@@ -1,8 +1,8 @@
-# ezphp/framework
+# ez-php/framework
 
 Lightweight PHP framework core — dependency injection, routing, middleware, and database migrations.
 
-[![CI](https://github.com/ezphp/framework/actions/workflows/ci.yml/badge.svg)](https://github.com/ezphp/framework/actions/workflows/ci.yml)
+[![CI](https://github.com/ez-php/framework/actions/workflows/ci.yml/badge.svg)](https://github.com/ez-php/framework/actions/workflows/ci.yml)
 
 ## Requirements
 
@@ -12,7 +12,7 @@ Lightweight PHP framework core — dependency injection, routing, middleware, an
 ## Installation
 
 ```bash
-composer require ezphp/framework
+composer require ez-php/framework
 ```
 
 ## What's included
@@ -45,13 +45,13 @@ $response = $app->handle(\EzPhp\Http\RequestFactory::fromGlobals());
 
 ## Optional modules
 
-- [ezphp/orm](https://github.com/ezphp/orm) — Active Record ORM with query builder and schema builder
-- [ezphp/auth](https://github.com/ezphp/auth) — Authentication
-- [ezphp/cache](https://github.com/ezphp/cache) — Cache drivers (array, file, Redis)
-- [ezphp/events](https://github.com/ezphp/events) — Event dispatcher
-- [ezphp/i18n](https://github.com/ezphp/i18n) — Internationalisation
-- [ezphp/validation](https://github.com/ezphp/validation) — Validator
-- [ezphp/http-client](https://github.com/ezphp/http-client) — HTTP client
+- [ez-php/orm](https://github.com/ez-php/orm) — Active Record ORM with query builder and schema builder
+- [ez-php/auth](https://github.com/ez-php/auth) — Authentication
+- [ez-php/cache](https://github.com/ez-php/cache) — Cache drivers (array, file, Redis)
+- [ez-php/events](https://github.com/ez-php/events) — Event dispatcher
+- [ez-php/i18n](https://github.com/ez-php/i18n) — Internationalisation
+- [ez-php/validation](https://github.com/ez-php/validation) — Validator
+- [ez-php/http-client](https://github.com/ez-php/http-client) — HTTP client
 
 ## License
 

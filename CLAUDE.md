@@ -86,7 +86,7 @@ When creating a new module or `CLAUDE.md` anywhere in this repository:
 
 **CLAUDE.md structure:**
 - Start with the full content of `CODING_GUIDELINES.md`, verbatim
-- Then add `---` followed by `# Package: ezphp/<name>` (or `# Directory: <name>`)
+- Then add `---` followed by `# Package: ez-php/<name>` (or `# Directory: <name>`)
 - Module-specific section must cover:
   - Source structure (file tree with one-line descriptions per file)
   - Key classes and their responsibilities
@@ -100,7 +100,7 @@ When creating a new module or `CLAUDE.md` anywhere in this repository:
 **Docker setup:** copy `docker-compose.yml`, `docker/`, `.env.example` and `start.sh` from the repository root and adapt them for the module (service names, ports, required services). Use a unique `DB_PORT` in `.env.example` that is not used by any other package — increment by one per package starting with `3306` (root).
 ---
 
-# Package: ezphp/framework
+# Package: ez-php/framework
 
 The framework core — runtime kernel, dependency injection, routing, middleware, configuration, database, migrations, exception handling, and scaffolding console commands.
 
@@ -236,11 +236,11 @@ Builds a recursive closure pipeline from class-strings. Resolves each middleware
 
 ### Database (`src/Database/Database.php`)
 
-Thin PDO wrapper. Not a DBAL. The ORM and query builder live in `ezphp/orm`.
+Thin PDO wrapper. Not a DBAL. The ORM and query builder live in `ez-php/orm`.
 
 - `query(sql, bindings)` — Positional bindings with type detection (null/bool/int/string)
 - `transaction(callable)` — Auto-rollback on exception; returns callable's return value
-- `table(name)` — Returns a `QueryBuilder` from `ezphp/orm` (cross-package bridge point)
+- `table(name)` — Returns a `QueryBuilder` from `ez-php/orm` (cross-package bridge point)
 
 ---
 
@@ -270,8 +270,8 @@ Thin PDO wrapper. Not a DBAL. The ORM and query builder live in `ezphp/orm`.
 - **Service providers instantiated directly** — `new $class($this)`, not via the container, to avoid circular bootstrap dependency.
 - **`Application::bind()` wraps callables** — Ensures the Application is always injected into user bindings, decoupling the user from the Container API.
 - **Router does not execute middleware** — Separation of concerns: `Router::retrieveRoute()` only resolves; `MiddlewareHandler` executes.
-- **Database is intentionally minimal** — No query builder, no schema builder in this package. Those belong in `ezphp/orm`.
-- **`Database::table()` depends on `ezphp/orm`** — The only cross-module dependency in the core. Acceptable as ORM is a sibling package in the monorepo.
+- **Database is intentionally minimal** — No query builder, no schema builder in this package. Those belong in `ez-php/orm`.
+- **`Database::table()` depends on `ez-php/orm`** — The only cross-module dependency in the core. Acceptable as ORM is a sibling package in the monorepo.
 - **Migrations use raw PDO** — `up(PDO)` / `down(PDO)` to keep migrations dependency-free; they must not rely on the ORM or Database class.
 - **`CorsMiddleware` is a concrete helper** — Provided as a convenience; not part of the routing or middleware infrastructure.
 
@@ -291,14 +291,14 @@ Thin PDO wrapper. Not a DBAL. The ORM and query builder live in `ezphp/orm`.
 
 | Concern | Where it belongs |
 |---|---|
-| HTTP Request / Response value objects | `ezphp/http` |
-| `.env` file parsing | `ezphp/dotenv` |
-| Console / Command infrastructure | `ezphp/console` |
-| ORM, Query Builder, Schema Builder | `ezphp/orm` |
-| Authentication (session / token) | `ezphp/auth` |
-| Caching (file, array, Redis) | `ezphp/cache` |
-| Event bus | `ezphp/events` |
-| Input validation | `ezphp/validation` |
-| HTTP client (cURL) | `ezphp/http-client` |
-| Translations / i18n | `ezphp/i18n` |
+| HTTP Request / Response value objects | `ez-php/http` |
+| `.env` file parsing | `ez-php/dotenv` |
+| Console / Command infrastructure | `ez-php/console` |
+| ORM, Query Builder, Schema Builder | `ez-php/orm` |
+| Authentication (session / token) | `ez-php/auth` |
+| Caching (file, array, Redis) | `ez-php/cache` |
+| Event bus | `ez-php/events` |
+| Input validation | `ez-php/validation` |
+| HTTP client (cURL) | `ez-php/http-client` |
+| Translations / i18n | `ez-php/i18n` |
 | Application template / entry point | `ez-php/` |

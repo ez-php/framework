@@ -10,10 +10,10 @@
     }
   ],
   "keywords": ["framework", "dependency-injection", "routing", "middleware", "migration", "php"],
-  "homepage": "https://github.com/ezphp/framework",
+  "homepage": "https://github.com/ez-php/framework",
   "support": {
-    "issues": "https://github.com/ezphp/framework/issues",
-    "source": "https://github.com/ezphp/framework"
+    "issues": "https://github.com/ez-php/framework/issues",
+    "source": "https://github.com/ez-php/framework"
   },
   "require": {
     "php": "^8.5",
