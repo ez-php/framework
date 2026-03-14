@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace Tests\Database;
 
 use EzPhp\Database\Database;
-use EzPhp\Orm\QueryBuilder;
 use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\UsesClass;
 use RuntimeException;
 use Tests\TestCase;
 use Throwable;
@@ -19,7 +17,6 @@ use Throwable;
  * @package Tests\Database
  */
 #[CoversClass(Database::class)]
-#[UsesClass(QueryBuilder::class)]
 final class DatabaseTest extends TestCase
 {
     private Database $db;
@@ -122,12 +119,4 @@ final class DatabaseTest extends TestCase
         $this->assertSame('ok', $result);
     }
 
-    /**
-     * @return void
-     */
-    public function test_table_returns_query_builder(): void
-    {
-        $qb = $this->db->table('users');
-        $this->assertInstanceOf(QueryBuilder::class, $qb);
-    }
 }

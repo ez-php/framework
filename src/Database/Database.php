@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace EzPhp\Database;
 
-use EzPhp\Orm\QueryBuilder;
 use PDO;
 use Throwable;
 
@@ -38,16 +37,6 @@ final class Database
     public function getPdo(): PDO
     {
         return $this->pdo;
-    }
-
-    /**
-     * @param string $table
-     *
-     * @return QueryBuilder
-     */
-    public function table(string $table): QueryBuilder
-    {
-        return new QueryBuilder($this, $table);
     }
 
     /**
