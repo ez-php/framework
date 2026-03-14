@@ -118,5 +118,4 @@ final class DatabaseTest extends TestCase
         $result = $this->db->transaction(fn (): string => 'ok');
         $this->assertSame('ok', $result);
     }
-
 }
