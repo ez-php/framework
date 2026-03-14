@@ -1,0 +1,53 @@
+{
+  "name": "ezphp/framework",
+  "description": "Lightweight PHP framework core — dependency injection, routing, middleware, and database migrations",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Andreas Uretschnig",
+      "email": "andreas.uretschnig@gmail.com"
+    }
+  ],
+  "keywords": ["framework", "dependency-injection", "routing", "middleware", "migration", "php"],
+  "homepage": "https://github.com/ezphp/framework",
+  "support": {
+    "issues": "https://github.com/ezphp/framework/issues",
+    "source": "https://github.com/ezphp/framework"
+  },
+  "repositories": [
+    {"type": "path", "url": "../modules/dotenv"},
+    {"type": "path", "url": "../modules/http"},
+    {"type": "path", "url": "../modules/console"}
+  ],
+  "require": {
+    "php": "^8.5",
+    "ext-pdo": "*",
+    "ezphp/dotenv": "^1.0",
+    "ezphp/http": "^1.0",
+    "ezphp/console": "^1.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^13.0",
+    "phpstan/phpstan": "^2.1",
+    "friendsofphp/php-cs-fixer": "^3.94",
+    "phpstan/phpstan-strict-rules": "^2.0",
+    "phpstan/phpstan-deprecation-rules": "^2.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "EzPhp\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "cs": "php-cs-fixer fix",
+    "analyse": "phpstan analyse",
+    "test": "phpunit",
+    "full": "composer analyse && composer cs && composer test"
+  }
+}
