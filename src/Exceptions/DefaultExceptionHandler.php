@@ -18,10 +18,14 @@ final class DefaultExceptionHandler implements ExceptionHandler
     /**
      * DefaultExceptionHandler Constructor
      *
-     * @param bool $debug
+     * @param bool   $debug        Show full exception details in HTML responses.
+     * @param string $templatePath Directory for custom production error templates (e.g. resources/errors).
+     *                             Templates are loaded as {templatePath}/{status}.php.
      */
-    public function __construct(private readonly bool $debug = false)
-    {
+    public function __construct(
+        private readonly bool $debug = false,
+        private readonly string $templatePath = '',
+    ) {
     }
 
     /**
@@ -33,19 +37,24 @@ final class DefaultExceptionHandler implements ExceptionHandler
     public function render(Throwable $e, Request $request): Response
     {
         $status = $e instanceof RouteException ? 404 : 500;
-        $message = $this->resolveMessage($e, $status);
 
         /** @var string $accept */
         $accept = $request->header('accept', '');
 
         if (str_contains($accept, 'application/json')) {
+            $message = $this->resolveMessage($e, $status);
             $json = json_encode(['error' => $message]) ?: '{"error":"Internal Server Error"}';
 
             return (new Response($json, $status))
                 ->withHeader('Content-Type', 'application/json');
         }
 
-        return new Response($message, $status);
+        $html = $this->debug
+            ? (new DebugHtmlRenderer())->render($e, $request)
+            : (new ProductionHtmlRenderer($this->templatePath))->render($status);
+
+        return (new Response($html, $status))
+            ->withHeader('Content-Type', 'text/html; charset=utf-8');
     }
 
     /**

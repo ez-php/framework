@@ -22,8 +22,9 @@ final class ExceptionHandlerServiceProvider extends ServiceProvider
     {
         $this->app->bind(ExceptionHandler::class, function (Application $app): DefaultExceptionHandler {
             $debug = (bool) $app->make(Config::class)->get('app.debug', false);
+            $templatePath = $app->basePath('resources/errors');
 
-            return new DefaultExceptionHandler($debug);
+            return new DefaultExceptionHandler($debug, $templatePath);
         });
     }
 }

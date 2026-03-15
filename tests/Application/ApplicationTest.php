@@ -127,7 +127,7 @@ final class ApplicationTest extends TestCase
         $response = $app->handle(new Request('GET', '/does-not-exist'));
 
         $this->assertSame(404, $response->status());
-        $this->assertSame('Route not found', $response->body());
+        $this->assertStringContainsString('404', $response->body());
     }
 
     /**
