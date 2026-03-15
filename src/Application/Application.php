@@ -43,6 +43,11 @@ final class Application
      */
     private array $globalMiddleware = [];
 
+    /**
+     * @var list<class-string>
+     */
+    private array $userCommands = [];
+
     private bool $middlewarePushed = false;
 
     /**
@@ -80,6 +85,30 @@ final class Application
         $this->userProviders[] = $class;
 
         return $this;
+    }
+
+    /**
+     * Register a console command class to be included in the Console.
+     *
+     * @param class-string $commandClass
+     *
+     * @return $this
+     */
+    public function registerCommand(string $commandClass): self
+    {
+        $this->userCommands[] = $commandClass;
+
+        return $this;
+    }
+
+    /**
+     * Return all user-registered command class names.
+     *
+     * @return list<class-string>
+     */
+    public function getCommands(): array
+    {
+        return $this->userCommands;
     }
 
     /**

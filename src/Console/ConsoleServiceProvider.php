@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace EzPhp\Console;
 
 use EzPhp\Application\Application;
+use EzPhp\Console\Command\ListCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
 use EzPhp\Console\Command\MakeMiddlewareCommand;
 use EzPhp\Console\Command\MakeMigrationCommand;
 use EzPhp\Console\Command\MakeProviderCommand;
 use EzPhp\Console\Command\MigrateCommand;
+use EzPhp\Console\Command\MigrateFreshCommand;
 use EzPhp\Console\Command\MigrateRollbackCommand;
+use EzPhp\Console\Command\MigrateStatusCommand;
+use EzPhp\Console\Command\ServeCommand;
+use EzPhp\Console\Command\TinkerCommand;
 use EzPhp\Migration\Migrator;
 use EzPhp\ServiceProvider\ServiceProvider;
 
@@ -34,6 +39,14 @@ final class ConsoleServiceProvider extends ServiceProvider
             return new MigrateRollbackCommand($app->make(Migrator::class));
         });
 
+        $this->app->bind(MigrateFreshCommand::class, function (Application $app): MigrateFreshCommand {
+            return new MigrateFreshCommand($app->make(Migrator::class));
+        });
+
+        $this->app->bind(MigrateStatusCommand::class, function (Application $app): MigrateStatusCommand {
+            return new MigrateStatusCommand($app->make(Migrator::class));
+        });
+
         $this->app->bind(MakeMigrationCommand::class, function (Application $app): MakeMigrationCommand {
             return new MakeMigrationCommand($app->basePath('database/migrations'));
         });
@@ -50,15 +63,38 @@ final class ConsoleServiceProvider extends ServiceProvider
             return new MakeProviderCommand($app->basePath('src'));
         });
 
+        $this->app->bind(ServeCommand::class, function (Application $app): ServeCommand {
+            return new ServeCommand($app->basePath('public'));
+        });
+
+        $this->app->bind(TinkerCommand::class, function (Application $app): TinkerCommand {
+            return new TinkerCommand($app);
+        });
+
         $this->app->bind(Console::class, function (Application $app): Console {
-            return new Console([
+            /** @var list<CommandInterface> $commands */
+            $commands = [
+                $app->make(ServeCommand::class),
                 $app->make(MigrateCommand::class),
                 $app->make(MigrateRollbackCommand::class),
+                $app->make(MigrateFreshCommand::class),
+                $app->make(MigrateStatusCommand::class),
                 $app->make(MakeMigrationCommand::class),
                 $app->make(MakeControllerCommand::class),
                 $app->make(MakeMiddlewareCommand::class),
                 $app->make(MakeProviderCommand::class),
-            ]);
+                $app->make(TinkerCommand::class),
+            ];
+
+            foreach ($app->getCommands() as $class) {
+                /** @var CommandInterface $userCommand */
+                $userCommand = $app->make($class);
+                $commands[] = $userCommand;
+            }
+
+            $listCommand = new ListCommand($commands);
+
+            return new Console([$listCommand, ...$commands]);
         });
     }
 }

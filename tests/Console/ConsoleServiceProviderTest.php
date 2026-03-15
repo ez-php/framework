@@ -9,14 +9,21 @@ use EzPhp\Application\CoreServiceProviders;
 use EzPhp\Config\Config;
 use EzPhp\Config\ConfigLoader;
 use EzPhp\Config\ConfigServiceProvider;
+use EzPhp\Console\Command\ListCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
 use EzPhp\Console\Command\MakeMiddlewareCommand;
 use EzPhp\Console\Command\MakeMigrationCommand;
 use EzPhp\Console\Command\MakeProviderCommand;
 use EzPhp\Console\Command\MigrateCommand;
+use EzPhp\Console\Command\MigrateFreshCommand;
 use EzPhp\Console\Command\MigrateRollbackCommand;
+use EzPhp\Console\Command\MigrateStatusCommand;
+use EzPhp\Console\Command\ServeCommand;
+use EzPhp\Console\Command\TinkerCommand;
 use EzPhp\Console\Console;
 use EzPhp\Console\ConsoleServiceProvider;
+use EzPhp\Console\Input;
+use EzPhp\Console\Output;
 use EzPhp\Container\Container;
 use EzPhp\Database\Database;
 use EzPhp\Database\DatabaseServiceProvider;
@@ -57,10 +64,17 @@ use Tests\DatabaseTestCase;
 #[UsesClass(ServiceProvider::class)]
 #[UsesClass(MigrateCommand::class)]
 #[UsesClass(MigrateRollbackCommand::class)]
+#[UsesClass(MigrateFreshCommand::class)]
+#[UsesClass(MigrateStatusCommand::class)]
 #[UsesClass(MakeMigrationCommand::class)]
 #[UsesClass(MakeControllerCommand::class)]
 #[UsesClass(MakeMiddlewareCommand::class)]
 #[UsesClass(MakeProviderCommand::class)]
+#[UsesClass(ServeCommand::class)]
+#[UsesClass(TinkerCommand::class)]
+#[UsesClass(ListCommand::class)]
+#[UsesClass(Input::class)]
+#[UsesClass(Output::class)]
 final class ConsoleServiceProviderTest extends DatabaseTestCase
 {
     /**
@@ -86,10 +100,14 @@ final class ConsoleServiceProviderTest extends DatabaseTestCase
 
         $this->assertInstanceOf(MigrateCommand::class, $app->make(MigrateCommand::class));
         $this->assertInstanceOf(MigrateRollbackCommand::class, $app->make(MigrateRollbackCommand::class));
+        $this->assertInstanceOf(MigrateFreshCommand::class, $app->make(MigrateFreshCommand::class));
+        $this->assertInstanceOf(MigrateStatusCommand::class, $app->make(MigrateStatusCommand::class));
         $this->assertInstanceOf(MakeMigrationCommand::class, $app->make(MakeMigrationCommand::class));
         $this->assertInstanceOf(MakeControllerCommand::class, $app->make(MakeControllerCommand::class));
         $this->assertInstanceOf(MakeMiddlewareCommand::class, $app->make(MakeMiddlewareCommand::class));
         $this->assertInstanceOf(MakeProviderCommand::class, $app->make(MakeProviderCommand::class));
+        $this->assertInstanceOf(ServeCommand::class, $app->make(ServeCommand::class));
+        $this->assertInstanceOf(TinkerCommand::class, $app->make(TinkerCommand::class));
     }
 
     /**
@@ -106,11 +124,16 @@ final class ConsoleServiceProviderTest extends DatabaseTestCase
         $console->run(['ez']);
         $output = (string) ob_get_clean();
 
+        $this->assertStringContainsString('list', $output);
+        $this->assertStringContainsString('serve', $output);
         $this->assertStringContainsString('migrate', $output);
         $this->assertStringContainsString('migrate:rollback', $output);
+        $this->assertStringContainsString('migrate:fresh', $output);
+        $this->assertStringContainsString('migrate:status', $output);
         $this->assertStringContainsString('make:migration', $output);
         $this->assertStringContainsString('make:controller', $output);
         $this->assertStringContainsString('make:middleware', $output);
         $this->assertStringContainsString('make:provider', $output);
+        $this->assertStringContainsString('tinker', $output);
     }
 }

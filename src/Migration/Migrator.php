@@ -64,6 +64,54 @@ final class Migrator
     }
 
     /**
+     * Roll back all executed migrations across all batches.
+     *
+     * @return list<string>
+     * @throws Throwable
+     */
+    public function rollbackAll(): array
+    {
+        $this->ensureMigrationsTable();
+
+        $rolled = [];
+
+        while ($this->getLastBatch() > 0) {
+            $rolled = array_merge($rolled, $this->rollback());
+        }
+
+        return $rolled;
+    }
+
+    /**
+     * Return the status of every migration file.
+     *
+     * @return list<array{migration: string, status: string, batch: int|null}>
+     */
+    public function status(): array
+    {
+        $this->ensureMigrationsTable();
+
+        /** @var list<array{migration: string, batch: int}> $ran */
+        $ran = $this->db->query('SELECT migration, batch FROM migrations ORDER BY migration');
+
+        $ranMap = [];
+        foreach ($ran as $row) {
+            $ranMap[$row['migration']] = $row['batch'];
+        }
+
+        $result = [];
+        foreach ($this->getFiles() as $file) {
+            if (isset($ranMap[$file])) {
+                $result[] = ['migration' => $file, 'status' => 'Ran', 'batch' => $ranMap[$file]];
+            } else {
+                $result[] = ['migration' => $file, 'status' => 'Pending', 'batch' => null];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Roll back the last batch of migrations.
      *
      * @return list<string>

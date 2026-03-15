@@ -9,13 +9,21 @@ use EzPhp\Application\CoreServiceProviders;
 use EzPhp\Config\Config;
 use EzPhp\Config\ConfigLoader;
 use EzPhp\Config\ConfigServiceProvider;
+use EzPhp\Console\Command\ListCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
 use EzPhp\Console\Command\MakeMiddlewareCommand;
 use EzPhp\Console\Command\MakeMigrationCommand;
 use EzPhp\Console\Command\MakeProviderCommand;
 use EzPhp\Console\Command\MigrateCommand;
+use EzPhp\Console\Command\MigrateFreshCommand;
 use EzPhp\Console\Command\MigrateRollbackCommand;
+use EzPhp\Console\Command\MigrateStatusCommand;
+use EzPhp\Console\Command\ServeCommand;
+use EzPhp\Console\Command\TinkerCommand;
+use EzPhp\Console\CommandInterface;
 use EzPhp\Console\ConsoleServiceProvider;
+use EzPhp\Console\Input;
+use EzPhp\Console\Output;
 use EzPhp\Container\Container;
 use EzPhp\Database\Database;
 use EzPhp\Database\DatabaseServiceProvider;
@@ -62,10 +70,17 @@ use Tests\TestCase;
 #[UsesClass(ConsoleServiceProvider::class)]
 #[UsesClass(MigrateCommand::class)]
 #[UsesClass(MigrateRollbackCommand::class)]
+#[UsesClass(MigrateFreshCommand::class)]
+#[UsesClass(MigrateStatusCommand::class)]
 #[UsesClass(MakeMigrationCommand::class)]
 #[UsesClass(MakeControllerCommand::class)]
 #[UsesClass(MakeMiddlewareCommand::class)]
 #[UsesClass(MakeProviderCommand::class)]
+#[UsesClass(ServeCommand::class)]
+#[UsesClass(TinkerCommand::class)]
+#[UsesClass(ListCommand::class)]
+#[UsesClass(Input::class)]
+#[UsesClass(Output::class)]
 #[UsesClass(CorsMiddleware::class)]
 #[UsesClass(MiddlewareHandler::class)]
 final class ApplicationTest extends TestCase
@@ -205,6 +220,70 @@ final class ApplicationTest extends TestCase
     {
         $app = new Application();
         $this->assertSame($app, $app->middleware(CorsMiddleware::class));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_register_command_returns_self_for_chaining(): void
+    {
+        $stub = new class () implements CommandInterface {
+            public function getName(): string
+            {
+                return 'test';
+            }
+
+            public function getDescription(): string
+            {
+                return '';
+            }
+
+            public function getHelp(): string
+            {
+                return '';
+            }
+
+            public function handle(array $args): int
+            {
+                return 0;
+            }
+        };
+
+        $app = new Application();
+        $this->assertSame($app, $app->registerCommand($stub::class));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_get_commands_returns_registered_command_classes(): void
+    {
+        $stub = new class () implements CommandInterface {
+            public function getName(): string
+            {
+                return 'test';
+            }
+
+            public function getDescription(): string
+            {
+                return '';
+            }
+
+            public function getHelp(): string
+            {
+                return '';
+            }
+
+            public function handle(array $args): int
+            {
+                return 0;
+            }
+        };
+
+        $app = new Application();
+        $app->registerCommand($stub::class);
+
+        $this->assertContains($stub::class, $app->getCommands());
     }
 
     /**

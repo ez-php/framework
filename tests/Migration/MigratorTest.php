@@ -216,6 +216,95 @@ final class MigratorTest extends TestCase
      * @return void
      * @throws Throwable
      */
+    public function test_rollback_all_reverts_all_batches(): void
+    {
+        $this->createMigrationFile(
+            '0001_create_users_table.php',
+            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
+            'DROP TABLE users',
+        );
+        $this->migrator->migrate();
+
+        $this->createMigrationFile(
+            '0002_create_posts_table.php',
+            'CREATE TABLE posts (id INTEGER PRIMARY KEY, title TEXT)',
+            'DROP TABLE posts',
+        );
+        $this->migrator->migrate();
+
+        $rolled = $this->migrator->rollbackAll();
+
+        $this->assertContains('0001_create_users_table.php', $rolled);
+        $this->assertContains('0002_create_posts_table.php', $rolled);
+
+        // All rolled back — migrate reruns everything
+        $ran = $this->migrator->migrate();
+        $this->assertSame(['0001_create_users_table.php', '0002_create_posts_table.php'], $ran);
+    }
+
+    /**
+     * @return void
+     * @throws Throwable
+     */
+    public function test_rollback_all_returns_empty_when_nothing_to_rollback(): void
+    {
+        $rolled = $this->migrator->rollbackAll();
+        $this->assertSame([], $rolled);
+    }
+
+    /**
+     * @return void
+     * @throws Throwable
+     */
+    public function test_status_returns_pending_and_ran(): void
+    {
+        $this->createMigrationFile(
+            '0001_create_users_table.php',
+            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
+            'DROP TABLE users',
+        );
+        $this->createMigrationFile(
+            '0002_create_posts_table.php',
+            'CREATE TABLE posts (id INTEGER PRIMARY KEY, title TEXT)',
+            'DROP TABLE posts',
+        );
+
+        $this->migrator->migrate();
+
+        // Add a third that hasn't run
+        $this->createMigrationFile(
+            '0003_create_tags_table.php',
+            'CREATE TABLE tags (id INTEGER PRIMARY KEY, name TEXT)',
+            'DROP TABLE tags',
+        );
+
+        $status = $this->migrator->status();
+
+        $this->assertCount(3, $status);
+
+        $this->assertSame('0001_create_users_table.php', $status[0]['migration']);
+        $this->assertSame('Ran', $status[0]['status']);
+        $this->assertSame(1, $status[0]['batch']);
+
+        $this->assertSame('0003_create_tags_table.php', $status[2]['migration']);
+        $this->assertSame('Pending', $status[2]['status']);
+        $this->assertNull($status[2]['batch']);
+    }
+
+    /**
+     * @return void
+     * @throws Throwable
+     */
+    public function test_status_returns_empty_when_no_files(): void
+    {
+        $status = $this->migrator->status();
+        $this->assertSame([], $status);
+    }
+
+    /**
+     * @return void
+     * @throws Throwable
+     */
     public function test_migration_file_can_be_loaded_repeatedly_without_error(): void
     {
         $this->createMigrationFile(
