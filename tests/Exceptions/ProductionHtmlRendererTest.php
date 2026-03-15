@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Tests\Exceptions;
 
 use EzPhp\Exceptions\ProductionHtmlRenderer;
+use EzPhp\I18n\Translator;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
 
 /**
@@ -14,6 +16,7 @@ use Tests\TestCase;
  * @package Tests\Exceptions
  */
 #[CoversClass(ProductionHtmlRenderer::class)]
+#[UsesClass(Translator::class)]
 final class ProductionHtmlRendererTest extends TestCase
 {
     /**
@@ -121,5 +124,37 @@ final class ProductionHtmlRendererTest extends TestCase
 
         unlink($dir . '/500.php');
         rmdir($dir);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_translator_title_and_message_are_used_when_translation_exists(): void
+    {
+        $langPath = sys_get_temp_dir() . '/ez-php-lang-' . uniqid();
+        mkdir($langPath . '/en', 0o777, true);
+        file_put_contents($langPath . '/en/errors.php', "<?php\nreturn ['404' => ['title' => 'Seite nicht gefunden', 'message' => 'Diese Seite existiert nicht.']];");
+
+        $translator = new Translator('en', 'en', $langPath);
+        $html = (new ProductionHtmlRenderer('', $translator))->render(404);
+
+        $this->assertStringContainsString('Seite nicht gefunden', $html);
+        $this->assertStringContainsString('Diese Seite existiert nicht.', $html);
+
+        unlink($langPath . '/en/errors.php');
+        rmdir($langPath . '/en');
+        rmdir($langPath);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_translator_falls_back_to_hardcoded_when_translation_key_missing(): void
+    {
+        $translator = new Translator('de', 'en', '/non/existent/lang');
+        $html = (new ProductionHtmlRenderer('', $translator))->render(404);
+
+        $this->assertStringContainsString('Not Found', $html);
+        $this->assertStringContainsString('The page you are looking for could not be found.', $html);
     }
 }

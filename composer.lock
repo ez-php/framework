@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "043e223ee4a5e4e3861c3c94fe8a1ab0",
+    "content-hash": "781add49ced9806d23c54b0174a8f573",
     "packages": [
         {
             "name": "ez-php/console",
@@ -170,6 +170,64 @@
                 "source": "https://github.com/ez-php/http"
             },
             "time": "2026-03-15T03:47:53+00:00"
+        },
+        {
+            "name": "ez-php/i18n",
+            "version": "0.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ez-php/i18n.git",
+                "reference": "571e792886d87fe03277c1244fbee8b140c4a590"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ez-php/i18n/zipball/571e792886d87fe03277c1244fbee8b140c4a590",
+                "reference": "571e792886d87fe03277c1244fbee8b140c4a590",
+                "shasum": ""
+            },
+            "require": {
+                "ez-php/framework": "0.*",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.94",
+                "phpstan/phpstan": "^2.1",
+                "phpstan/phpstan-deprecation-rules": "^2.0",
+                "phpstan/phpstan-strict-rules": "^2.0",
+                "phpunit/phpunit": "^13.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "EzPhp\\I18n\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andreas Uretschnig",
+                    "email": "andreas.uretschnig@gmail.com"
+                }
+            ],
+            "description": "Internationalisation module for the ez-php framework — file-based translations with dot-notation keys and locale fallback",
+            "homepage": "https://github.com/ez-php/i18n",
+            "keywords": [
+                "ez-php",
+                "framework",
+                "i18n",
+                "internationalization",
+                "localisation",
+                "php",
+                "translation"
+            ],
+            "support": {
+                "issues": "https://github.com/ez-php/i18n/issues",
+                "source": "https://github.com/ez-php/i18n"
+            },
+            "time": "2026-03-15T03:47:54+00:00"
         }
     ],
     "packages-dev": [

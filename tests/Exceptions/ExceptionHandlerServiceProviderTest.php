@@ -20,6 +20,8 @@ use EzPhp\Exceptions\DefaultExceptionHandler;
 use EzPhp\Exceptions\ExceptionHandler;
 use EzPhp\Exceptions\ExceptionHandlerServiceProvider;
 use EzPhp\Exceptions\RouteException;
+use EzPhp\I18n\Translator;
+use EzPhp\I18n\TranslatorServiceProvider;
 use EzPhp\Middleware\MiddlewareHandler;
 use EzPhp\Migration\MigrationServiceProvider;
 use EzPhp\Migration\Migrator;
@@ -59,6 +61,8 @@ use Tests\DatabaseTestCase;
 #[UsesClass(MigrateCommand::class)]
 #[UsesClass(MigrateRollbackCommand::class)]
 #[UsesClass(MakeMigrationCommand::class)]
+#[UsesClass(Translator::class)]
+#[UsesClass(TranslatorServiceProvider::class)]
 final class ExceptionHandlerServiceProviderTest extends DatabaseTestCase
 {
     /**

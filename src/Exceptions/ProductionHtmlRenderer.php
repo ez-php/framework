@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace EzPhp\Exceptions;
 
+use EzPhp\I18n\Translator;
+
 /**
  * Class ProductionHtmlRenderer
  *
  * Renders clean production error pages (404, 500, etc.).
  * Looks for a custom template at {templatePath}/{status}.php first;
  * falls back to a built-in minimal HTML page.
+ *
+ * When a Translator is provided, titles and messages are resolved via
+ * translation keys (e.g. "errors.404.title", "errors.404.message").
+ * If a key has no translation, the built-in English strings are used.
  *
  * Custom templates receive a single variable: int $status.
  *
@@ -18,10 +24,13 @@ namespace EzPhp\Exceptions;
 final class ProductionHtmlRenderer
 {
     /**
-     * @param string $templatePath Directory to look for custom error templates (e.g. resources/errors).
+     * @param string          $templatePath Directory for custom error templates (e.g. resources/errors).
+     * @param Translator|null $translator   Optional translator for localised error strings.
      */
-    public function __construct(private readonly string $templatePath = '')
-    {
+    public function __construct(
+        private readonly string $templatePath = '',
+        private readonly ?Translator $translator = null,
+    ) {
     }
 
     /**
@@ -115,13 +124,22 @@ final class ProductionHtmlRenderer
      */
     private function titleFor(int $status): string
     {
-        return match ($status) {
+        $fallback = match ($status) {
             404 => 'Not Found',
             500 => 'Internal Server Error',
             403 => 'Forbidden',
             401 => 'Unauthorized',
             default => 'Error',
         };
+
+        if ($this->translator === null) {
+            return $fallback;
+        }
+
+        $key = 'errors.' . $status . '.title';
+        $translated = $this->translator->get($key);
+
+        return $translated !== $key ? $translated : $fallback;
     }
 
     /**
@@ -131,12 +149,21 @@ final class ProductionHtmlRenderer
      */
     private function messageFor(int $status): string
     {
-        return match ($status) {
+        $fallback = match ($status) {
             404 => 'The page you are looking for could not be found.',
             500 => 'Something went wrong. Please try again later.',
             403 => 'You do not have permission to access this resource.',
             401 => 'Authentication is required to access this resource.',
             default => 'An unexpected error occurred.',
         };
+
+        if ($this->translator === null) {
+            return $fallback;
+        }
+
+        $key = 'errors.' . $status . '.message';
+        $translated = $this->translator->get($key);
+
+        return $translated !== $key ? $translated : $fallback;
     }
 }
