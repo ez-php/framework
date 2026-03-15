@@ -6,6 +6,7 @@ namespace EzPhp\Database;
 
 use EzPhp\Application\Application;
 use EzPhp\Config\Config;
+use EzPhp\Contracts\DatabaseInterface;
 use EzPhp\ServiceProvider\ServiceProvider;
 
 /**
@@ -52,5 +53,7 @@ final class DatabaseServiceProvider extends ServiceProvider
 
             return new Database($dsn, $username, $password);
         });
+
+        $this->app->bind(DatabaseInterface::class, fn () => $this->app->make(Database::class));
     }
 }

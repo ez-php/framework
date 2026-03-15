@@ -5,38 +5,32 @@ declare(strict_types=1);
 namespace EzPhp\ServiceProvider;
 
 use EzPhp\Application\Application;
+use EzPhp\Contracts\ServiceProvider as ContractsServiceProvider;
 
 /**
  * Class ServiceProvider
  *
+ * Framework-internal base class for core service providers.
+ * Extends the contracts ServiceProvider and adds a basePath() helper
+ * for providers that need to resolve file-system paths relative to the
+ * application root (e.g. config/, routes/, database/migrations/).
+ *
  * @package EzPhp\ServiceProvider
  */
-abstract class ServiceProvider
+abstract class ServiceProvider extends ContractsServiceProvider
 {
     /**
-     * ServiceProvider Constructor
+     * Resolve a path relative to the application root.
      *
-     * @param Application $app
+     * @param string $path Optional sub-path to append.
+     *
+     * @return string
      */
-    final public function __construct(
-        protected Application $app
-    ) {
-        //
-    }
-
-    /**
-     * @return void
-     */
-    public function register(): void
+    protected function basePath(string $path = ''): string
     {
-        //
-    }
+        /** @var Application $app */
+        $app = $this->app;
 
-    /**
-     * @return void
-     */
-    public function boot(): void
-    {
-        //
+        return $app->basePath($path);
     }
 }

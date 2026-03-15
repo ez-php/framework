@@ -4,21 +4,17 @@ declare(strict_types=1);
 
 namespace EzPhp\Middleware;
 
-use EzPhp\Http\Request;
-use EzPhp\Http\Response;
+use EzPhp\Contracts\MiddlewareInterface as ContractsMiddlewareInterface;
 
 /**
  * Interface MiddlewareInterface
  *
+ * Framework middleware contract. Extends the contracts interface for backward
+ * compatibility — existing middleware implementing this interface also satisfies
+ * EzPhp\Contracts\MiddlewareInterface.
+ *
  * @package EzPhp\Middleware
  */
-interface MiddlewareInterface
+interface MiddlewareInterface extends ContractsMiddlewareInterface
 {
-    /**
-     * @param Request  $request
-     * @param callable $next
-     *
-     * @return Response
-     */
-    public function handle(Request $request, callable $next): Response;
 }

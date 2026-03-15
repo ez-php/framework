@@ -28,7 +28,7 @@ final class RouterServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $routesPath = $this->app->basePath('routes/web.php');
+        $routesPath = $this->basePath('routes/web.php');
 
         if (!file_exists($routesPath)) {
             return;

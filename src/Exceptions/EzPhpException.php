@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace EzPhp\Exceptions;
 
-use RuntimeException;
+use EzPhp\Contracts\EzPhpException as ContractsEzPhpException;
 
 /**
  * Class EzPhpException
  *
  * @package EzPhp\Exceptions
  */
-class EzPhpException extends RuntimeException
+class EzPhpException extends ContractsEzPhpException
 {
 }

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace EzPhp\Config;
 
+use EzPhp\Contracts\ConfigInterface;
+
 /**
  * Class Config
  *
  * @package EzPhp\Config
  */
-final readonly class Config
+final readonly class Config implements ConfigInterface
 {
     /**
      * Config Constructor

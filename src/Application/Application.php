@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace EzPhp\Application;
 
 use EzPhp\Container\Container;
+use EzPhp\Contracts\ContainerInterface;
+use EzPhp\Contracts\ExceptionHandlerInterface;
 use EzPhp\Exceptions\ApplicationException;
 use EzPhp\Exceptions\ContainerException;
-use EzPhp\Exceptions\ExceptionHandler;
 use EzPhp\Http\Request;
 use EzPhp\Http\Response;
 use EzPhp\Middleware\MiddlewareHandler;
 use EzPhp\Middleware\MiddlewareInterface;
 use EzPhp\Routing\Router;
-use EzPhp\ServiceProvider\ServiceProvider;
 use ReflectionException;
 use Throwable;
 
@@ -22,19 +22,19 @@ use Throwable;
  *
  * @package EzPhp\Application
  */
-final class Application
+final class Application implements ContainerInterface
 {
     private bool $booted = false;
 
     private Container $container;
 
     /**
-     * @var ServiceProvider[]
+     * @var list<\EzPhp\Contracts\ServiceProvider>
      */
     private array $serviceProviders = [];
 
     /**
-     * @var list<class-string<ServiceProvider>>
+     * @var list<class-string<\EzPhp\Contracts\ServiceProvider>>
      */
     private array $userProviders = [];
 
@@ -76,7 +76,7 @@ final class Application
     }
 
     /**
-     * @param class-string<ServiceProvider> $class
+     * @param class-string<\EzPhp\Contracts\ServiceProvider> $class
      *
      * @return $this
      */
@@ -177,7 +177,7 @@ final class Application
                 $route = $this->make(Router::class)->retrieveRoute($request);
                 return $handler->runRoute($route, $request);
             } catch (Throwable $e) {
-                return $this->make(ExceptionHandler::class)->render($e, $request);
+                return $this->make(ExceptionHandlerInterface::class)->render($e, $request);
             }
         });
 
@@ -202,13 +202,28 @@ final class Application
     }
 
     /**
+     * Register an existing object as a shared instance in the container.
+     * Useful in boot() to decorate a previously resolved service.
+     *
+     * @template T of object
+     * @param class-string<T> $class
+     * @param T               $instance
+     *
+     * @return void
+     */
+    public function instance(string $class, object $instance): void
+    {
+        $this->container->instance($class, $instance);
+    }
+
+    /**
      * @template T of object
      * @param class-string<T> $class
      * @param class-string|callable|null $value
      *
-     * @return $this
+     * @return void
      */
-    public function bind(string $class, string|callable|null $value = null): self
+    public function bind(string $class, string|callable|null $value = null): void
     {
         if ($value === null) {
             $this->container->bind($class);
@@ -217,7 +232,6 @@ final class Application
         } else {
             $this->container->bind($class, fn () => $value($this));
         }
-        return $this;
     }
 
     /**
@@ -227,6 +241,7 @@ final class Application
     {
         $this->container = new Container();
         $this->container->bind(Application::class, fn () => $this);
+        $this->container->bind(ContainerInterface::class, fn () => $this);
         $this->container->bind(Container::class, fn () => $this->container);
     }
 

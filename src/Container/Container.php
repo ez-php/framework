@@ -53,6 +53,20 @@ final class Container
     }
 
     /**
+     * Register an existing object as a shared instance, bypassing bindings.
+     *
+     * @template T of object
+     * @param class-string<T> $class
+     * @param T               $instance
+     *
+     * @return void
+     */
+    public function instance(string $class, object $instance): void
+    {
+        $this->instances[$class] = $instance;
+    }
+
+    /**
      * @template T of object
      * @param class-string<T> $class
      *

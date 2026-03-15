@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace EzPhp\Database;
 
+use EzPhp\Contracts\DatabaseInterface;
 use PDO;
 use Throwable;
 
@@ -12,7 +13,7 @@ use Throwable;
  *
  * @package EzPhp\Database
  */
-final class Database
+final class Database implements DatabaseInterface
 {
     private PDO $pdo;
 

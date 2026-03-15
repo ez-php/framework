@@ -4,22 +4,16 @@ declare(strict_types=1);
 
 namespace EzPhp\Exceptions;
 
-use EzPhp\Http\Request;
-use EzPhp\Http\Response;
-use Throwable;
+use EzPhp\Contracts\ExceptionHandlerInterface;
 
 /**
  * Interface ExceptionHandler
  *
+ * Framework exception handler contract. Extends the contracts interface
+ * so that implementations satisfy both the framework type and the contracts type.
+ *
  * @package EzPhp\Exceptions
  */
-interface ExceptionHandler
+interface ExceptionHandler extends ExceptionHandlerInterface
 {
-    /**
-     * @param Throwable $e
-     * @param Request   $request
-     *
-     * @return Response
-     */
-    public function render(Throwable $e, Request $request): Response;
 }

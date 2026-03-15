@@ -11,7 +11,6 @@ use EzPhp\Exceptions\ExceptionHandlerServiceProvider;
 use EzPhp\I18n\TranslatorServiceProvider;
 use EzPhp\Migration\MigrationServiceProvider;
 use EzPhp\Routing\RouterServiceProvider;
-use EzPhp\ServiceProvider\ServiceProvider;
 
 /**
  * Class CoreServiceProviders
@@ -21,7 +20,7 @@ use EzPhp\ServiceProvider\ServiceProvider;
 final class CoreServiceProviders
 {
     /**
-     * @return list<class-string<ServiceProvider>>
+     * @return list<class-string<\EzPhp\Contracts\ServiceProvider>>
      */
     public static function all(): array
     {

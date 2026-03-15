@@ -164,6 +164,23 @@ final class ContainerTest extends TestCase
 
         $this->assertInstanceOf(ContainerTestWithDependency::class, $result);
     }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_instance_overrides_cached_singleton(): void
+    {
+        $container = new Container();
+        $original = new AutowiringService();
+        $container->bind(AutowiringService::class, fn () => $original);
+        $container->make(AutowiringService::class); // cache the original
+
+        $replacement = new AutowiringService();
+        $container->instance(AutowiringService::class, $replacement);
+
+        $this->assertSame($replacement, $container->make(AutowiringService::class));
+    }
 }
 
 /**

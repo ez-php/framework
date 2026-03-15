@@ -351,4 +351,21 @@ final class ApplicationTest extends TestCase
         // Still a valid response — middleware was not double-applied
         $this->assertSame(200, $response->status());
     }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_instance_overrides_resolved_singleton(): void
+    {
+        $app = new Application();
+        $app->bootstrap();
+
+        $app->make(Router::class); // cache the framework-bound instance
+
+        $replacement = new Router();
+        $app->instance(Router::class, $replacement);
+
+        $this->assertSame($replacement, $app->make(Router::class));
+    }
 }

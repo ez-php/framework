@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace EzPhp\Config;
 
 use EzPhp\Application\Application;
+use EzPhp\Contracts\ConfigInterface;
 use EzPhp\ServiceProvider\ServiceProvider;
 
 /**
@@ -21,6 +22,7 @@ final class ConfigServiceProvider extends ServiceProvider
     {
         $this->app->bind(ConfigLoader::class, fn (Application $app) => new ConfigLoader($app->basePath('config')));
         $this->app->bind(Config::class, fn (Application $app) => new Config($app->make(ConfigLoader::class)->load()));
+        $this->app->bind(ConfigInterface::class, fn () => $this->app->make(Config::class));
     }
 
     /**
