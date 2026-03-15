@@ -22,8 +22,6 @@ use EzPhp\Console\Command\ServeCommand;
 use EzPhp\Console\Command\TinkerCommand;
 use EzPhp\Console\Console;
 use EzPhp\Console\ConsoleServiceProvider;
-use EzPhp\Console\Input;
-use EzPhp\Console\Output;
 use EzPhp\Container\Container;
 use EzPhp\Database\Database;
 use EzPhp\Database\DatabaseServiceProvider;
@@ -73,8 +71,6 @@ use Tests\DatabaseTestCase;
 #[UsesClass(ServeCommand::class)]
 #[UsesClass(TinkerCommand::class)]
 #[UsesClass(ListCommand::class)]
-#[UsesClass(Input::class)]
-#[UsesClass(Output::class)]
 final class ConsoleServiceProviderTest extends DatabaseTestCase
 {
     /**

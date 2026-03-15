@@ -6,9 +6,7 @@ namespace Tests\Console\Command;
 
 use EzPhp\Console\Command\ListCommand;
 use EzPhp\Console\CommandInterface;
-use EzPhp\Console\Output;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
 
 /**
@@ -17,7 +15,6 @@ use Tests\TestCase;
  * @package Tests\Console\Command
  */
 #[CoversClass(ListCommand::class)]
-#[UsesClass(Output::class)]
 final class ListCommandTest extends TestCase
 {
     /**

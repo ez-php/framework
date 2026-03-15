@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Console\Command;
 
 use EzPhp\Console\Command\MigrateStatusCommand;
-use EzPhp\Console\Output;
 use EzPhp\Database\Database;
 use EzPhp\Migration\Migrator;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -21,7 +20,6 @@ use Throwable;
 #[CoversClass(MigrateStatusCommand::class)]
 #[UsesClass(Migrator::class)]
 #[UsesClass(Database::class)]
-#[UsesClass(Output::class)]
 final class MigrateStatusCommandTest extends TestCase
 {
     private string $path;

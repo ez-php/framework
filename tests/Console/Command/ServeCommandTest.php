@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace Tests\Console\Command;
 
 use EzPhp\Console\Command\ServeCommand;
-use EzPhp\Console\Input;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
 
 /**
@@ -16,7 +14,6 @@ use Tests\TestCase;
  * @package Tests\Console\Command
  */
 #[CoversClass(ServeCommand::class)]
-#[UsesClass(Input::class)]
 final class ServeCommandTest extends TestCase
 {
     /**
