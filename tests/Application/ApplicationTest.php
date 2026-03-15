@@ -68,8 +68,6 @@ use Tests\TestCase;
 #[UsesClass(MakeProviderCommand::class)]
 #[UsesClass(CorsMiddleware::class)]
 #[UsesClass(MiddlewareHandler::class)]
-#[UsesClass(Request::class)]
-#[UsesClass(Response::class)]
 final class ApplicationTest extends TestCase
 {
     /**

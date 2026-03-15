@@ -23,8 +23,6 @@ use Tests\TestCase;
 #[CoversClass(MiddlewareHandler::class)]
 #[UsesClass(Container::class)]
 #[UsesClass(Route::class)]
-#[UsesClass(Request::class)]
-#[UsesClass(Response::class)]
 final class TerminableMiddlewareTest extends TestCase
 {
     /**
