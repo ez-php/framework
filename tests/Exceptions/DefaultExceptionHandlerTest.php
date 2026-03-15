@@ -9,7 +9,6 @@ use EzPhp\Exceptions\DefaultExceptionHandler;
 use EzPhp\Exceptions\ProductionHtmlRenderer;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
-use EzPhp\I18n\Translator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use RuntimeException;
@@ -24,7 +23,6 @@ use Tests\TestCase;
 #[UsesClass(RouteException::class)]
 #[UsesClass(DebugHtmlRenderer::class)]
 #[UsesClass(ProductionHtmlRenderer::class)]
-#[UsesClass(Translator::class)]
 final class DefaultExceptionHandlerTest extends TestCase
 {
     /**

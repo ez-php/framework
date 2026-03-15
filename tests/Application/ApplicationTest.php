@@ -27,8 +27,10 @@ use EzPhp\Database\Database;
 use EzPhp\Database\DatabaseServiceProvider;
 use EzPhp\Exceptions\ApplicationException;
 use EzPhp\Exceptions\ContainerException;
+use EzPhp\Exceptions\DebugHtmlRenderer;
 use EzPhp\Exceptions\DefaultExceptionHandler;
 use EzPhp\Exceptions\ExceptionHandlerServiceProvider;
+use EzPhp\Exceptions\ProductionHtmlRenderer;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
 use EzPhp\Http\Response;
@@ -59,8 +61,10 @@ use Tests\TestCase;
 #[UsesClass(MigrationServiceProvider::class)]
 #[UsesClass(RouterServiceProvider::class)]
 #[UsesClass(CoreServiceProviders::class)]
+#[UsesClass(DebugHtmlRenderer::class)]
 #[UsesClass(DefaultExceptionHandler::class)]
 #[UsesClass(ExceptionHandlerServiceProvider::class)]
+#[UsesClass(ProductionHtmlRenderer::class)]
 #[UsesClass(ServiceProvider::class)]
 #[UsesClass(Route::class)]
 #[UsesClass(Router::class)]

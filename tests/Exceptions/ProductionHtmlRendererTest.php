@@ -7,7 +7,6 @@ namespace Tests\Exceptions;
 use EzPhp\Exceptions\ProductionHtmlRenderer;
 use EzPhp\I18n\Translator;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
 
 /**
@@ -16,7 +15,6 @@ use Tests\TestCase;
  * @package Tests\Exceptions
  */
 #[CoversClass(ProductionHtmlRenderer::class)]
-#[UsesClass(Translator::class)]
 final class ProductionHtmlRendererTest extends TestCase
 {
     /**

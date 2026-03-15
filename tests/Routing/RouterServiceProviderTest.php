@@ -18,6 +18,7 @@ use EzPhp\Database\Database;
 use EzPhp\Database\DatabaseServiceProvider;
 use EzPhp\Exceptions\DefaultExceptionHandler;
 use EzPhp\Exceptions\ExceptionHandlerServiceProvider;
+use EzPhp\Exceptions\ProductionHtmlRenderer;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
 use EzPhp\Middleware\MiddlewareHandler;
@@ -53,6 +54,7 @@ use Tests\TestCase;
 #[UsesClass(CoreServiceProviders::class)]
 #[UsesClass(DefaultExceptionHandler::class)]
 #[UsesClass(ExceptionHandlerServiceProvider::class)]
+#[UsesClass(ProductionHtmlRenderer::class)]
 #[UsesClass(RouteException::class)]
 #[UsesClass(ServiceProvider::class)]
 #[UsesClass(ConsoleServiceProvider::class)]
