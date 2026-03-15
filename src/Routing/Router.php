@@ -6,6 +6,8 @@ namespace EzPhp\Routing;
 
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
+use EzPhp\Http\Response;
+use EzPhp\Middleware\MiddlewareInterface;
 use InvalidArgumentException;
 
 /**
@@ -21,6 +23,11 @@ final class Router
     private array $routes = [];
 
     private string $groupPrefix = '';
+
+    /**
+     * @var list<class-string<MiddlewareInterface>>
+     */
+    private array $groupMiddleware = [];
 
     /**
      * @param string   $path
@@ -87,23 +94,49 @@ final class Router
         }
 
         $route = new Route($method, $fullPath, $handler);
+
+        foreach ($this->groupMiddleware as $middleware) {
+            $route->middleware($middleware);
+        }
+
         $this->routes[] = $route;
 
         return $route;
     }
 
     /**
-     * @param string   $prefix
-     * @param callable $callback
+     * @param string                                      $prefix
+     * @param callable                                    $callback
+     * @param list<class-string<MiddlewareInterface>>     $middleware
      *
      * @return void
      */
-    public function group(string $prefix, callable $callback): void
+    public function group(string $prefix, callable $callback, array $middleware = []): void
     {
         $previousPrefix = $this->groupPrefix;
+        $previousMiddleware = $this->groupMiddleware;
+
         $this->groupPrefix = $previousPrefix . $prefix;
+        $this->groupMiddleware = array_merge($previousMiddleware, $middleware);
+
         $callback($this);
+
         $this->groupPrefix = $previousPrefix;
+        $this->groupMiddleware = $previousMiddleware;
+    }
+
+    /**
+     * Register a redirect route that issues an HTTP redirect response.
+     *
+     * @param string $from   URI to redirect from.
+     * @param string $to     URI to redirect to.
+     * @param int    $status HTTP redirect status code (default: 302).
+     *
+     * @return Route
+     */
+    public function redirect(string $from, string $to, int $status = 302): Route
+    {
+        return $this->add('GET', $from, static fn (): Response => (new Response('', $status))->withHeader('Location', $to));
     }
 
     /**

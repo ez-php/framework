@@ -444,6 +444,123 @@ final class RouterTest extends TestCase
         $this->assertInstanceOf(Route::class, $route);
     }
 
+    // --- Group-Middleware ---
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_group_applies_middleware_to_routes_inside_group(): void
+    {
+        /** @var class-string<MiddlewareInterface> $mw */
+        $mw = MiddlewareInterface::class;
+
+        $router = new Router();
+        $router->group('/api', function (Router $r): void {
+            $r->get('/users', fn () => 'users');
+        }, [$mw]);
+
+        $route = $router->retrieveRoute(new Request('GET', '/api/users'));
+        $this->assertSame([$mw], $route->getMiddleware());
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_group_middleware_does_not_apply_outside_group(): void
+    {
+        /** @var class-string<MiddlewareInterface> $mw */
+        $mw = MiddlewareInterface::class;
+
+        $router = new Router();
+        $router->get('/home', fn () => 'home');
+        $router->group('/api', function (Router $r): void {
+            $r->get('/users', fn () => 'users');
+        }, [$mw]);
+
+        $route = $router->retrieveRoute(new Request('GET', '/home'));
+        $this->assertSame([], $route->getMiddleware());
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_nested_group_middleware_accumulates(): void
+    {
+        /** @var class-string<MiddlewareInterface> $mw1 */
+        $mw1 = MiddlewareInterface::class;
+
+        $router = new Router();
+        $router->group('/api', function (Router $r) use ($mw1): void {
+            $r->group('/v1', function (Router $r): void {
+                $r->get('/users', fn () => 'users');
+            }, [$mw1]);
+        }, [$mw1]);
+
+        $route = $router->retrieveRoute(new Request('GET', '/api/v1/users'));
+        // Both group layers contribute mw1 — the route ends up with it twice
+        $this->assertCount(2, $route->getMiddleware());
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_group_middleware_restores_after_group(): void
+    {
+        /** @var class-string<MiddlewareInterface> $mw */
+        $mw = MiddlewareInterface::class;
+
+        $router = new Router();
+        $router->group('/api', function (Router $r): void {
+            $r->get('/users', fn () => 'users');
+        }, [$mw]);
+        $router->get('/public', fn () => 'public');
+
+        $publicRoute = $router->retrieveRoute(new Request('GET', '/public'));
+        $this->assertSame([], $publicRoute->getMiddleware());
+    }
+
+    // --- Redirect-Routes ---
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_redirect_registers_get_route_returning_redirect_response(): void
+    {
+        $router = new Router();
+        $router->redirect('/old', '/new');
+
+        $request = new Request('GET', '/old');
+        $route = $router->retrieveRoute($request);
+        $response = $route->run($request);
+
+        $this->assertSame(302, $response->status());
+        $this->assertArrayHasKey('Location', $response->headers());
+        $this->assertSame('/new', $response->headers()['Location']);
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_redirect_supports_custom_status_code(): void
+    {
+        $router = new Router();
+        $router->redirect('/legacy', '/current', 301);
+
+        $request = new Request('GET', '/legacy');
+        $route = $router->retrieveRoute($request);
+        $response = $route->run($request);
+
+        $this->assertSame(301, $response->status());
+        $this->assertArrayHasKey('Location', $response->headers());
+        $this->assertSame('/current', $response->headers()['Location']);
+    }
+
     // --- put() / delete() Hilfsmethoden ---
 
     /**
