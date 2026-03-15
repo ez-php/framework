@@ -7,6 +7,7 @@ namespace Tests\Exceptions;
 use EzPhp\Exceptions\DefaultExceptionHandler;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
+use EzPhp\Http\Response;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use RuntimeException;
@@ -19,6 +20,8 @@ use Tests\TestCase;
  */
 #[CoversClass(DefaultExceptionHandler::class)]
 #[UsesClass(RouteException::class)]
+#[UsesClass(Request::class)]
+#[UsesClass(Response::class)]
 final class DefaultExceptionHandlerTest extends TestCase
 {
     /**

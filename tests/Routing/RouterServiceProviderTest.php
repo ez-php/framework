@@ -20,6 +20,7 @@ use EzPhp\Exceptions\DefaultExceptionHandler;
 use EzPhp\Exceptions\ExceptionHandlerServiceProvider;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
+use EzPhp\Http\Response;
 use EzPhp\Middleware\MiddlewareHandler;
 use EzPhp\Migration\MigrationServiceProvider;
 use EzPhp\Migration\Migrator;
@@ -59,6 +60,8 @@ use Tests\TestCase;
 #[UsesClass(MigrateCommand::class)]
 #[UsesClass(MigrateRollbackCommand::class)]
 #[UsesClass(MakeMigrationCommand::class)]
+#[UsesClass(Request::class)]
+#[UsesClass(Response::class)]
 final class RouterServiceProviderTest extends TestCase
 {
     /**

@@ -8,6 +8,7 @@ use EzPhp\Http\Request;
 use EzPhp\Http\Response;
 use EzPhp\Middleware\CorsMiddleware;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
 
 /**
@@ -16,6 +17,8 @@ use Tests\TestCase;
  * @package Tests\Middleware
  */
 #[CoversClass(CorsMiddleware::class)]
+#[UsesClass(Request::class)]
+#[UsesClass(Response::class)]
 final class CorsMiddlewareTest extends TestCase
 {
     /**

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Tests\Console\Command;
 
 use EzPhp\Console\Command\MakeMigrationCommand;
+use EzPhp\Console\Input;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
 
 /**
@@ -14,6 +16,7 @@ use Tests\TestCase;
  * @package Tests\Console\Command
  */
 #[CoversClass(MakeMigrationCommand::class)]
+#[UsesClass(Input::class)]
 final class MakeMigrationCommandTest extends TestCase
 {
     private string $path;

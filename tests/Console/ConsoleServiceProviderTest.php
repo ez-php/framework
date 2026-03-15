@@ -17,6 +17,7 @@ use EzPhp\Console\Command\MigrateCommand;
 use EzPhp\Console\Command\MigrateRollbackCommand;
 use EzPhp\Console\Console;
 use EzPhp\Console\ConsoleServiceProvider;
+use EzPhp\Console\Output;
 use EzPhp\Container\Container;
 use EzPhp\Database\Database;
 use EzPhp\Database\DatabaseServiceProvider;
@@ -61,6 +62,8 @@ use Tests\DatabaseTestCase;
 #[UsesClass(MakeControllerCommand::class)]
 #[UsesClass(MakeMiddlewareCommand::class)]
 #[UsesClass(MakeProviderCommand::class)]
+#[UsesClass(Console::class)]
+#[UsesClass(Output::class)]
 final class ConsoleServiceProviderTest extends DatabaseTestCase
 {
     /**
