@@ -12,7 +12,6 @@ use EzPhp\Config\ConfigServiceProvider;
 use EzPhp\Console\Command\MakeMigrationCommand;
 use EzPhp\Console\Command\MigrateCommand;
 use EzPhp\Console\Command\MigrateRollbackCommand;
-use EzPhp\Console\Console;
 use EzPhp\Console\ConsoleServiceProvider;
 use EzPhp\Container\Container;
 use EzPhp\Database\Database;
@@ -21,7 +20,6 @@ use EzPhp\Exceptions\DefaultExceptionHandler;
 use EzPhp\Exceptions\ExceptionHandlerServiceProvider;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
-use EzPhp\Http\Response;
 use EzPhp\Middleware\MiddlewareHandler;
 use EzPhp\Migration\MigrationServiceProvider;
 use EzPhp\Migration\Migrator;
@@ -52,15 +50,12 @@ use Tests\TestCase;
 #[UsesClass(MiddlewareHandler::class)]
 #[UsesClass(Route::class)]
 #[UsesClass(Router::class)]
-#[UsesClass(Request::class)]
-#[UsesClass(Response::class)]
 #[UsesClass(CoreServiceProviders::class)]
 #[UsesClass(DefaultExceptionHandler::class)]
 #[UsesClass(ExceptionHandlerServiceProvider::class)]
 #[UsesClass(RouteException::class)]
 #[UsesClass(ServiceProvider::class)]
 #[UsesClass(ConsoleServiceProvider::class)]
-#[UsesClass(Console::class)]
 #[UsesClass(MigrateCommand::class)]
 #[UsesClass(MigrateRollbackCommand::class)]
 #[UsesClass(MakeMigrationCommand::class)]

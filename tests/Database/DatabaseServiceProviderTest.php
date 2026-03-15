@@ -12,7 +12,6 @@ use EzPhp\Config\ConfigServiceProvider;
 use EzPhp\Console\Command\MakeMigrationCommand;
 use EzPhp\Console\Command\MigrateCommand;
 use EzPhp\Console\Command\MigrateRollbackCommand;
-use EzPhp\Console\Console;
 use EzPhp\Console\ConsoleServiceProvider;
 use EzPhp\Container\Container;
 use EzPhp\Database\Database;
@@ -52,7 +51,6 @@ use Tests\DatabaseTestCase;
 #[UsesClass(ExceptionHandlerServiceProvider::class)]
 #[UsesClass(ServiceProvider::class)]
 #[UsesClass(ConsoleServiceProvider::class)]
-#[UsesClass(Console::class)]
 #[UsesClass(MigrateCommand::class)]
 #[UsesClass(MigrateRollbackCommand::class)]
 #[UsesClass(MakeMigrationCommand::class)]

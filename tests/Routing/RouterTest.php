@@ -11,7 +11,6 @@ use EzPhp\Middleware\MiddlewareInterface;
 use EzPhp\Routing\Route;
 use EzPhp\Routing\Router;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
 
 /**
@@ -22,8 +21,6 @@ use Tests\TestCase;
 #[CoversClass(Router::class)]
 #[CoversClass(Route::class)]
 #[CoversClass(RouteException::class)]
-#[UsesClass(Request::class)]
-#[UsesClass(Response::class)]
 final class RouterTest extends TestCase
 {
     /**

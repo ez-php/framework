@@ -15,10 +15,7 @@ use EzPhp\Console\Command\MakeMigrationCommand;
 use EzPhp\Console\Command\MakeProviderCommand;
 use EzPhp\Console\Command\MigrateCommand;
 use EzPhp\Console\Command\MigrateRollbackCommand;
-use EzPhp\Console\Console;
 use EzPhp\Console\ConsoleServiceProvider;
-use EzPhp\Console\Input;
-use EzPhp\Console\Output;
 use EzPhp\Container\Container;
 use EzPhp\Database\Database;
 use EzPhp\Database\DatabaseServiceProvider;
@@ -59,21 +56,16 @@ use Tests\TestCase;
 #[UsesClass(DefaultExceptionHandler::class)]
 #[UsesClass(ExceptionHandlerServiceProvider::class)]
 #[UsesClass(ServiceProvider::class)]
-#[UsesClass(Request::class)]
-#[UsesClass(Response::class)]
 #[UsesClass(Route::class)]
 #[UsesClass(Router::class)]
 #[UsesClass(RouteException::class)]
 #[UsesClass(ConsoleServiceProvider::class)]
-#[UsesClass(Console::class)]
 #[UsesClass(MigrateCommand::class)]
 #[UsesClass(MigrateRollbackCommand::class)]
 #[UsesClass(MakeMigrationCommand::class)]
 #[UsesClass(MakeControllerCommand::class)]
 #[UsesClass(MakeMiddlewareCommand::class)]
 #[UsesClass(MakeProviderCommand::class)]
-#[UsesClass(Input::class)]
-#[UsesClass(Output::class)]
 #[UsesClass(CorsMiddleware::class)]
 #[UsesClass(MiddlewareHandler::class)]
 final class ApplicationTest extends TestCase
