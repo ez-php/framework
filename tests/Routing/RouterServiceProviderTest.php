@@ -104,4 +104,20 @@ final class RouterServiceProviderTest extends TestCase
         $this->assertSame(200, $response->status());
         $this->assertSame('Hello from ez-php!', $response->body());
     }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_boot_is_noop_when_routes_file_missing(): void
+    {
+        $tmpDir = sys_get_temp_dir() . '/ez-php-no-routes-' . uniqid();
+        mkdir($tmpDir . '/config', 0o777, true);
+        $app = new Application($tmpDir);
+        $app->bootstrap();
+
+        $response = $app->handle(new Request('GET', '/'));
+
+        $this->assertSame(404, $response->status());
+    }
 }

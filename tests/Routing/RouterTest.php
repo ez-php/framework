@@ -10,6 +10,7 @@ use EzPhp\Http\Response;
 use EzPhp\Middleware\MiddlewareInterface;
 use EzPhp\Routing\Route;
 use EzPhp\Routing\Router;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Tests\TestCase;
 
@@ -559,6 +560,21 @@ final class RouterTest extends TestCase
         $this->assertSame(301, $response->status());
         $this->assertArrayHasKey('Location', $response->headers());
         $this->assertSame('/current', $response->headers()['Location']);
+    }
+
+    // --- Duplicate Routes ---
+
+    /**
+     * @return void
+     */
+    public function test_add_throws_for_duplicate_route(): void
+    {
+        $router = new Router();
+        $router->get('/users', fn () => 'users');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Duplicate route: GET /users is already registered.');
+        $router->get('/users', fn () => 'users');
     }
 
     // --- put() / delete() Hilfsmethoden ---

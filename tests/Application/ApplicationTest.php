@@ -321,6 +321,21 @@ final class ApplicationTest extends TestCase
      * @return void
      * @throws ReflectionException
      */
+    public function test_bind_with_string_class_resolves_to_instance(): void
+    {
+        $app = new Application();
+        $app->bootstrap();
+
+        $app->bind(Router::class, Router::class);
+        $router = $app->make(Router::class);
+
+        $this->assertInstanceOf(Router::class, $router);
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
     public function test_global_middleware_not_duplicated_on_multiple_handles(): void
     {
         $app = new Application();
