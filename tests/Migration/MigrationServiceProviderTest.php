@@ -63,10 +63,7 @@ final class MigrationServiceProviderTest extends DatabaseTestCase
      */
     public function test_register_binds_migrator_into_container(): void
     {
-        $app = new Application();
-        $app->bootstrap();
-
-        $migrator = $app->make(Migrator::class);
+        $migrator = $this->app()->make(Migrator::class);
 
         $this->assertInstanceOf(Migrator::class, $migrator);
     }
@@ -77,11 +74,8 @@ final class MigrationServiceProviderTest extends DatabaseTestCase
      */
     public function test_migrator_resolves_as_singleton(): void
     {
-        $app = new Application();
-        $app->bootstrap();
-
-        $m1 = $app->make(Migrator::class);
-        $m2 = $app->make(Migrator::class);
+        $m1 = $this->app()->make(Migrator::class);
+        $m2 = $this->app()->make(Migrator::class);
 
         $this->assertSame($m1, $m2);
     }
@@ -93,17 +87,15 @@ final class MigrationServiceProviderTest extends DatabaseTestCase
      */
     public function test_migrator_can_run_against_real_database(): void
     {
-        $app = new Application();
-        $app->bootstrap();
-
-        $migrator = $app->make(Migrator::class);
+        $migrator = $this->app()->make(Migrator::class);
 
         // database/migrations/ is empty — nothing to run, no error
         $ran = $migrator->migrate();
 
         $this->assertSame([], $ran);
 
-        // Clean up migrations table if created
-        $app->make(Database::class)->query('DROP TABLE IF EXISTS migrations');
+        // CREATE TABLE is DDL and causes an implicit MySQL commit, bypassing the
+        // outer transaction. Drop the migrations table explicitly for cleanup.
+        $this->app()->make(Database::class)->query('DROP TABLE IF EXISTS migrations');
     }
 }

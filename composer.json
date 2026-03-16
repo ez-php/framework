@@ -1,6 +1,6 @@
 {
   "name": "ez-php/framework",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Lightweight PHP framework core — dependency injection, routing, middleware, and database migrations",
   "type": "library",
   "license": "MIT",
@@ -27,6 +27,7 @@
   },
   "require-dev": {
     "ez-php/docker": "0.*",
+    "ez-php/testing": "0.*",
     "phpunit/phpunit": "^13.0",
     "phpstan/phpstan": "^2.1",
     "friendsofphp/php-cs-fixer": "^3.94",

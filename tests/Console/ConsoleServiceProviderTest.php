@@ -78,10 +78,7 @@ final class ConsoleServiceProviderTest extends DatabaseTestCase
      */
     public function test_console_is_bound_in_container(): void
     {
-        $app = new Application();
-        $app->bootstrap();
-
-        $console = $app->make(Console::class);
+        $console = $this->app()->make(Console::class);
 
         $this->assertInstanceOf(Console::class, $console);
     }
@@ -91,19 +88,16 @@ final class ConsoleServiceProviderTest extends DatabaseTestCase
      */
     public function test_all_core_commands_are_registered(): void
     {
-        $app = new Application();
-        $app->bootstrap();
-
-        $this->assertInstanceOf(MigrateCommand::class, $app->make(MigrateCommand::class));
-        $this->assertInstanceOf(MigrateRollbackCommand::class, $app->make(MigrateRollbackCommand::class));
-        $this->assertInstanceOf(MigrateFreshCommand::class, $app->make(MigrateFreshCommand::class));
-        $this->assertInstanceOf(MigrateStatusCommand::class, $app->make(MigrateStatusCommand::class));
-        $this->assertInstanceOf(MakeMigrationCommand::class, $app->make(MakeMigrationCommand::class));
-        $this->assertInstanceOf(MakeControllerCommand::class, $app->make(MakeControllerCommand::class));
-        $this->assertInstanceOf(MakeMiddlewareCommand::class, $app->make(MakeMiddlewareCommand::class));
-        $this->assertInstanceOf(MakeProviderCommand::class, $app->make(MakeProviderCommand::class));
-        $this->assertInstanceOf(ServeCommand::class, $app->make(ServeCommand::class));
-        $this->assertInstanceOf(TinkerCommand::class, $app->make(TinkerCommand::class));
+        $this->assertInstanceOf(MigrateCommand::class, $this->app()->make(MigrateCommand::class));
+        $this->assertInstanceOf(MigrateRollbackCommand::class, $this->app()->make(MigrateRollbackCommand::class));
+        $this->assertInstanceOf(MigrateFreshCommand::class, $this->app()->make(MigrateFreshCommand::class));
+        $this->assertInstanceOf(MigrateStatusCommand::class, $this->app()->make(MigrateStatusCommand::class));
+        $this->assertInstanceOf(MakeMigrationCommand::class, $this->app()->make(MakeMigrationCommand::class));
+        $this->assertInstanceOf(MakeControllerCommand::class, $this->app()->make(MakeControllerCommand::class));
+        $this->assertInstanceOf(MakeMiddlewareCommand::class, $this->app()->make(MakeMiddlewareCommand::class));
+        $this->assertInstanceOf(MakeProviderCommand::class, $this->app()->make(MakeProviderCommand::class));
+        $this->assertInstanceOf(ServeCommand::class, $this->app()->make(ServeCommand::class));
+        $this->assertInstanceOf(TinkerCommand::class, $this->app()->make(TinkerCommand::class));
     }
 
     /**
@@ -111,10 +105,7 @@ final class ConsoleServiceProviderTest extends DatabaseTestCase
      */
     public function test_console_knows_core_commands(): void
     {
-        $app = new Application();
-        $app->bootstrap();
-
-        $console = $app->make(Console::class);
+        $console = $this->app()->make(Console::class);
 
         ob_start();
         $console->run(['ez']);

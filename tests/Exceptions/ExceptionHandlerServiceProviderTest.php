@@ -67,10 +67,7 @@ final class ExceptionHandlerServiceProviderTest extends DatabaseTestCase
      */
     public function test_register_binds_exception_handler_into_container(): void
     {
-        $app = new Application();
-        $app->bootstrap();
-
-        $handler = $app->make(ExceptionHandler::class);
+        $handler = $this->app()->make(ExceptionHandler::class);
 
         $this->assertInstanceOf(DefaultExceptionHandler::class, $handler);
     }
@@ -81,11 +78,8 @@ final class ExceptionHandlerServiceProviderTest extends DatabaseTestCase
      */
     public function test_exception_handler_resolves_as_singleton(): void
     {
-        $app = new Application();
-        $app->bootstrap();
-
-        $h1 = $app->make(ExceptionHandler::class);
-        $h2 = $app->make(ExceptionHandler::class);
+        $h1 = $this->app()->make(ExceptionHandler::class);
+        $h2 = $this->app()->make(ExceptionHandler::class);
 
         $this->assertSame($h1, $h2);
     }

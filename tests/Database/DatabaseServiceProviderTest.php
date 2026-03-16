@@ -62,10 +62,7 @@ final class DatabaseServiceProviderTest extends DatabaseTestCase
      */
     public function test_register_binds_database_into_container(): void
     {
-        $app = new Application();
-        $app->bootstrap();
-
-        $db = $app->make(Database::class);
+        $db = $this->app()->make(Database::class);
 
         $this->assertInstanceOf(Database::class, $db);
     }
@@ -76,10 +73,7 @@ final class DatabaseServiceProviderTest extends DatabaseTestCase
      */
     public function test_database_connection_is_functional(): void
     {
-        $app = new Application();
-        $app->bootstrap();
-
-        $db = $app->make(Database::class);
+        $db = $this->app()->make(Database::class);
         $result = $db->query('SELECT 1 as value');
 
         $this->assertSame(1, $result[0]['value']);
@@ -91,11 +85,8 @@ final class DatabaseServiceProviderTest extends DatabaseTestCase
      */
     public function test_database_resolves_as_singleton(): void
     {
-        $app = new Application();
-        $app->bootstrap();
-
-        $db1 = $app->make(Database::class);
-        $db2 = $app->make(Database::class);
+        $db1 = $this->app()->make(Database::class);
+        $db2 = $this->app()->make(Database::class);
 
         $this->assertSame($db1, $db2);
     }
