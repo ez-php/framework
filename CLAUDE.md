@@ -168,7 +168,12 @@ src/
 │       ├── MakeMiddlewareCommand.php — Scaffolds a middleware class in src/Middleware/
 │       ├── MakeProviderCommand.php   — Scaffolds a service provider in src/Providers/
 │       ├── MigrateCommand.php        — Runs all pending migrations
-│       └── MigrateRollbackCommand.php — Rolls back the last migration batch
+│       ├── MigrateRollbackCommand.php — Rolls back the last migration batch
+│       ├── MigrateFreshCommand.php   — Rolls back all migrations and re-runs them from scratch
+│       ├── MigrateStatusCommand.php  — Shows the status of all migrations (pending / ran)
+│       ├── ServeCommand.php          — Starts the built-in PHP web server
+│       ├── TinkerCommand.php         — Opens an interactive REPL with the application bootstrapped (requires psy/psysh)
+│       └── ListCommand.php           — Lists all available commands
 ├── Container/
 │   └── Container.php                 — DI container with singleton cache and autowiring
 ├── Database/
