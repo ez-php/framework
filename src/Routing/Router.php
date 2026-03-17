@@ -126,6 +126,42 @@ final class Router
     }
 
     /**
+     * Register the seven standard RESTful routes for a resource controller.
+     *
+     * Routes registered (prefix = /{resource}):
+     *
+     * | Method | URI                   | Action  | Name                  |
+     * |--------|-----------------------|---------|-----------------------|
+     * | GET    | /{resource}           | index   | {resource}.index      |
+     * | GET    | /{resource}/create    | create  | {resource}.create     |
+     * | POST   | /{resource}           | store   | {resource}.store      |
+     * | GET    | /{resource}/{id}      | show    | {resource}.show       |
+     * | GET    | /{resource}/{id}/edit | edit    | {resource}.edit       |
+     * | PUT    | /{resource}/{id}      | update  | {resource}.update     |
+     * | DELETE | /{resource}/{id}      | destroy | {resource}.destroy    |
+     *
+     * The controller instance is captured by the route closures, so it is
+     * shared across all requests — keep resource controllers stateless.
+     *
+     * @param string                      $resource   Plural resource name, e.g. 'posts'.
+     * @param ResourceControllerInterface $controller Resolved controller instance.
+     *
+     * @return void
+     */
+    public function resource(string $resource, ResourceControllerInterface $controller): void
+    {
+        $base = '/' . ltrim($resource, '/');
+
+        $this->get($base, fn (Request $r): Response|string => $controller->index($r))->name("$resource.index");
+        $this->get($base . '/create', fn (Request $r): Response|string => $controller->create($r))->name("$resource.create");
+        $this->post($base, fn (Request $r): Response|string => $controller->store($r))->name("$resource.store");
+        $this->get($base . '/{id}', fn (Request $r): Response|string => $controller->show($r))->name("$resource.show");
+        $this->get($base . '/{id}/edit', fn (Request $r): Response|string => $controller->edit($r))->name("$resource.edit");
+        $this->put($base . '/{id}', fn (Request $r): Response|string => $controller->update($r))->name("$resource.update");
+        $this->delete($base . '/{id}', fn (Request $r): Response|string => $controller->destroy($r))->name("$resource.destroy");
+    }
+
+    /**
      * Register a redirect route that issues an HTTP redirect response.
      *
      * @param string $from   URI to redirect from.

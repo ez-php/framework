@@ -8,6 +8,7 @@ use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
 use EzPhp\Http\Response;
 use EzPhp\Middleware\MiddlewareInterface;
+use EzPhp\Routing\ResourceControllerInterface;
 use EzPhp\Routing\Route;
 use EzPhp\Routing\Router;
 use InvalidArgumentException;
@@ -562,6 +563,166 @@ final class RouterTest extends TestCase
         $this->assertSame('/current', $response->headers()['Location']);
     }
 
+    // --- Resource Routes ---
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_resource_registers_index_route(): void
+    {
+        $router = new Router();
+        $router->resource('posts', new ResourceTestController());
+
+        $route = $router->retrieveRoute(new Request('GET', '/posts'));
+        $this->assertInstanceOf(Route::class, $route);
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_resource_registers_create_route(): void
+    {
+        $router = new Router();
+        $router->resource('posts', new ResourceTestController());
+
+        $route = $router->retrieveRoute(new Request('GET', '/posts/create'));
+        $this->assertInstanceOf(Route::class, $route);
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_resource_registers_store_route(): void
+    {
+        $router = new Router();
+        $router->resource('posts', new ResourceTestController());
+
+        $route = $router->retrieveRoute(new Request('POST', '/posts'));
+        $this->assertInstanceOf(Route::class, $route);
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_resource_registers_show_route(): void
+    {
+        $router = new Router();
+        $router->resource('posts', new ResourceTestController());
+
+        $route = $router->retrieveRoute(new Request('GET', '/posts/42'));
+        $this->assertInstanceOf(Route::class, $route);
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_resource_registers_edit_route(): void
+    {
+        $router = new Router();
+        $router->resource('posts', new ResourceTestController());
+
+        $route = $router->retrieveRoute(new Request('GET', '/posts/42/edit'));
+        $this->assertInstanceOf(Route::class, $route);
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_resource_registers_update_route(): void
+    {
+        $router = new Router();
+        $router->resource('posts', new ResourceTestController());
+
+        $route = $router->retrieveRoute(new Request('PUT', '/posts/42'));
+        $this->assertInstanceOf(Route::class, $route);
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_resource_registers_destroy_route(): void
+    {
+        $router = new Router();
+        $router->resource('posts', new ResourceTestController());
+
+        $route = $router->retrieveRoute(new Request('DELETE', '/posts/42'));
+        $this->assertInstanceOf(Route::class, $route);
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_resource_named_routes_are_generated(): void
+    {
+        $router = new Router();
+        $router->resource('posts', new ResourceTestController());
+
+        $this->assertSame('/posts', $router->route('posts.index'));
+        $this->assertSame('/posts/create', $router->route('posts.create'));
+        $this->assertSame('/posts', $router->route('posts.store'));
+        $this->assertSame('/posts/42', $router->route('posts.show', ['id' => '42']));
+        $this->assertSame('/posts/42/edit', $router->route('posts.edit', ['id' => '42']));
+        $this->assertSame('/posts/42', $router->route('posts.update', ['id' => '42']));
+        $this->assertSame('/posts/42', $router->route('posts.destroy', ['id' => '42']));
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_resource_dispatches_index_action(): void
+    {
+        $router = new Router();
+        $router->resource('posts', new ResourceTestController());
+
+        $request = new Request('GET', '/posts');
+        $route = $router->retrieveRoute($request);
+        $response = $route->run($request);
+
+        $this->assertSame('index', $response->body());
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_resource_dispatches_show_with_id_param(): void
+    {
+        $router = new Router();
+        $router->resource('posts', new ResourceTestController());
+
+        $request = new Request('GET', '/posts/99');
+        $route = $router->retrieveRoute($request);
+        $response = $route->run($request);
+
+        $this->assertSame('show:99', $response->body());
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_resource_works_inside_group(): void
+    {
+        $router = new Router();
+        $router->group('/api', function (Router $r): void {
+            $r->resource('posts', new ResourceTestController());
+        });
+
+        $route = $router->retrieveRoute(new Request('GET', '/api/posts'));
+        $this->assertInstanceOf(Route::class, $route);
+        $route = $router->retrieveRoute(new Request('GET', '/api/posts/5'));
+        $this->assertInstanceOf(Route::class, $route);
+    }
+
     // --- Duplicate Routes ---
 
     /**
@@ -603,5 +764,87 @@ final class RouterTest extends TestCase
 
         $route = $router->retrieveRoute(new Request('DELETE', '/users/1'));
         $this->assertInstanceOf(Route::class, $route);
+    }
+}
+
+/**
+ * Class ResourceTestController
+ *
+ * @package Tests\Routing
+ */
+class ResourceTestController implements ResourceControllerInterface
+{
+    /**
+     * @param Request $request
+     *
+     * @return string
+     */
+    public function index(Request $request): string
+    {
+        return 'index';
+    }
+
+    /**
+     * @param Request $request
+     *
+     * @return string
+     */
+    public function create(Request $request): string
+    {
+        return 'create';
+    }
+
+    /**
+     * @param Request $request
+     *
+     * @return string
+     */
+    public function store(Request $request): string
+    {
+        return 'store';
+    }
+
+    /**
+     * @param Request $request
+     *
+     * @return string
+     */
+    public function show(Request $request): string
+    {
+        $id = $request->param('id');
+        return 'show:' . (is_string($id) ? $id : '');
+    }
+
+    /**
+     * @param Request $request
+     *
+     * @return string
+     */
+    public function edit(Request $request): string
+    {
+        $id = $request->param('id');
+        return 'edit:' . (is_string($id) ? $id : '');
+    }
+
+    /**
+     * @param Request $request
+     *
+     * @return string
+     */
+    public function update(Request $request): string
+    {
+        $id = $request->param('id');
+        return 'update:' . (is_string($id) ? $id : '');
+    }
+
+    /**
+     * @param Request $request
+     *
+     * @return string
+     */
+    public function destroy(Request $request): string
+    {
+        $id = $request->param('id');
+        return 'destroy:' . (is_string($id) ? $id : '');
     }
 }
