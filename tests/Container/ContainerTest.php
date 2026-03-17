@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Container;
 
 use EzPhp\Container\Container;
+use EzPhp\Container\ContextualBindingBuilder;
 use EzPhp\Exceptions\ContainerException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use ReflectionException;
@@ -16,6 +17,7 @@ use Tests\TestCase;
  * @package Tests\Container
  */
 #[CoversClass(Container::class)]
+#[CoversClass(ContextualBindingBuilder::class)]
 final class ContainerTest extends TestCase
 {
     /**
@@ -181,6 +183,164 @@ final class ContainerTest extends TestCase
 
         $this->assertSame($replacement, $container->make(AutowiringService::class));
     }
+
+    // -------------------------------------------------------------------------
+    // Contextual binding
+    // -------------------------------------------------------------------------
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_contextual_binding_injects_specific_implementation(): void
+    {
+        $container = new Container();
+        $container->when(ContextualServiceA::class)
+            ->needs(ContextualLoggerInterface::class)
+            ->give(ContextualFileLogger::class);
+
+        $service = $container->make(ContextualServiceA::class);
+
+        $this->assertInstanceOf(ContextualFileLogger::class, $service->logger);
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_different_concretes_receive_different_contextual_implementations(): void
+    {
+        $container = new Container();
+        $container->when(ContextualServiceA::class)
+            ->needs(ContextualLoggerInterface::class)
+            ->give(ContextualFileLogger::class);
+        $container->when(ContextualServiceB::class)
+            ->needs(ContextualLoggerInterface::class)
+            ->give(ContextualNullLogger::class);
+
+        $serviceA = $container->make(ContextualServiceA::class);
+        $serviceB = $container->make(ContextualServiceB::class);
+
+        $this->assertInstanceOf(ContextualFileLogger::class, $serviceA->logger);
+        $this->assertInstanceOf(ContextualNullLogger::class, $serviceB->logger);
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_contextual_binding_falls_back_to_regular_binding_for_other_classes(): void
+    {
+        $container = new Container();
+        $container->bind(ContextualLoggerInterface::class, ContextualNullLogger::class);
+        $container->when(ContextualServiceA::class)
+            ->needs(ContextualLoggerInterface::class)
+            ->give(ContextualFileLogger::class);
+
+        $serviceA = $container->make(ContextualServiceA::class);
+        $serviceB = $container->make(ContextualServiceB::class);
+
+        $this->assertInstanceOf(ContextualFileLogger::class, $serviceA->logger);
+        $this->assertInstanceOf(ContextualNullLogger::class, $serviceB->logger);
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_contextual_binding_give_accepts_callable_factory(): void
+    {
+        $custom = new ContextualFileLogger();
+
+        $container = new Container();
+        $container->when(ContextualServiceA::class)
+            ->needs(ContextualLoggerInterface::class)
+            ->give(fn (Container $c): ContextualFileLogger => $custom);
+
+        $service = $container->make(ContextualServiceA::class);
+
+        $this->assertSame($custom, $service->logger);
+    }
+
+    // -------------------------------------------------------------------------
+    // Tagged services
+    // -------------------------------------------------------------------------
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_tag_and_makeTagged_resolve_all_tagged_services(): void
+    {
+        $container = new Container();
+        $container->tag([TaggedHandlerA::class, TaggedHandlerB::class], 'handlers');
+
+        $instances = $container->makeTagged('handlers');
+
+        $this->assertCount(2, $instances);
+        $this->assertInstanceOf(TaggedHandlerA::class, $instances[0]);
+        $this->assertInstanceOf(TaggedHandlerB::class, $instances[1]);
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_makeTagged_returns_empty_array_for_unknown_tag(): void
+    {
+        $container = new Container();
+
+        $this->assertSame([], $container->makeTagged('unknown'));
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_tag_accepts_single_class_string(): void
+    {
+        $container = new Container();
+        $container->tag(TaggedHandlerA::class, 'handlers');
+
+        $instances = $container->makeTagged('handlers');
+
+        $this->assertCount(1, $instances);
+        $this->assertInstanceOf(TaggedHandlerA::class, $instances[0]);
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_tag_called_multiple_times_accumulates_services(): void
+    {
+        $container = new Container();
+        $container->tag(TaggedHandlerA::class, 'handlers');
+        $container->tag(TaggedHandlerB::class, 'handlers');
+        $container->tag(TaggedHandlerC::class, 'handlers');
+
+        $instances = $container->makeTagged('handlers');
+
+        $this->assertCount(3, $instances);
+        $this->assertInstanceOf(TaggedHandlerA::class, $instances[0]);
+        $this->assertInstanceOf(TaggedHandlerB::class, $instances[1]);
+        $this->assertInstanceOf(TaggedHandlerC::class, $instances[2]);
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_makeTagged_resolves_via_regular_bindings(): void
+    {
+        $container = new Container();
+        $container->bind(TaggedHandlerA::class, fn () => new TaggedHandlerA());
+        $container->tag(TaggedHandlerA::class, 'handlers');
+
+        $instances = $container->makeTagged('handlers');
+
+        $this->assertInstanceOf(TaggedHandlerA::class, $instances[0]);
+    }
 }
 
 /**
@@ -293,4 +453,92 @@ readonly class ContainerTestWithDependency implements ContainerTestInterface
     public function __construct(public AutowiringService $service)
     {
     }
+}
+
+/**
+ * Interface ContextualLoggerInterface
+ *
+ * @package Tests\Container
+ */
+interface ContextualLoggerInterface
+{
+}
+
+/**
+ * Class ContextualFileLogger
+ *
+ * @package Tests\Container
+ */
+class ContextualFileLogger implements ContextualLoggerInterface
+{
+}
+
+/**
+ * Class ContextualNullLogger
+ *
+ * @package Tests\Container
+ */
+class ContextualNullLogger implements ContextualLoggerInterface
+{
+}
+
+/**
+ * Class ContextualServiceA
+ *
+ * @package Tests\Container
+ */
+readonly class ContextualServiceA
+{
+    /**
+     * ContextualServiceA Constructor
+     *
+     * @param ContextualLoggerInterface $logger
+     */
+    public function __construct(public ContextualLoggerInterface $logger)
+    {
+    }
+}
+
+/**
+ * Class ContextualServiceB
+ *
+ * @package Tests\Container
+ */
+readonly class ContextualServiceB
+{
+    /**
+     * ContextualServiceB Constructor
+     *
+     * @param ContextualLoggerInterface $logger
+     */
+    public function __construct(public ContextualLoggerInterface $logger)
+    {
+    }
+}
+
+/**
+ * Class TaggedHandlerA
+ *
+ * @package Tests\Container
+ */
+class TaggedHandlerA
+{
+}
+
+/**
+ * Class TaggedHandlerB
+ *
+ * @package Tests\Container
+ */
+class TaggedHandlerB
+{
+}
+
+/**
+ * Class TaggedHandlerC
+ *
+ * @package Tests\Container
+ */
+class TaggedHandlerC
+{
 }
