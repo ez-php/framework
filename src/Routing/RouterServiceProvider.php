@@ -19,7 +19,7 @@ final class RouterServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(Router::class, fn () => new Router());
+        $this->app->bind(Router::class, fn () => new Router($this->app));
     }
 
     /**

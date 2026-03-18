@@ -39,7 +39,11 @@ final class DefaultExceptionHandler implements ExceptionHandler
      */
     public function render(Throwable $e, Request $request): Response
     {
-        $status = $e instanceof RouteException ? 404 : 500;
+        $status = match (true) {
+            $e instanceof RouteException => 404,
+            $e instanceof HttpException => $e->getStatusCode(),
+            default => 500,
+        };
 
         /** @var string $accept */
         $accept = $request->header('accept', '');

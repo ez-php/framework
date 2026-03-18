@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Routing;
 
+use EzPhp\Contracts\ContainerInterface;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
 use EzPhp\Http\Response;
@@ -765,6 +766,119 @@ final class RouterTest extends TestCase
         $route = $router->retrieveRoute(new Request('DELETE', '/users/1'));
         $this->assertInstanceOf(Route::class, $route);
     }
+
+    // --- patch() ---
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_patch_registers_patch_route(): void
+    {
+        $router = new Router();
+        $router->patch('/users/1', fn () => 'patched');
+
+        $route = $router->retrieveRoute(new Request('PATCH', '/users/1'));
+        $this->assertInstanceOf(Route::class, $route);
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_patch_route_runs_and_returns_response(): void
+    {
+        $router = new Router();
+        $router->patch('/users/1', fn () => 'patched');
+
+        $request = new Request('PATCH', '/users/1');
+        $route = $router->retrieveRoute($request);
+        $this->assertSame('patched', $route->run($request)->body());
+    }
+
+    // --- Partial resource routes: only ---
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_resource_only_registers_specified_actions(): void
+    {
+        $router = new Router();
+        $router->resource('posts', new ResourceTestController(), only: ['index', 'show']);
+
+        $this->assertInstanceOf(Route::class, $router->retrieveRoute(new Request('GET', '/posts')));
+        $this->assertInstanceOf(Route::class, $router->retrieveRoute(new Request('GET', '/posts/1')));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_resource_only_excludes_unspecified_actions(): void
+    {
+        $router = new Router();
+        $router->resource('posts', new ResourceTestController(), only: ['index']);
+
+        $this->expectException(RouteException::class);
+        $router->retrieveRoute(new Request('POST', '/posts'));
+    }
+
+    // --- Partial resource routes: except ---
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_resource_except_excludes_specified_actions(): void
+    {
+        $router = new Router();
+        $router->resource('posts', new ResourceTestController(), except: ['create', 'edit']);
+
+        $this->assertInstanceOf(Route::class, $router->retrieveRoute(new Request('GET', '/posts')));
+        $this->assertInstanceOf(Route::class, $router->retrieveRoute(new Request('GET', '/posts/1')));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_resource_except_removes_excluded_routes(): void
+    {
+        $router = new Router();
+        $router->resource('posts', new ResourceTestController(), except: ['destroy']);
+
+        $this->expectException(RouteException::class);
+        $router->retrieveRoute(new Request('DELETE', '/posts/1'));
+    }
+
+    // --- Array dispatch: [Controller::class, 'method'] ---
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_array_handler_is_resolved_from_container_at_dispatch(): void
+    {
+        $container = new ArrayDispatchTestContainer();
+        $router = new Router($container);
+        $router->get('/items', [ArrayDispatchTestController::class, 'index']);
+
+        $request = new Request('GET', '/items');
+        $route = $router->retrieveRoute($request);
+        $response = $route->run($request);
+
+        $this->assertSame('items-index', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_array_handler_without_container_throws(): void
+    {
+        $router = new Router();
+
+        $this->expectException(InvalidArgumentException::class);
+        $router->get('/items', [ArrayDispatchTestController::class, 'index']);
+    }
 }
 
 /**
@@ -846,5 +960,67 @@ class ResourceTestController implements ResourceControllerInterface
     {
         $id = $request->param('id');
         return 'destroy:' . (is_string($id) ? $id : '');
+    }
+}
+
+/**
+ * Class ArrayDispatchTestController
+ *
+ * Stub controller for testing [Controller::class, 'method'] array dispatch.
+ *
+ * @package Tests\Routing
+ */
+class ArrayDispatchTestController
+{
+    /**
+     * @param Request $request
+     *
+     * @return string
+     */
+    public function index(Request $request): string
+    {
+        return 'items-index';
+    }
+}
+
+/**
+ * Class ArrayDispatchTestContainer
+ *
+ * Minimal ContainerInterface stub that makes ArrayDispatchTestController.
+ *
+ * @package Tests\Routing
+ */
+class ArrayDispatchTestContainer implements ContainerInterface
+{
+    /**
+     * @param string               $abstract
+     * @param string|callable|null $factory
+     *
+     * @return void
+     */
+    public function bind(string $abstract, string|callable|null $factory = null): void
+    {
+    }
+
+    /**
+     * @template T of object
+     * @param class-string<T> $abstract
+     *
+     * @return T
+     */
+    public function make(string $abstract): mixed
+    {
+        return new $abstract();
+    }
+
+    /**
+     * @template T of object
+     * @param class-string<T> $abstract
+     * @param T               $instance
+     *
+     * @return void
+     */
+    public function instance(string $abstract, object $instance): void
+    {
     }
 }

@@ -6,6 +6,7 @@ namespace Tests\Exceptions;
 
 use EzPhp\Exceptions\DebugHtmlRenderer;
 use EzPhp\Exceptions\DefaultExceptionHandler;
+use EzPhp\Exceptions\HttpException;
 use EzPhp\Exceptions\ProductionHtmlRenderer;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
@@ -21,6 +22,7 @@ use Tests\TestCase;
  */
 #[CoversClass(DefaultExceptionHandler::class)]
 #[UsesClass(RouteException::class)]
+#[UsesClass(HttpException::class)]
 #[UsesClass(DebugHtmlRenderer::class)]
 #[UsesClass(ProductionHtmlRenderer::class)]
 final class DefaultExceptionHandlerTest extends TestCase
@@ -142,5 +144,44 @@ final class DefaultExceptionHandlerTest extends TestCase
 
         $this->assertStringContainsString('POST', $response->body());
         $this->assertStringContainsString('/api/users', $response->body());
+    }
+
+    // --- HttpException ---
+
+    /**
+     * @return void
+     */
+    public function test_render_uses_http_exception_status_code(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $request = new Request('GET', '/');
+        $response = $handler->render(new HttpException(403, 'Forbidden'), $request);
+
+        $this->assertSame(403, $response->status());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_render_shows_http_exception_message_in_production(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $request = new Request('GET', '/', headers: ['accept' => 'application/json']);
+        $response = $handler->render(new HttpException(403, 'Forbidden'), $request);
+
+        $this->assertSame('{"error":"Forbidden"}', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_render_returns_json_http_exception_with_json_accept(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $request = new Request('GET', '/', headers: ['accept' => 'application/json']);
+        $response = $handler->render(new HttpException(422, 'Unprocessable'), $request);
+
+        $this->assertSame(422, $response->status());
+        $this->assertSame('application/json', $response->headers()['Content-Type']);
     }
 }

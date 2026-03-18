@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace EzPhp\Routing;
 
+use Closure;
+use EzPhp\Contracts\ContainerInterface;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
 use EzPhp\Http\Response;
@@ -30,57 +32,84 @@ final class Router
     private array $groupMiddleware = [];
 
     /**
-     * @param string   $path
-     * @param callable $handler
+     * Router Constructor
+     *
+     * @param ContainerInterface|null $container Optional container used to resolve
+     *                                           [Controller::class, 'method'] array handlers.
+     */
+    public function __construct(private readonly ?ContainerInterface $container = null)
+    {
+    }
+
+    /**
+     * @param string                               $path
+     * @param callable|array{class-string, string} $handler
      *
      * @return Route
      */
-    public function get(string $path, callable $handler): Route
+    public function get(string $path, callable|array $handler): Route
     {
         return $this->add('GET', $path, $handler);
     }
 
     /**
-     * @param string   $path
-     * @param callable $handler
+     * @param string                               $path
+     * @param callable|array{class-string, string} $handler
      *
      * @return Route
      */
-    public function post(string $path, callable $handler): Route
+    public function post(string $path, callable|array $handler): Route
     {
         return $this->add('POST', $path, $handler);
     }
 
     /**
-     * @param string   $path
-     * @param callable $handler
+     * @param string                               $path
+     * @param callable|array{class-string, string} $handler
      *
      * @return Route
      */
-    public function put(string $path, callable $handler): Route
+    public function put(string $path, callable|array $handler): Route
     {
         return $this->add('PUT', $path, $handler);
     }
 
     /**
-     * @param string   $path
-     * @param callable $handler
+     * @param string                               $path
+     * @param callable|array{class-string, string} $handler
      *
      * @return Route
      */
-    public function delete(string $path, callable $handler): Route
+    public function patch(string $path, callable|array $handler): Route
+    {
+        return $this->add('PATCH', $path, $handler);
+    }
+
+    /**
+     * @param string                               $path
+     * @param callable|array{class-string, string} $handler
+     *
+     * @return Route
+     */
+    public function delete(string $path, callable|array $handler): Route
     {
         return $this->add('DELETE', $path, $handler);
     }
 
     /**
-     * @param string   $method
-     * @param string   $path
-     * @param callable $handler
+     * Register a route for any HTTP method.
+     *
+     * The handler may be:
+     * - any PHP callable (closure, function name, invokable)
+     * - a `[Controller::class, 'method']` tuple — resolved from the container at dispatch time
+     *
+     * @param string                               $method  HTTP method (will be uppercased).
+     * @param string                               $path    Route URI path.
+     * @param callable|array{class-string, string} $handler Route handler.
      *
      * @return Route
      */
-    public function add(string $method, string $path, callable $handler): Route
+    public function add(string $method, string $path, callable|array $handler): Route
     {
         $fullPath = $this->groupPrefix . $path;
         $method = strtoupper($method);
@@ -93,7 +122,11 @@ final class Router
             }
         }
 
-        $route = new Route($method, $fullPath, $handler);
+        $callable = is_array($handler)
+            ? $this->resolveControllerAction($handler)
+            : $handler;
+
+        $route = new Route($method, $fullPath, $callable);
 
         foreach ($this->groupMiddleware as $middleware) {
             $route->middleware($middleware);
@@ -143,22 +176,44 @@ final class Router
      * The controller instance is captured by the route closures, so it is
      * shared across all requests — keep resource controllers stateless.
      *
+     * Use `$only` to register a subset of actions, or `$except` to skip specific ones.
+     * When both are provided, `$only` is applied first, then `$except` filters the result.
+     *
      * @param string                      $resource   Plural resource name, e.g. 'posts'.
      * @param ResourceControllerInterface $controller Resolved controller instance.
+     * @param list<string>                $only       Restrict to these action names.
+     * @param list<string>                $except     Exclude these action names.
      *
      * @return void
      */
-    public function resource(string $resource, ResourceControllerInterface $controller): void
-    {
+    public function resource(
+        string $resource,
+        ResourceControllerInterface $controller,
+        array $only = [],
+        array $except = []
+    ): void {
         $base = '/' . ltrim($resource, '/');
 
-        $this->get($base, fn (Request $r): Response|string => $controller->index($r))->name("$resource.index");
-        $this->get($base . '/create', fn (Request $r): Response|string => $controller->create($r))->name("$resource.create");
-        $this->post($base, fn (Request $r): Response|string => $controller->store($r))->name("$resource.store");
-        $this->get($base . '/{id}', fn (Request $r): Response|string => $controller->show($r))->name("$resource.show");
-        $this->get($base . '/{id}/edit', fn (Request $r): Response|string => $controller->edit($r))->name("$resource.edit");
-        $this->put($base . '/{id}', fn (Request $r): Response|string => $controller->update($r))->name("$resource.update");
-        $this->delete($base . '/{id}', fn (Request $r): Response|string => $controller->destroy($r))->name("$resource.destroy");
+        /** @var array<string, Closure(): Route> $actions */
+        $actions = [
+            'index' => fn (): Route => $this->get($base, fn (Request $r): Response|string => $controller->index($r))->name("$resource.index"),
+            'create' => fn (): Route => $this->get($base . '/create', fn (Request $r): Response|string => $controller->create($r))->name("$resource.create"),
+            'store' => fn (): Route => $this->post($base, fn (Request $r): Response|string => $controller->store($r))->name("$resource.store"),
+            'show' => fn (): Route => $this->get($base . '/{id}', fn (Request $r): Response|string => $controller->show($r))->name("$resource.show"),
+            'edit' => fn (): Route => $this->get($base . '/{id}/edit', fn (Request $r): Response|string => $controller->edit($r))->name("$resource.edit"),
+            'update' => fn (): Route => $this->put($base . '/{id}', fn (Request $r): Response|string => $controller->update($r))->name("$resource.update"),
+            'destroy' => fn (): Route => $this->delete($base . '/{id}', fn (Request $r): Response|string => $controller->destroy($r))->name("$resource.destroy"),
+        ];
+
+        $toRegister = $only !== [] ? array_intersect_key($actions, array_flip($only)) : $actions;
+
+        if ($except !== []) {
+            $toRegister = array_diff_key($toRegister, array_flip($except));
+        }
+
+        foreach ($toRegister as $register) {
+            $register();
+        }
     }
 
     /**
@@ -216,5 +271,48 @@ final class Router
         }
 
         throw new RouteException();
+    }
+
+    /**
+     * Wrap a [Controller::class, 'method'] tuple in a lazy closure that resolves
+     * the controller from the container at dispatch time.
+     *
+     * @param array<mixed> $handler
+     *
+     * @return Closure
+     */
+    private function resolveControllerAction(array $handler): Closure
+    {
+        if ($this->container === null) {
+            throw new InvalidArgumentException(
+                'Container required for [Controller::class, method] dispatch. ' .
+                'Ensure RouterServiceProvider is registered or inject a ContainerInterface into Router.'
+            );
+        }
+
+        $class = $handler[0] ?? null;
+        $action = $handler[1] ?? null;
+
+        if (!is_string($class) || $class === '') {
+            throw new InvalidArgumentException(
+                'Array handler[0] must be a non-empty class-string.'
+            );
+        }
+
+        if (!is_string($action) || $action === '') {
+            throw new InvalidArgumentException(
+                'Array handler[1] must be a non-empty method name.'
+            );
+        }
+
+        /** @var class-string $class */
+        $container = $this->container;
+
+        return static function (Request $r) use ($container, $class, $action): mixed {
+            $controller = $container->make($class);
+            /** @var callable(Request): mixed $callable */
+            $callable = [$controller, $action];
+            return $callable($r);
+        };
     }
 }
