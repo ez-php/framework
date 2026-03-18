@@ -7,7 +7,6 @@ namespace Tests\Controller;
 use EzPhp\Controller\Controller;
 use EzPhp\Exceptions\HttpException;
 use EzPhp\Http\Response;
-use EzPhp\Http\ResponseFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
@@ -18,8 +17,6 @@ use Tests\TestCase;
  * @package Tests\Controller
  */
 #[CoversClass(Controller::class)]
-#[UsesClass(Response::class)]
-#[UsesClass(ResponseFactory::class)]
 #[UsesClass(HttpException::class)]
 final class ControllerTest extends TestCase
 {
