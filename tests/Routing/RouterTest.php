@@ -996,10 +996,11 @@ class ArrayDispatchTestContainer implements ContainerInterface
      * @param string               $abstract
      * @param string|callable|null $factory
      *
-     * @return void
+     * @return static
      */
-    public function bind(string $abstract, string|callable|null $factory = null): void
+    public function bind(string $abstract, string|callable|null $factory = null): static
     {
+        return $this;
     }
 
     /**

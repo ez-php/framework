@@ -221,9 +221,9 @@ final class Application implements ContainerInterface
      * @param class-string<T> $class
      * @param class-string|callable|null $value
      *
-     * @return void
+     * @return static
      */
-    public function bind(string $class, string|callable|null $value = null): void
+    public function bind(string $class, string|callable|null $value = null): static
     {
         if ($value === null) {
             $this->container->bind($class);
@@ -232,6 +232,8 @@ final class Application implements ContainerInterface
         } else {
             $this->container->bind($class, fn () => $value($this));
         }
+
+        return $this;
     }
 
     /**
