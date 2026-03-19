@@ -103,6 +103,8 @@ final class MakeMigrationCommandTest extends TestCase
         $this->assertStringContainsString('MigrationInterface', $content);
         $this->assertStringContainsString('function up', $content);
         $this->assertStringContainsString('function down', $content);
+        $this->assertStringNotContainsString('// TODO', $content);
+        $this->assertStringContainsString('$pdo->exec(', $content);
     }
 
     /**

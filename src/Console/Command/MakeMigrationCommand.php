@@ -100,12 +100,12 @@ final class MakeMigrationCommand implements CommandInterface
             return new class implements MigrationInterface {
                 public function up(\PDO $pdo): void
                 {
-                    // TODO
+                    // $pdo->exec('CREATE TABLE example (id INT AUTO_INCREMENT PRIMARY KEY)');
                 }
 
                 public function down(\PDO $pdo): void
                 {
-                    // TODO
+                    // $pdo->exec('DROP TABLE IF EXISTS example');
                 }
             };
             PHP;
