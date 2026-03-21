@@ -12,10 +12,20 @@ use Throwable;
 /**
  * Class DefaultExceptionHandler
  *
+ * Converts exceptions into HTTP responses. Supports:
+ * - Custom renderers registered via renderable()
+ * - JSON error responses with structured envelope
+ * - Debug/production HTML responses
+ *
  * @package EzPhp\Exceptions
  */
-final class DefaultExceptionHandler implements ExceptionHandler
+class DefaultExceptionHandler implements ExceptionHandler
 {
+    /**
+     * @var list<array{0: class-string, 1: callable(Throwable, Request): Response}>
+     */
+    private array $renderables = [];
+
     /**
      * DefaultExceptionHandler Constructor
      *
@@ -32,6 +42,23 @@ final class DefaultExceptionHandler implements ExceptionHandler
     }
 
     /**
+     * Register a custom renderer for a specific exception class.
+     * The renderer callable receives the exception and the request, and must return a Response.
+     * The first matching renderer is used (checked in registration order).
+     *
+     * @param class-string                                $exceptionClass
+     * @param callable(Throwable, Request): Response      $renderer
+     *
+     * @return $this
+     */
+    public function renderable(string $exceptionClass, callable $renderer): self
+    {
+        $this->renderables[] = [$exceptionClass, $renderer];
+
+        return $this;
+    }
+
+    /**
      * @param Throwable $e
      * @param Request   $request
      *
@@ -39,6 +66,13 @@ final class DefaultExceptionHandler implements ExceptionHandler
      */
     public function render(Throwable $e, Request $request): Response
     {
+        // Check custom renderers first (in registration order)
+        foreach ($this->renderables as [$class, $renderer]) {
+            if ($e instanceof $class) {
+                return $renderer($e, $request);
+            }
+        }
+
         $status = match (true) {
             $e instanceof RouteException => 404,
             $e instanceof HttpException => $e->getStatusCode(),
@@ -50,7 +84,8 @@ final class DefaultExceptionHandler implements ExceptionHandler
 
         if (str_contains($accept, 'application/json')) {
             $message = $this->resolveMessage($e, $status);
-            $json = json_encode(['error' => $message]) ?: '{"error":"Internal Server Error"}';
+            $envelope = ['error' => ['code' => $status, 'message' => $message]];
+            $json = json_encode($envelope) ?: '{"error":{"code":500,"message":"Internal Server Error"}}';
 
             return (new Response($json, $status))
                 ->withHeader('Content-Type', 'application/json');

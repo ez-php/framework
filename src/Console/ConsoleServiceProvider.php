@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace EzPhp\Console;
 
 use EzPhp\Application\Application;
+use EzPhp\Console\Command\EnvCheckCommand;
 use EzPhp\Console\Command\ListCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
 use EzPhp\Console\Command\MakeMiddlewareCommand;
@@ -71,6 +72,10 @@ final class ConsoleServiceProvider extends ServiceProvider
             return new TinkerCommand($app);
         });
 
+        $this->app->bind(EnvCheckCommand::class, function (Application $app): EnvCheckCommand {
+            return new EnvCheckCommand($app->basePath('.env.example'));
+        });
+
         $this->app->bind(Console::class, function (Application $app): Console {
             /** @var list<CommandInterface> $commands */
             $commands = [
@@ -84,6 +89,7 @@ final class ConsoleServiceProvider extends ServiceProvider
                 $app->make(MakeMiddlewareCommand::class),
                 $app->make(MakeProviderCommand::class),
                 $app->make(TinkerCommand::class),
+                $app->make(EnvCheckCommand::class),
             ];
 
             foreach ($app->getCommands() as $class) {

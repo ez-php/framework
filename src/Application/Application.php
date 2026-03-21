@@ -44,6 +44,11 @@ final class Application implements ContainerInterface
     private array $globalMiddleware = [];
 
     /**
+     * @var array<string, class-string<MiddlewareInterface>>
+     */
+    private array $middlewareAliases = [];
+
+    /**
      * @var list<class-string>
      */
     private array $userCommands = [];
@@ -112,6 +117,31 @@ final class Application implements ContainerInterface
     }
 
     /**
+     * Register a short alias for a middleware class.
+     *
+     * @param string                            $alias Short name (e.g. 'auth', 'throttle').
+     * @param class-string<MiddlewareInterface> $class Fully-qualified middleware class name.
+     *
+     * @return $this
+     */
+    public function middlewareAlias(string $alias, string $class): self
+    {
+        $this->middlewareAliases[$alias] = $class;
+
+        return $this;
+    }
+
+    /**
+     * Return all registered middleware aliases.
+     *
+     * @return array<string, class-string<MiddlewareInterface>>
+     */
+    public function getMiddlewareAliases(): array
+    {
+        return $this->middlewareAliases;
+    }
+
+    /**
      * Register one or more global middleware classes.
      *
      * @param class-string<MiddlewareInterface> ...$classes
@@ -163,6 +193,7 @@ final class Application implements ContainerInterface
         $handler = $this->make(MiddlewareHandler::class);
 
         if (!$this->middlewarePushed) {
+            $handler->setAliases($this->middlewareAliases);
             foreach ($this->globalMiddleware as $class) {
                 $handler->add($class);
             }

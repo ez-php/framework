@@ -14,7 +14,7 @@ namespace EzPhp\Exceptions;
  *
  * @package EzPhp\Exceptions
  */
-final class HttpException extends EzPhpException
+class HttpException extends EzPhpException
 {
     /**
      * HttpException Constructor

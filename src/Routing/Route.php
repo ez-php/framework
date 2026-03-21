@@ -26,6 +26,11 @@ final class Route
      */
     private array $params = [];
 
+    /**
+     * @var array<string, string>
+     */
+    private array $constraints = [];
+
     private ?string $name = null;
 
     private readonly Closure $handler;
@@ -43,6 +48,22 @@ final class Route
         callable $handler
     ) {
         $this->handler = $handler(...);
+    }
+
+    /**
+     * Add a regex constraint for a named route parameter.
+     * When the route is matched, the parameter will only match if the segment
+     * satisfies this pattern. Defaults to [^/]+ when not constrained.
+     *
+     * @param string $param   The route parameter name (without braces).
+     * @param string $pattern A regex pattern fragment (no delimiters).
+     *
+     * @return $this
+     */
+    public function where(string $param, string $pattern): self
+    {
+        $this->constraints[$param] = $pattern;
+        return $this;
     }
 
     /**
@@ -191,9 +212,23 @@ final class Route
     private function buildPattern(string $path): string
     {
         // Optional params with preceding slash: /{param?}
-        $pattern = (string) preg_replace('/\/\{([a-zA-Z_][a-zA-Z0-9_]*)\?\}/', '(?:\/([^/]+))?', $path);
+        $pattern = (string) preg_replace_callback(
+            '/\/\{([a-zA-Z_][a-zA-Z0-9_]*)\?\}/',
+            function (array $m): string {
+                $paramPattern = $this->constraints[$m[1]] ?? '[^/]+';
+                return '(?:\/(' . $paramPattern . '))?';
+            },
+            $path
+        );
         // Required params: {param}
-        $pattern = (string) preg_replace('/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/', '([^/]+)', $pattern);
+        $pattern = (string) preg_replace_callback(
+            '/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/',
+            function (array $m): string {
+                $paramPattern = $this->constraints[$m[1]] ?? '[^/]+';
+                return '(' . $paramPattern . ')';
+            },
+            $pattern
+        );
         return '#^' . $pattern . '$#';
     }
 }

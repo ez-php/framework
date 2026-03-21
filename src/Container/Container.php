@@ -67,6 +67,20 @@ final class Container
     }
 
     /**
+     * Register a short alias for an existing binding. Equivalent to `bind($abstract, $concrete)`.
+     *
+     * @template T of object
+     * @param class-string<T> $abstract
+     * @param class-string    $concrete
+     *
+     * @return $this
+     */
+    public function alias(string $abstract, string $concrete): self
+    {
+        return $this->bind($abstract, $concrete);
+    }
+
+    /**
      * Register an existing object as a shared instance, bypassing bindings.
      *
      * @template T of object
@@ -81,16 +95,30 @@ final class Container
     }
 
     /**
+     * Resolve an instance of the given class from the container.
+     *
+     * When $overrides is non-empty, the singleton cache is bypassed and the
+     * result is not stored. This allows ad-hoc construction with runtime values.
+     *
+     * Note: overrides are only available on the concrete Container class, not
+     * via ContainerInterface (which declares make(string $class): object).
+     *
      * @template T of object
-     * @param class-string<T> $class
+     * @param class-string<T>      $class
+     * @param array<string, mixed> $overrides Named constructor parameter overrides.
      *
      * @return T
      * @throws ReflectionException
      */
-    public function make(string $class): object
+    public function make(string $class, array $overrides = []): object
     {
         if (!class_exists($class) && !interface_exists($class)) {
             throw new ContainerException("Class '$class' does not exist");
+        }
+
+        if ($overrides !== []) {
+            /** @var T */
+            return $this->build($class, $overrides);
         }
 
         if (isset($this->instances[$class])) {
@@ -179,13 +207,14 @@ final class Container
 
     /**
      * @template T of object
-     * @param class-string<T> $class
+     * @param class-string<T>      $class
+     * @param array<string, mixed> $overrides Named constructor parameter overrides.
      *
      * @return T
      * @throws ContainerException
      * @throws ReflectionException
      */
-    private function build(string $class): object
+    private function build(string $class, array $overrides = []): object
     {
         $reflection = new ReflectionClass($class);
 
@@ -206,6 +235,13 @@ final class Container
         $dependencies = [];
 
         foreach ($constructor->getParameters() as $parameter) {
+            $paramName = $parameter->getName();
+
+            if (array_key_exists($paramName, $overrides)) {
+                $dependencies[] = $overrides[$paramName];
+                continue;
+            }
+
             $type = $parameter->getType();
 
             if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
@@ -227,7 +263,7 @@ final class Container
             }
 
             throw new ContainerException(
-                "Cannot resolve parameter '\${$parameter->getName()}' of class '$class'"
+                "Cannot resolve parameter '\${$paramName}' of class '$class'"
             );
         }
 

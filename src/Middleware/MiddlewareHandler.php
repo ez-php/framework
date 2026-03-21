@@ -27,6 +27,16 @@ final class MiddlewareHandler
     private array $resolved = [];
 
     /**
+     * @var list<class-string>
+     */
+    private array $priority = [];
+
+    /**
+     * @var array<string, class-string<MiddlewareInterface>>
+     */
+    private array $aliases = [];
+
+    /**
      * MiddlewareHandler Constructor
      *
      * @param Container $container
@@ -47,6 +57,35 @@ final class MiddlewareHandler
     }
 
     /**
+     * Register middleware aliases. An alias is a short string key (e.g. 'auth')
+     * that maps to a fully-qualified middleware class. Aliases are resolved in
+     * buildPipeline() before the class is made from the container.
+     *
+     * @param array<string, class-string<MiddlewareInterface>> $aliases
+     *
+     * @return void
+     */
+    public function setAliases(array $aliases): void
+    {
+        $this->aliases = $aliases;
+    }
+
+    /**
+     * Set the middleware priority order. Middleware appearing earlier in the
+     * list will run first, regardless of the order they were added. Middleware
+     * not in the priority list retains its original relative order and runs
+     * after all prioritized middleware.
+     *
+     * @param list<class-string> $priority
+     *
+     * @return void
+     */
+    public function setPriority(array $priority): void
+    {
+        $this->priority = $priority;
+    }
+
+    /**
      * Run the full pipeline (global + route middleware) then the route handler.
      *
      * @param Route   $route
@@ -56,7 +95,7 @@ final class MiddlewareHandler
      */
     public function handle(Route $route, Request $request): Response
     {
-        $stack = array_merge($this->middleware, $route->getMiddleware());
+        $stack = $this->sortByPriority(array_merge($this->middleware, $route->getMiddleware()));
         $this->resolved = [];
 
         return $this->buildPipeline(
@@ -80,7 +119,7 @@ final class MiddlewareHandler
     {
         $this->resolved = [];
 
-        return $this->buildPipeline($terminal, $this->middleware, 0)($request);
+        return $this->buildPipeline($terminal, $this->sortByPriority($this->middleware), 0)($request);
     }
 
     /**
@@ -120,6 +159,41 @@ final class MiddlewareHandler
     }
 
     /**
+     * Sort a middleware stack according to the configured priority list.
+     * Middleware in the priority list comes first (in priority list order).
+     * Unprioritized middleware follows in its original order.
+     *
+     * @param array<int, class-string<MiddlewareInterface>> $stack
+     *
+     * @return array<int, class-string<MiddlewareInterface>>
+     */
+    private function sortByPriority(array $stack): array
+    {
+        if ($this->priority === []) {
+            return $stack;
+        }
+
+        $prioritized = [];
+        $rest = [];
+
+        foreach ($stack as $class) {
+            if (in_array($class, $this->priority, true)) {
+                $prioritized[] = $class;
+            } else {
+                $rest[] = $class;
+            }
+        }
+
+        usort($prioritized, function (string $a, string $b): int {
+            $posA = array_search($a, $this->priority, true);
+            $posB = array_search($b, $this->priority, true);
+            return ($posA === false ? PHP_INT_MAX : $posA) <=> ($posB === false ? PHP_INT_MAX : $posB);
+        });
+
+        return array_merge($prioritized, $rest);
+    }
+
+    /**
      * @param callable(Request):Response              $terminal
      * @param array<int, class-string<MiddlewareInterface>> $stack
      * @param int                                          $index
@@ -133,7 +207,8 @@ final class MiddlewareHandler
         }
 
         return function (Request $request) use ($terminal, $stack, $index): Response {
-            $middleware = $this->container->make($stack[$index]);
+            $class = $this->aliases[$stack[$index]] ?? $stack[$index];
+            $middleware = $this->container->make($class);
             $this->resolved[] = $middleware;
             return $middleware->handle($request, $this->buildPipeline($terminal, $stack, $index + 1));
         };

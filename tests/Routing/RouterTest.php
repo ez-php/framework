@@ -879,6 +879,159 @@ final class RouterTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $router->get('/items', [ArrayDispatchTestController::class, 'index']);
     }
+
+    // --- Regex Constraints (item 28) ---
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_where_constraint_matches_valid_segment(): void
+    {
+        $router = new Router();
+        $router->get('/users/{id}', fn (Request $r) => $r->param('id'))->where('id', '[0-9]+');
+
+        $request = new Request('GET', '/users/42');
+        $route = $router->retrieveRoute($request);
+        $response = $route->run($request);
+
+        $this->assertSame('42', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_where_constraint_rejects_non_matching_segment(): void
+    {
+        $router = new Router();
+        $router->get('/users/{id}', fn () => 'ok')->where('id', '[0-9]+');
+
+        $this->expectException(RouteException::class);
+        $router->retrieveRoute(new Request('GET', '/users/abc'));
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_where_constraint_on_optional_param_matches_when_provided(): void
+    {
+        $router = new Router();
+        $router->get('/posts/{slug?}', fn (Request $r) => $r->param('slug') ?? 'none')
+            ->where('slug', '[a-z\-]+');
+
+        $request = new Request('GET', '/posts/my-post');
+        $route = $router->retrieveRoute($request);
+        $response = $route->run($request);
+
+        $this->assertSame('my-post', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_where_constraint_on_optional_param_rejects_invalid_value(): void
+    {
+        $router = new Router();
+        $router->get('/posts/{slug?}', fn () => 'ok')->where('slug', '[a-z\-]+');
+
+        $this->expectException(RouteException::class);
+        $router->retrieveRoute(new Request('GET', '/posts/123'));
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_where_constraint_falls_back_when_no_constraint_set(): void
+    {
+        $router = new Router();
+        $router->get('/items/{id}', fn (Request $r) => $r->param('id'));
+
+        $request = new Request('GET', '/items/any-value');
+        $route = $router->retrieveRoute($request);
+        $response = $route->run($request);
+
+        $this->assertSame('any-value', $response->body());
+    }
+
+    // --- Fallback Route (item 29) ---
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_fallback_matches_unmatched_get_request(): void
+    {
+        $router = new Router();
+        $router->get('/home', fn () => 'home');
+        $router->fallback(fn () => 'fallback');
+
+        $request = new Request('GET', '/missing');
+        $route = $router->retrieveRoute($request);
+        $response = $route->run($request);
+
+        $this->assertSame('fallback', $response->body());
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_fallback_matches_any_http_method(): void
+    {
+        $router = new Router();
+        $router->fallback(fn () => 'fallback');
+
+        foreach (['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] as $method) {
+            $request = new Request($method, '/missing');
+            $route = $router->retrieveRoute($request);
+            $this->assertSame('fallback', $route->run($request)->body());
+        }
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_fallback_is_not_used_when_route_matches(): void
+    {
+        $router = new Router();
+        $router->get('/home', fn () => 'home');
+        $router->fallback(fn () => 'fallback');
+
+        $request = new Request('GET', '/home');
+        $route = $router->retrieveRoute($request);
+        $response = $route->run($request);
+
+        $this->assertSame('home', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_without_fallback_throws_route_exception(): void
+    {
+        $router = new Router();
+        $router->get('/home', fn () => 'home');
+
+        $this->expectException(RouteException::class);
+        $router->retrieveRoute(new Request('GET', '/missing'));
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_fallback_does_not_participate_in_duplicate_detection(): void
+    {
+        $router = new Router();
+        $router->fallback(fn () => 'first');
+        $router->fallback(fn () => 'second'); // Should not throw
+
+        $route = $router->retrieveRoute(new Request('GET', '/any'));
+        $this->assertSame('second', $route->run(new Request('GET', '/any'))->body());
+    }
 }
 
 /**

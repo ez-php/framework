@@ -341,6 +341,80 @@ final class ContainerTest extends TestCase
 
         $this->assertInstanceOf(TaggedHandlerA::class, $instances[0]);
     }
+
+    // -------------------------------------------------------------------------
+    // alias()
+    // -------------------------------------------------------------------------
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_alias_registers_binding_for_abstract(): void
+    {
+        $container = new Container();
+        $container->alias(ContainerTestInterface::class, ContainerTestImplementation::class);
+
+        $result = $container->make(ContainerTestInterface::class);
+
+        $this->assertInstanceOf(ContainerTestImplementation::class, $result);
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_alias_returns_self_for_chaining(): void
+    {
+        $container = new Container();
+        $result = $container->alias(ContainerTestInterface::class, ContainerTestImplementation::class);
+
+        $this->assertSame($container, $result);
+    }
+
+    // -------------------------------------------------------------------------
+    // make() with overrides
+    // -------------------------------------------------------------------------
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_make_with_overrides_injects_provided_values(): void
+    {
+        $container = new Container();
+        $result = $container->make(AutowiringOptional::class, ['value' => 'overridden']);
+
+        $this->assertSame('overridden', $result->value);
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_make_with_overrides_skips_singleton_cache(): void
+    {
+        $container = new Container();
+        $a = $container->make(AutowiringOptional::class, ['value' => 'first']);
+        $b = $container->make(AutowiringOptional::class, ['value' => 'second']);
+
+        $this->assertSame('first', $a->value);
+        $this->assertSame('second', $b->value);
+        $this->assertNotSame($a, $b);
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_make_without_overrides_still_caches_singleton(): void
+    {
+        $container = new Container();
+        $a = $container->make(AutowiringOptional::class);
+        $b = $container->make(AutowiringOptional::class);
+
+        $this->assertSame($a, $b);
+    }
 }
 
 /**

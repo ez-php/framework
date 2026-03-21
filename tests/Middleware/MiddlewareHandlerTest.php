@@ -136,6 +136,116 @@ final class MiddlewareHandlerTest extends TestCase
         $this->assertSame('short-circuit', $response->body());
         $this->assertSame(403, $response->status());
     }
+
+    // --- Priority Ordering (item 30) ---
+
+    /**
+     * @return void
+     */
+    public function test_set_priority_reorders_middleware(): void
+    {
+        $container = new Container();
+        $container->bind(PrefixAMiddleware::class);
+        $container->bind(PrefixBMiddleware::class);
+
+        $handler = new MiddlewareHandler($container);
+        // Add B first, then A
+        $handler->add(PrefixBMiddleware::class);
+        $handler->add(PrefixAMiddleware::class);
+        // Priority: A before B
+        $handler->setPriority([PrefixAMiddleware::class, PrefixBMiddleware::class]);
+
+        $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
+
+        // A wraps B wraps handler → "A>B>handler"
+        $this->assertSame('A>B>handler', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_unprioritized_middleware_appended_in_original_order(): void
+    {
+        $container = new Container();
+        $container->bind(PrefixAMiddleware::class);
+        $container->bind(PrefixBMiddleware::class);
+        $container->bind(AppendMiddleware::class);
+
+        $handler = new MiddlewareHandler($container);
+        $handler->add(AppendMiddleware::class);
+        $handler->add(PrefixAMiddleware::class);
+        $handler->add(PrefixBMiddleware::class);
+        // Only prioritize B before A; Append has no priority entry
+        $handler->setPriority([PrefixBMiddleware::class, PrefixAMiddleware::class]);
+
+        $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
+
+        // B wraps A wraps (Append wraps handler) → "B>A>handler+appended"
+        $this->assertSame('B>A>handler+appended', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_no_priority_preserves_original_order(): void
+    {
+        $container = new Container();
+        $container->bind(PrefixAMiddleware::class);
+        $container->bind(PrefixBMiddleware::class);
+
+        $handler = new MiddlewareHandler($container);
+        $handler->add(PrefixAMiddleware::class);
+        $handler->add(PrefixBMiddleware::class);
+        // No setPriority call
+
+        $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
+
+        $this->assertSame('A>B>handler', $response->body());
+    }
+
+    // --- Middleware Aliases (item 31) ---
+
+    /**
+     * @return void
+     */
+    public function test_alias_resolves_middleware_by_short_name(): void
+    {
+        $container = new Container();
+        $container->bind(PrefixAMiddleware::class);
+
+        $handler = new MiddlewareHandler($container);
+        $handler->setAliases(['prefix-a' => PrefixAMiddleware::class]);
+
+        // The alias key is treated as the middleware identifier; the handler
+        // resolves it to the real class via the alias table in buildPipeline().
+        // We use a cast to string to avoid the literal type inference that
+        // would make the @var annotation redundant at the assignment site.
+        $aliasKey = sprintf('%s', 'prefix-a');
+
+        /** @var class-string<MiddlewareInterface> $aliasKey */
+        $handler->add($aliasKey);
+
+        $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
+
+        $this->assertSame('A>handler', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_non_alias_class_string_still_resolved_directly(): void
+    {
+        $container = new Container();
+        $container->bind(PrefixBMiddleware::class);
+
+        $handler = new MiddlewareHandler($container);
+        $handler->setAliases(['other' => PrefixAMiddleware::class]);
+        $handler->add(PrefixBMiddleware::class);
+
+        $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
+
+        $this->assertSame('B>handler', $response->body());
+    }
 }
 
 /**

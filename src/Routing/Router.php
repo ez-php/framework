@@ -24,6 +24,8 @@ final class Router
      */
     private array $routes = [];
 
+    private ?Route $fallbackRoute = null;
+
     private string $groupPrefix = '';
 
     /**
@@ -217,6 +219,23 @@ final class Router
     }
 
     /**
+     * Register a fallback route that matches any method and any path.
+     *
+     * The fallback is tried last, after all other routes fail to match.
+     * It does not participate in duplicate detection.
+     *
+     * @param callable $handler
+     *
+     * @return Route
+     */
+    public function fallback(callable $handler): Route
+    {
+        $route = new Route('ANY', '/*', $handler);
+        $this->fallbackRoute = $route;
+        return $route;
+    }
+
+    /**
      * Register a redirect route that issues an HTTP redirect response.
      *
      * @param string $from   URI to redirect from.
@@ -268,6 +287,10 @@ final class Router
             if (($matched = $route->matches($request)) !== null) {
                 return $matched;
             }
+        }
+
+        if ($this->fallbackRoute !== null) {
+            return $this->fallbackRoute;
         }
 
         throw new RouteException();

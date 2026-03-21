@@ -10,10 +10,12 @@ use EzPhp\Exceptions\HttpException;
 use EzPhp\Exceptions\ProductionHtmlRenderer;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
+use EzPhp\Http\Response;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use RuntimeException;
 use Tests\TestCase;
+use Throwable;
 
 /**
  * Class DefaultExceptionHandlerTest
@@ -82,7 +84,7 @@ final class DefaultExceptionHandlerTest extends TestCase
 
         $this->assertSame(500, $response->status());
         $this->assertSame('application/json', $response->headers()['Content-Type']);
-        $this->assertSame('{"error":"Internal Server Error"}', $response->body());
+        $this->assertSame('{"error":{"code":500,"message":"Internal Server Error"}}', $response->body());
     }
 
     /**
@@ -96,7 +98,7 @@ final class DefaultExceptionHandlerTest extends TestCase
 
         $this->assertSame(500, $response->status());
         $this->assertSame('application/json', $response->headers()['Content-Type']);
-        $this->assertSame('{"error":"Oops"}', $response->body());
+        $this->assertSame('{"error":{"code":500,"message":"Oops"}}', $response->body());
     }
 
     /**
@@ -110,7 +112,7 @@ final class DefaultExceptionHandlerTest extends TestCase
 
         $this->assertSame(404, $response->status());
         $this->assertSame('application/json', $response->headers()['Content-Type']);
-        $this->assertStringContainsString('Route not found', $response->body());
+        $this->assertSame('{"error":{"code":404,"message":"Route not found"}}', $response->body());
     }
 
     /**
@@ -169,7 +171,7 @@ final class DefaultExceptionHandlerTest extends TestCase
         $request = new Request('GET', '/', headers: ['accept' => 'application/json']);
         $response = $handler->render(new HttpException(403, 'Forbidden'), $request);
 
-        $this->assertSame('{"error":"Forbidden"}', $response->body());
+        $this->assertSame('{"error":{"code":403,"message":"Forbidden"}}', $response->body());
     }
 
     /**
@@ -183,5 +185,110 @@ final class DefaultExceptionHandlerTest extends TestCase
 
         $this->assertSame(422, $response->status());
         $this->assertSame('application/json', $response->headers()['Content-Type']);
+    }
+
+    // --- Structured JSON Envelope (item 33) ---
+
+    /**
+     * @return void
+     */
+    public function test_json_error_contains_code_field(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $request = new Request('GET', '/', headers: ['accept' => 'application/json']);
+        $response = $handler->render(new HttpException(404, 'Not Found'), $request);
+
+        /** @var array{error: array{code: int, message: string}} $body */
+        $body = json_decode($response->body(), true);
+        $this->assertSame(404, $body['error']['code']);
+        $this->assertSame('Not Found', $body['error']['message']);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_json_error_envelope_format(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $request = new Request('GET', '/', headers: ['accept' => 'application/json']);
+        $response = $handler->render(new RouteException(), $request);
+
+        $this->assertSame('{"error":{"code":404,"message":"Route not found"}}', $response->body());
+    }
+
+    // --- Custom Renderers (item 32) ---
+
+    /**
+     * @return void
+     */
+    public function test_renderable_custom_renderer_is_called_for_matching_exception(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $handler->renderable(
+            HttpException::class,
+            function (Throwable $e, Request $r): Response {
+                /** @var HttpException $e */
+                return new Response('custom:' . $e->getStatusCode(), $e->getStatusCode());
+            }
+        );
+
+        $request = new Request('GET', '/');
+        $response = $handler->render(new HttpException(403, 'Forbidden'), $request);
+
+        $this->assertSame(403, $response->status());
+        $this->assertSame('custom:403', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_renderable_first_matching_renderer_wins(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $handler->renderable(
+            HttpException::class,
+            fn (Throwable $e, Request $r): Response => new Response('first', 200)
+        );
+        $handler->renderable(
+            HttpException::class,
+            fn (Throwable $e, Request $r): Response => new Response('second', 200)
+        );
+
+        $request = new Request('GET', '/');
+        $response = $handler->render(new HttpException(404, 'Not Found'), $request);
+
+        $this->assertSame('first', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_renderable_falls_through_to_default_when_no_match(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $handler->renderable(
+            HttpException::class,
+            fn (Throwable $e, Request $r): Response => new Response('custom', 200)
+        );
+
+        $request = new Request('GET', '/', headers: ['accept' => 'application/json']);
+        $response = $handler->render(new RouteException(), $request);
+
+        // RouteException is not HttpException; falls through to default JSON handler
+        $this->assertStringContainsString('Route not found', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_renderable_returns_self_for_chaining(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $result = $handler->renderable(
+            HttpException::class,
+            fn (Throwable $e, Request $r): Response => new Response('', 200)
+        );
+
+        $this->assertSame($handler, $result);
     }
 }

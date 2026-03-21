@@ -107,4 +107,99 @@ final class ConfigTest extends TestCase
     {
         $this->assertSame(3306, $this->makeConfig()->get('db.port'));
     }
+
+    // --- Typed accessor helpers ---
+
+    /**
+     * @return void
+     */
+    public function test_string_returns_string_value(): void
+    {
+        $this->assertSame('ez-php', $this->makeConfig()->string('app.name'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_string_returns_default_for_missing_key(): void
+    {
+        $this->assertSame('default', $this->makeConfig()->string('missing', 'default'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_string_casts_integer_to_string(): void
+    {
+        $this->assertSame('3306', $this->makeConfig()->string('db.port'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_int_returns_integer_value(): void
+    {
+        $this->assertSame(3306, $this->makeConfig()->int('db.port'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_int_returns_default_for_missing_key(): void
+    {
+        $this->assertSame(42, $this->makeConfig()->int('missing', 42));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_bool_returns_boolean_value(): void
+    {
+        $this->assertTrue($this->makeConfig()->bool('app.debug'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_bool_returns_default_for_missing_key(): void
+    {
+        $this->assertFalse($this->makeConfig()->bool('missing'));
+        $this->assertTrue($this->makeConfig()->bool('missing', true));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_bool_handles_string_true(): void
+    {
+        $config = new Config(['flag' => 'true']);
+        $this->assertTrue($config->bool('flag'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_bool_handles_string_false(): void
+    {
+        $config = new Config(['flag' => 'false']);
+        $this->assertFalse($config->bool('flag'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_bool_handles_string_one(): void
+    {
+        $config = new Config(['flag' => '1']);
+        $this->assertTrue($config->bool('flag'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_bool_handles_string_zero(): void
+    {
+        $config = new Config(['flag' => '0']);
+        $this->assertFalse($config->bool('flag'));
+    }
 }
