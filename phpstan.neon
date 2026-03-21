@@ -4,3 +4,6 @@ parameters:
 	paths:
 		- src
 		- tests
+	stubFiles:
+		- stubs/ServiceProvider.stub.php
+		- stubs/Request.stub.php
