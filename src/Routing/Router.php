@@ -6,6 +6,7 @@ namespace EzPhp\Routing;
 
 use Closure;
 use EzPhp\Contracts\ContainerInterface;
+use EzPhp\Exceptions\NotFoundException;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
 use EzPhp\Http\Response;
@@ -27,6 +28,13 @@ final class Router
     private ?Route $fallbackRoute = null;
 
     private string $groupPrefix = '';
+
+    /**
+     * Model bindings: param name → resolver closure.
+     *
+     * @var array<string, Closure(string): ?object>
+     */
+    private array $modelBindings = [];
 
     /**
      * @var list<class-string<MiddlewareInterface>>
@@ -236,6 +244,41 @@ final class Router
     }
 
     /**
+     * Register a model binding for a named route parameter.
+     *
+     * When a route with a matching parameter is resolved, the Router replaces
+     * the raw string value with the model instance returned by the resolver.
+     * A null return from the resolver throws a NotFoundException (404).
+     *
+     * Default resolver — calls `$modelClass::find($id)` statically:
+     *
+     *   $router->model('user', User::class);
+     *
+     * Custom resolver:
+     *
+     *   $router->model('user', User::class, fn (string $id): ?User => User::withTrashed()->find($id));
+     *
+     * @param string                    $param     Route parameter name (without braces).
+     * @param class-string              $modelClass Model class used for the default find() resolver.
+     * @param Closure(string): ?object|null $resolver   Custom resolver; null uses the default.
+     *
+     * @return void
+     */
+    public function model(string $param, string $modelClass, ?Closure $resolver = null): void
+    {
+        if ($resolver !== null) {
+            $this->modelBindings[$param] = $resolver;
+            return;
+        }
+
+        $this->modelBindings[$param] = static function (string $id) use ($modelClass): ?object {
+            /** @var callable(string): ?object $finder */
+            $finder = [$modelClass, 'find'];
+            return $finder($id);
+        };
+    }
+
+    /**
      * Register a redirect route that issues an HTTP redirect response.
      *
      * @param string $from   URI to redirect from.
@@ -285,7 +328,7 @@ final class Router
 
         foreach ($this->routes as $route) {
             if (($matched = $route->matches($request)) !== null) {
-                return $matched;
+                return $this->applyModelBindings($matched);
             }
         }
 
@@ -294,6 +337,82 @@ final class Router
         }
 
         throw new RouteException();
+    }
+
+    /**
+     * Check whether the request matches a route that is exempt from CSRF verification.
+     *
+     * This is a lightweight alternative to retrieveRoute() used by CsrfMiddleware.
+     * It matches the route pattern but intentionally skips model binding to avoid
+     * triggering database queries for what is only an exemption check.
+     *
+     * Returns false for unmatched requests (they will produce a 404 in the main
+     * dispatch; the CSRF check is irrelevant).
+     *
+     * @param Request $request
+     *
+     * @return bool
+     */
+    public function isCsrfExemptRoute(Request $request): bool
+    {
+        if ($request->method() === 'POST') {
+            $override = $request->input('_method');
+            if (is_string($override) && $override !== '') {
+                $request = $request->withMethod(strtoupper($override));
+            }
+        }
+
+        foreach ($this->routes as $route) {
+            if (($matched = $route->matches($request)) !== null) {
+                return $matched->isCsrfExempt();
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Apply registered model bindings to the matched route's raw string params.
+     *
+     * For each param that has a model binding, call the resolver with the raw
+     * string value. A null return indicates the model was not found and a
+     * NotFoundException (404) is thrown. Unbound params are left unchanged.
+     *
+     * @param Route $route
+     *
+     * @return Route
+     */
+    private function applyModelBindings(Route $route): Route
+    {
+        if ($this->modelBindings === []) {
+            return $route;
+        }
+
+        $resolved = $route->getParams();
+        $changed = false;
+
+        foreach ($this->modelBindings as $param => $resolver) {
+            if (!array_key_exists($param, $resolved)) {
+                continue;
+            }
+
+            $raw = $resolved[$param];
+
+            if (!is_string($raw)) {
+                continue;
+            }
+
+            $model = $resolver($raw);
+
+            if ($model === null) {
+                throw new NotFoundException("Model not found for route parameter '$param'.");
+            }
+
+            $resolved[$param] = $model;
+            $changed = true;
+        }
+
+        return $changed ? $route->withResolvedParams($resolved) : $route;
     }
 
     /**

@@ -9,6 +9,7 @@ use EzPhp\Application\CoreServiceProviders;
 use EzPhp\Config\Config;
 use EzPhp\Config\ConfigLoader;
 use EzPhp\Config\ConfigServiceProvider;
+use EzPhp\Config\ConfigValidator;
 use EzPhp\Console\Command\MakeMigrationCommand;
 use EzPhp\Console\Command\MigrateCommand;
 use EzPhp\Console\Command\MigrateRollbackCommand;
@@ -44,6 +45,7 @@ use Tests\DatabaseTestCase;
 #[UsesClass(Config::class)]
 #[UsesClass(ConfigLoader::class)]
 #[UsesClass(ConfigServiceProvider::class)]
+#[UsesClass(ConfigValidator::class)]
 #[UsesClass(Database::class)]
 #[UsesClass(DatabaseServiceProvider::class)]
 #[UsesClass(DefaultExceptionHandler::class)]

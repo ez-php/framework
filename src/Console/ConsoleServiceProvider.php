@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace EzPhp\Console;
 
 use EzPhp\Application\Application;
+use EzPhp\Config\ConfigLoader;
+use EzPhp\Console\Command\ConfigCacheCommand;
+use EzPhp\Console\Command\ConfigClearCommand;
 use EzPhp\Console\Command\EnvCheckCommand;
 use EzPhp\Console\Command\ListCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
@@ -89,9 +92,22 @@ final class ConsoleServiceProvider extends ServiceProvider
             return new EnvCheckCommand($app->basePath('.env.example'));
         });
 
+        $this->app->bind(ConfigCacheCommand::class, function (Application $app): ConfigCacheCommand {
+            return new ConfigCacheCommand(
+                $app->make(ConfigLoader::class),
+                $app->basePath('bootstrap/cache/config.php'),
+            );
+        });
+
+        $this->app->bind(ConfigClearCommand::class, function (Application $app): ConfigClearCommand {
+            return new ConfigClearCommand($app->basePath('bootstrap/cache/config.php'));
+        });
+
         $this->app->bind(Console::class, function (Application $app): Console {
             /** @var list<CommandInterface> $commands */
             $commands = [
+                $app->make(ConfigCacheCommand::class),
+                $app->make(ConfigClearCommand::class),
                 $app->make(ServeCommand::class),
                 $app->make(MigrateCommand::class),
                 $app->make(MigrateRollbackCommand::class),

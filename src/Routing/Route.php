@@ -22,7 +22,7 @@ final class Route
     private array $middleware = [];
 
     /**
-     * @var array<string, string>
+     * @var array<string, mixed>
      */
     private array $params = [];
 
@@ -32,6 +32,8 @@ final class Route
     private array $constraints = [];
 
     private ?string $name = null;
+
+    private bool $csrfExempt = false;
 
     private readonly Closure $handler;
 
@@ -118,6 +120,57 @@ final class Route
     public function getName(): ?string
     {
         return $this->name;
+    }
+
+    /**
+     * Exclude this route from CSRF token verification.
+     *
+     * Useful for API endpoints or webhook receivers that are authenticated
+     * via other means (e.g. HMAC signatures, Bearer tokens).
+     *
+     * @return $this
+     */
+    public function withoutCsrf(): self
+    {
+        $this->csrfExempt = true;
+
+        return $this;
+    }
+
+    /**
+     * Return true if CSRF verification should be skipped for this route.
+     *
+     * @return bool
+     */
+    public function isCsrfExempt(): bool
+    {
+        return $this->csrfExempt;
+    }
+
+    /**
+     * Return the currently matched route parameters (raw strings from the URL
+     * or resolved model instances after model binding is applied).
+     *
+     * @return array<string, mixed>
+     */
+    public function getParams(): array
+    {
+        return $this->params;
+    }
+
+    /**
+     * Return a clone of this route with the given resolved params replacing the
+     * current raw string params. Used by the Router after applying model bindings.
+     *
+     * @param array<string, mixed> $resolvedParams
+     *
+     * @return static
+     */
+    public function withResolvedParams(array $resolvedParams): static
+    {
+        return clone($this, [
+            'params' => $resolvedParams,
+        ]);
     }
 
     /**

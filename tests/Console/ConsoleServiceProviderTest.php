@@ -9,6 +9,9 @@ use EzPhp\Application\CoreServiceProviders;
 use EzPhp\Config\Config;
 use EzPhp\Config\ConfigLoader;
 use EzPhp\Config\ConfigServiceProvider;
+use EzPhp\Config\ConfigValidator;
+use EzPhp\Console\Command\ConfigCacheCommand;
+use EzPhp\Console\Command\ConfigClearCommand;
 use EzPhp\Console\Command\EnvCheckCommand;
 use EzPhp\Console\Command\ListCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
@@ -53,6 +56,7 @@ use Tests\DatabaseTestCase;
 #[UsesClass(Config::class)]
 #[UsesClass(ConfigLoader::class)]
 #[UsesClass(ConfigServiceProvider::class)]
+#[UsesClass(ConfigValidator::class)]
 #[UsesClass(Database::class)]
 #[UsesClass(DatabaseServiceProvider::class)]
 #[UsesClass(MigrationServiceProvider::class)]
@@ -74,6 +78,8 @@ use Tests\DatabaseTestCase;
 #[UsesClass(MakeProviderCommand::class)]
 #[UsesClass(ServeCommand::class)]
 #[UsesClass(TinkerCommand::class)]
+#[UsesClass(ConfigCacheCommand::class)]
+#[UsesClass(ConfigClearCommand::class)]
 #[UsesClass(EnvCheckCommand::class)]
 #[UsesClass(ListCommand::class)]
 #[UsesClass(ScheduleRunCommand::class)]
@@ -121,6 +127,8 @@ final class ConsoleServiceProviderTest extends DatabaseTestCase
 
         $this->assertStringContainsString('list', $output);
         $this->assertStringContainsString('serve', $output);
+        $this->assertStringContainsString('config:cache', $output);
+        $this->assertStringContainsString('config:clear', $output);
         $this->assertStringContainsString('migrate', $output);
         $this->assertStringContainsString('migrate:rollback', $output);
         $this->assertStringContainsString('migrate:fresh', $output);

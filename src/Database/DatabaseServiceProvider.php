@@ -6,6 +6,7 @@ namespace EzPhp\Database;
 
 use EzPhp\Application\Application;
 use EzPhp\Config\Config;
+use EzPhp\Config\ConfigValidator;
 use EzPhp\Contracts\DatabaseInterface;
 use EzPhp\ServiceProvider\ServiceProvider;
 
@@ -24,14 +25,13 @@ final class DatabaseServiceProvider extends ServiceProvider
         $this->app->bind(Database::class, function (Application $app): Database {
             $config = $app->make(Config::class);
 
-            /** @var string $driver */
-            $driver = $config->get('db.driver', 'mysql');
-            /** @var string $database */
-            $database = $config->get('db.database');
-            /** @var string $username */
-            $username = $config->get('db.username', '');
-            /** @var string $password */
-            $password = $config->get('db.password', '');
+            $driver = $config->string('db.driver', 'mysql');
+
+            ConfigValidator::assertValidValue('db.driver', $driver, ['mysql', 'sqlite']);
+
+            $database = $config->string('db.database');
+            $username = $config->string('db.username', '');
+            $password = $config->string('db.password', '');
 
             if ($driver === 'sqlite') {
                 $dsn = "sqlite:$database";
@@ -39,10 +39,8 @@ final class DatabaseServiceProvider extends ServiceProvider
                 return new Database($dsn, '', '');
             }
 
-            /** @var string $host */
-            $host = $config->get('db.host');
-            /** @var string $port */
-            $port = $config->get('db.port');
+            $host = $config->string('db.host');
+            $port = $config->string('db.port');
 
             $dsn = sprintf(
                 'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',

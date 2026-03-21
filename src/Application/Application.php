@@ -34,6 +34,21 @@ final class Application implements ContainerInterface
     private array $serviceProviders = [];
 
     /**
+     * Deferred provider binding map: class-string → provider class-string.
+     * Populated during bootstrap; provider is loaded on first make() for that class.
+     *
+     * @var array<string, class-string<\EzPhp\Contracts\ServiceProvider>>
+     */
+    private array $deferredBindings = [];
+
+    /**
+     * Already-loaded deferred provider class-strings (to avoid double-loading).
+     *
+     * @var array<class-string<\EzPhp\Contracts\ServiceProvider>, true>
+     */
+    private array $loadedDeferredProviders = [];
+
+    /**
      * @var list<class-string<\EzPhp\Contracts\ServiceProvider>>
      */
     private array $userProviders = [];
@@ -169,6 +184,8 @@ final class Application implements ContainerInterface
         }
 
         $this->serviceProviders = [];
+        $this->deferredBindings = [];
+        $this->loadedDeferredProviders = [];
         $this->middlewarePushed = false;
         $this->foundation();
         $this->loadServiceProviders();
@@ -229,6 +246,9 @@ final class Application implements ContainerInterface
         if (!isset($this->container)) {
             throw new ApplicationException('Container not set!');
         }
+
+        $this->activateDeferredProviderFor($class);
+
         return $this->container->make($class);
     }
 
@@ -284,9 +304,45 @@ final class Application implements ContainerInterface
     private function loadServiceProviders(): void
     {
         $providers = array_merge(CoreServiceProviders::all(), $this->userProviders);
-        foreach ($providers as $serviceProvider) {
-            $this->serviceProviders[] = new $serviceProvider($this);
+        foreach ($providers as $serviceProviderClass) {
+            $instance = new $serviceProviderClass($this);
+
+            if ($instance->deferred()) {
+                foreach ($instance->provides() as $binding) {
+                    $this->deferredBindings[$binding] = $serviceProviderClass;
+                }
+                continue;
+            }
+
+            $this->serviceProviders[] = $instance;
         }
+    }
+
+    /**
+     * Activate the deferred provider responsible for the given binding class,
+     * if one has been registered and has not yet been loaded.
+     *
+     * @param string $class
+     *
+     * @return void
+     */
+    private function activateDeferredProviderFor(string $class): void
+    {
+        if (!isset($this->deferredBindings[$class])) {
+            return;
+        }
+
+        $providerClass = $this->deferredBindings[$class];
+
+        if (isset($this->loadedDeferredProviders[$providerClass])) {
+            return;
+        }
+
+        $this->loadedDeferredProviders[$providerClass] = true;
+
+        $provider = new $providerClass($this);
+        $provider->register();
+        $provider->boot();
     }
 
     /**
