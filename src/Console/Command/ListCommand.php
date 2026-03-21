@@ -14,14 +14,14 @@ use EzPhp\Console\Output;
  *
  * @package EzPhp\Console\Command
  */
-final class ListCommand implements CommandInterface
+final readonly class ListCommand implements CommandInterface
 {
     /**
      * ListCommand Constructor
      *
      * @param list<CommandInterface> $commands All commands registered in the Console.
      */
-    public function __construct(private readonly array $commands)
+    public function __construct(private array $commands)
     {
     }
 

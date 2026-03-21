@@ -28,6 +28,7 @@ abstract class Controller
      * @param int   $status HTTP status code (default 200).
      *
      * @return Response
+     * @throws \JsonException
      */
     protected function json(mixed $data, int $status = 200): Response
     {

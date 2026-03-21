@@ -12,14 +12,14 @@ use EzPhp\Console\Input;
  *
  * @package EzPhp\Console\Command
  */
-final class MakeMigrationCommand implements CommandInterface
+final readonly class MakeMigrationCommand implements CommandInterface
 {
     /**
      * MakeMigrationCommand Constructor
      *
      * @param string $migrationsPath
      */
-    public function __construct(private readonly string $migrationsPath)
+    public function __construct(private string $migrationsPath)
     {
     }
 

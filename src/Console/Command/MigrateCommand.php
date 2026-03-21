@@ -13,14 +13,14 @@ use Throwable;
  *
  * @package EzPhp\Console\Command
  */
-final class MigrateCommand implements CommandInterface
+final readonly class MigrateCommand implements CommandInterface
 {
     /**
      * MigrateCommand Constructor
      *
      * @param Migrator $migrator
      */
-    public function __construct(private readonly Migrator $migrator)
+    public function __construct(private Migrator $migrator)
     {
     }
 

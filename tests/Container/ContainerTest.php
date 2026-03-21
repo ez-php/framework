@@ -362,7 +362,6 @@ final class ContainerTest extends TestCase
 
     /**
      * @return void
-     * @throws ReflectionException
      */
     public function test_alias_returns_self_for_chaining(): void
     {

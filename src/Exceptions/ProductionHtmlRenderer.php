@@ -21,15 +21,15 @@ use EzPhp\I18n\Translator;
  *
  * @package EzPhp\Exceptions
  */
-final class ProductionHtmlRenderer
+final readonly class ProductionHtmlRenderer
 {
     /**
      * @param string          $templatePath Directory for custom error templates (e.g. resources/errors).
      * @param Translator|null $translator   Optional translator for localised error strings.
      */
     public function __construct(
-        private readonly string $templatePath = '',
-        private readonly ?Translator $translator = null,
+        private string $templatePath = '',
+        private ?Translator $translator = null,
     ) {
     }
 

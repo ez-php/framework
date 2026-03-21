@@ -12,7 +12,7 @@ use EzPhp\Http\Response;
  *
  * @package EzPhp\Middleware
  */
-final class CorsMiddleware implements MiddlewareInterface
+final readonly class CorsMiddleware implements MiddlewareInterface
 {
     /**
      * CorsMiddleware Constructor
@@ -23,10 +23,10 @@ final class CorsMiddleware implements MiddlewareInterface
      * @param int    $maxAge
      */
     public function __construct(
-        private readonly string $allowOrigin = '*',
-        private readonly string $allowMethods = 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-        private readonly string $allowHeaders = 'Content-Type, Authorization, X-Requested-With',
-        private readonly int $maxAge = 86400,
+        private string $allowOrigin = '*',
+        private string $allowMethods = 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+        private string $allowHeaders = 'Content-Type, Authorization, X-Requested-With',
+        private int $maxAge = 86400,
     ) {
     }
 

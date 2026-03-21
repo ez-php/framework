@@ -11,14 +11,14 @@ use EzPhp\Console\CommandInterface;
  *
  * @package EzPhp\Console\Command
  */
-final class MakeProviderCommand implements CommandInterface
+final readonly class MakeProviderCommand implements CommandInterface
 {
     /**
      * MakeProviderCommand Constructor
      *
      * @param string $srcPath
      */
-    public function __construct(private readonly string $srcPath)
+    public function __construct(private string $srcPath)
     {
     }
 

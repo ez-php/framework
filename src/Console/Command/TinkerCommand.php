@@ -15,14 +15,14 @@ use EzPhp\Console\CommandInterface;
  *
  * @package EzPhp\Console\Command
  */
-final class TinkerCommand implements CommandInterface
+final readonly class TinkerCommand implements CommandInterface
 {
     /**
      * TinkerCommand Constructor
      *
      * @param Application $app The bootstrapped application instance.
      */
-    public function __construct(private readonly Application $app)
+    public function __construct(private Application $app)
     {
     }
 

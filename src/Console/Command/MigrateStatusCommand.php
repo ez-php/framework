@@ -15,14 +15,14 @@ use EzPhp\Migration\Migrator;
  *
  * @package EzPhp\Console\Command
  */
-final class MigrateStatusCommand implements CommandInterface
+final readonly class MigrateStatusCommand implements CommandInterface
 {
     /**
      * MigrateStatusCommand Constructor
      *
      * @param Migrator $migrator
      */
-    public function __construct(private readonly Migrator $migrator)
+    public function __construct(private Migrator $migrator)
     {
     }
 

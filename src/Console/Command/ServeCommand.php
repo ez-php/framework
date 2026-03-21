@@ -14,14 +14,14 @@ use EzPhp\Console\Input;
  *
  * @package EzPhp\Console\Command
  */
-final class ServeCommand implements CommandInterface
+final readonly class ServeCommand implements CommandInterface
 {
     /**
      * ServeCommand Constructor
      *
      * @param string $publicPath Absolute path to the public/ directory.
      */
-    public function __construct(private readonly string $publicPath)
+    public function __construct(private string $publicPath)
     {
     }
 

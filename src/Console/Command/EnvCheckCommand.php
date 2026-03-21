@@ -15,14 +15,14 @@ use EzPhp\Console\CommandInterface;
  *
  * @package EzPhp\Console\Command
  */
-final class EnvCheckCommand implements CommandInterface
+final readonly class EnvCheckCommand implements CommandInterface
 {
     /**
      * EnvCheckCommand Constructor
      *
      * @param string $envExamplePath Absolute path to the .env.example file.
      */
-    public function __construct(private readonly string $envExamplePath)
+    public function __construct(private string $envExamplePath)
     {
     }
 

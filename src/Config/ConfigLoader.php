@@ -11,14 +11,14 @@ use EzPhp\Exceptions\ConfigException;
  *
  * @package EzPhp\Config
  */
-final class ConfigLoader
+final readonly class ConfigLoader
 {
     /**
      * ConfigLoader Constructor
      *
      * @param string|null $configPath
      */
-    public function __construct(private readonly ?string $configPath = null)
+    public function __construct(private ?string $configPath = null)
     {
     }
 
