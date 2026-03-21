@@ -9,6 +9,7 @@ use EzPhp\Application\CoreServiceProviders;
 use EzPhp\Config\Config;
 use EzPhp\Config\ConfigLoader;
 use EzPhp\Config\ConfigServiceProvider;
+use EzPhp\Console\Command\EnvCheckCommand;
 use EzPhp\Console\Command\ListCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
 use EzPhp\Console\Command\MakeMiddlewareCommand;
@@ -70,6 +71,7 @@ use Tests\DatabaseTestCase;
 #[UsesClass(MakeProviderCommand::class)]
 #[UsesClass(ServeCommand::class)]
 #[UsesClass(TinkerCommand::class)]
+#[UsesClass(EnvCheckCommand::class)]
 #[UsesClass(ListCommand::class)]
 final class ConsoleServiceProviderTest extends DatabaseTestCase
 {
