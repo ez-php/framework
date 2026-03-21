@@ -19,10 +19,13 @@ use EzPhp\Console\Command\MigrateCommand;
 use EzPhp\Console\Command\MigrateFreshCommand;
 use EzPhp\Console\Command\MigrateRollbackCommand;
 use EzPhp\Console\Command\MigrateStatusCommand;
+use EzPhp\Console\Command\ScheduleRunCommand;
 use EzPhp\Console\Command\ServeCommand;
 use EzPhp\Console\Command\TinkerCommand;
 use EzPhp\Console\Console;
 use EzPhp\Console\ConsoleServiceProvider;
+use EzPhp\Console\Schedule\ScheduledCommand;
+use EzPhp\Console\Schedule\Scheduler;
 use EzPhp\Container\Container;
 use EzPhp\Database\Database;
 use EzPhp\Database\DatabaseServiceProvider;
@@ -73,6 +76,9 @@ use Tests\DatabaseTestCase;
 #[UsesClass(TinkerCommand::class)]
 #[UsesClass(EnvCheckCommand::class)]
 #[UsesClass(ListCommand::class)]
+#[UsesClass(ScheduleRunCommand::class)]
+#[UsesClass(Scheduler::class)]
+#[UsesClass(ScheduledCommand::class)]
 final class ConsoleServiceProviderTest extends DatabaseTestCase
 {
     /**
@@ -124,5 +130,27 @@ final class ConsoleServiceProviderTest extends DatabaseTestCase
         $this->assertStringContainsString('make:middleware', $output);
         $this->assertStringContainsString('make:provider', $output);
         $this->assertStringContainsString('tinker', $output);
+        $this->assertStringContainsString('schedule:run', $output);
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function test_scheduler_is_bound_in_container(): void
+    {
+        $scheduler = $this->app()->make(Scheduler::class);
+
+        $this->assertInstanceOf(Scheduler::class, $scheduler);
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function test_schedule_run_command_is_registered(): void
+    {
+        $this->assertInstanceOf(
+            ScheduleRunCommand::class,
+            $this->app()->make(ScheduleRunCommand::class),
+        );
     }
 }

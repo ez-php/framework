@@ -15,8 +15,10 @@ use EzPhp\Console\Command\MigrateCommand;
 use EzPhp\Console\Command\MigrateFreshCommand;
 use EzPhp\Console\Command\MigrateRollbackCommand;
 use EzPhp\Console\Command\MigrateStatusCommand;
+use EzPhp\Console\Command\ScheduleRunCommand;
 use EzPhp\Console\Command\ServeCommand;
 use EzPhp\Console\Command\TinkerCommand;
+use EzPhp\Console\Schedule\Scheduler;
 use EzPhp\Migration\Migrator;
 use EzPhp\ServiceProvider\ServiceProvider;
 
@@ -32,6 +34,17 @@ final class ConsoleServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(Scheduler::class, function (): Scheduler {
+            return new Scheduler();
+        });
+
+        $this->app->bind(ScheduleRunCommand::class, function (Application $app): ScheduleRunCommand {
+            return new ScheduleRunCommand(
+                $app->make(Scheduler::class),
+                fn (): Console => $app->make(Console::class),
+            );
+        });
+
         $this->app->bind(MigrateCommand::class, function (Application $app): MigrateCommand {
             return new MigrateCommand($app->make(Migrator::class));
         });
@@ -97,6 +110,8 @@ final class ConsoleServiceProvider extends ServiceProvider
                 $userCommand = $app->make($class);
                 $commands[] = $userCommand;
             }
+
+            $commands[] = $app->make(ScheduleRunCommand::class);
 
             $listCommand = new ListCommand($commands);
 

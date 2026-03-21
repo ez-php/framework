@@ -161,19 +161,23 @@ src/
 │   ├── ConfigLoader.php              — Scans config/*.php and returns keyed array
 │   └── ConfigServiceProvider.php    — Binds ConfigLoader and Config to the container
 ├── Console/
-│   ├── ConsoleServiceProvider.php    — Registers Console and all built-in commands
-│   └── Command/
-│       ├── MakeControllerCommand.php — Scaffolds a controller class in src/Controllers/
-│       ├── MakeMigrationCommand.php  — Creates a timestamped migration stub
-│       ├── MakeMiddlewareCommand.php — Scaffolds a middleware class in src/Middleware/
-│       ├── MakeProviderCommand.php   — Scaffolds a service provider in src/Providers/
-│       ├── MigrateCommand.php        — Runs all pending migrations
-│       ├── MigrateRollbackCommand.php — Rolls back the last migration batch
-│       ├── MigrateFreshCommand.php   — Rolls back all migrations and re-runs them from scratch
-│       ├── MigrateStatusCommand.php  — Shows the status of all migrations (pending / ran)
-│       ├── ServeCommand.php          — Starts the built-in PHP web server
-│       ├── TinkerCommand.php         — Opens an interactive REPL with the application bootstrapped (requires psy/psysh)
-│       └── ListCommand.php           — Lists all available commands
+│   ├── ConsoleServiceProvider.php    — Registers Console, Scheduler, and all built-in commands
+│   ├── Command/
+│   │   ├── MakeControllerCommand.php — Scaffolds a controller class in src/Controllers/
+│   │   ├── MakeMigrationCommand.php  — Creates a timestamped migration stub
+│   │   ├── MakeMiddlewareCommand.php — Scaffolds a middleware class in src/Middleware/
+│   │   ├── MakeProviderCommand.php   — Scaffolds a service provider in src/Providers/
+│   │   ├── MigrateCommand.php        — Runs all pending migrations
+│   │   ├── MigrateRollbackCommand.php — Rolls back the last migration batch
+│   │   ├── MigrateFreshCommand.php   — Rolls back all migrations and re-runs them from scratch
+│   │   ├── MigrateStatusCommand.php  — Shows the status of all migrations (pending / ran)
+│   │   ├── ScheduleRunCommand.php    — Runs all due scheduled commands (trigger with system cron)
+│   │   ├── ServeCommand.php          — Starts the built-in PHP web server
+│   │   ├── TinkerCommand.php         — Opens an interactive REPL with the application bootstrapped (requires psy/psysh)
+│   │   └── ListCommand.php           — Lists all available commands
+│   └── Schedule/
+│       ├── Scheduler.php             — Registry of ScheduledCommands; command() adds entries; dueCommands() filters by time
+│       └── ScheduledCommand.php      — A command + frequency predicate; everyMinute/hourly/daily/weekly/monthly
 ├── Container/
 │   └── Container.php                 — DI container with singleton cache and autowiring
 ├── Database/
