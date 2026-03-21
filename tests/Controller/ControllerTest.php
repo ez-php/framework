@@ -11,7 +11,6 @@ use EzPhp\Http\Response;
 use EzPhp\Validation\ConditionalRule;
 use EzPhp\Validation\RuleInterface;
 use EzPhp\Validation\ValidationException;
-use EzPhp\Validation\Validator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
@@ -23,10 +22,6 @@ use Tests\TestCase;
  */
 #[CoversClass(Controller::class)]
 #[UsesClass(HttpException::class)]
-#[UsesClass(Request::class)]
-#[UsesClass(ValidationException::class)]
-#[UsesClass(Validator::class)]
-#[UsesClass(ConditionalRule::class)]
 final class ControllerTest extends TestCase
 {
     private ConcreteController $controller;

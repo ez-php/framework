@@ -7,7 +7,6 @@ namespace Tests\Console\Command;
 use EzPhp\Config\ConfigLoader;
 use EzPhp\Console\Command\ConfigCacheCommand;
 use EzPhp\Console\Command\ConfigClearCommand;
-use EzPhp\Console\Output;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
@@ -20,7 +19,6 @@ use Tests\TestCase;
 #[CoversClass(ConfigCacheCommand::class)]
 #[CoversClass(ConfigClearCommand::class)]
 #[UsesClass(ConfigLoader::class)]
-#[UsesClass(Output::class)]
 final class ConfigCommandsTest extends TestCase
 {
     /** @var string */

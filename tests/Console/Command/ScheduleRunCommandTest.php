@@ -6,7 +6,6 @@ namespace Tests\Console\Command;
 
 use EzPhp\Console\Command\ScheduleRunCommand;
 use EzPhp\Console\Console;
-use EzPhp\Console\Output;
 use EzPhp\Console\Schedule\ScheduledCommand;
 use EzPhp\Console\Schedule\Scheduler;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -21,8 +20,6 @@ use Tests\TestCase;
 #[CoversClass(ScheduleRunCommand::class)]
 #[UsesClass(Scheduler::class)]
 #[UsesClass(ScheduledCommand::class)]
-#[UsesClass(Output::class)]
-#[UsesClass(Console::class)]
 final class ScheduleRunCommandTest extends TestCase
 {
     /**
