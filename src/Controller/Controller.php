@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace EzPhp\Controller;
 
 use EzPhp\Exceptions\HttpException;
+use EzPhp\Http\Request;
 use EzPhp\Http\Response;
 use EzPhp\Http\ResponseFactory;
+use EzPhp\Validation\ConditionalRule;
+use EzPhp\Validation\RuleInterface;
+use EzPhp\Validation\ValidationException;
+use EzPhp\Validation\Validator;
 
 /**
  * Class Controller
@@ -59,6 +64,29 @@ abstract class Controller
     protected function redirect(string $url, int $status = 302): Response
     {
         return ResponseFactory::redirect($url, $status);
+    }
+
+    /**
+     * Validate the given request data against the given rules.
+     *
+     * Runs $request->all() through the Validator and throws a ValidationException
+     * on failure, which the DefaultExceptionHandler converts to a 422 response.
+     * Returns the merged query + body array on success so callers can use the
+     * validated data directly.
+     *
+     * Requires ez-php/validation to be installed.
+     *
+     * @param Request                                                          $request The current HTTP request.
+     * @param array<string, string|list<string|RuleInterface|ConditionalRule>> $rules   Validation rules keyed by field name.
+     *
+     * @return array<string, mixed>
+     * @throws ValidationException When validation fails.
+     */
+    protected function validate(Request $request, array $rules): array
+    {
+        Validator::make($request->all(), $rules)->validate();
+
+        return $request->all();
     }
 
     /**

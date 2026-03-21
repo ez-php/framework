@@ -6,7 +6,12 @@ namespace Tests\Controller;
 
 use EzPhp\Controller\Controller;
 use EzPhp\Exceptions\HttpException;
+use EzPhp\Http\Request;
 use EzPhp\Http\Response;
+use EzPhp\Validation\ConditionalRule;
+use EzPhp\Validation\RuleInterface;
+use EzPhp\Validation\ValidationException;
+use EzPhp\Validation\Validator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
@@ -18,6 +23,10 @@ use Tests\TestCase;
  */
 #[CoversClass(Controller::class)]
 #[UsesClass(HttpException::class)]
+#[UsesClass(Request::class)]
+#[UsesClass(ValidationException::class)]
+#[UsesClass(Validator::class)]
+#[UsesClass(ConditionalRule::class)]
 final class ControllerTest extends TestCase
 {
     private ConcreteController $controller;
@@ -121,6 +130,47 @@ final class ControllerTest extends TestCase
         $this->assertSame(422, $caught->getStatusCode());
         $this->assertSame('Unprocessable', $caught->getMessage());
     }
+
+    // ── validate ─────────────────────────────────────────────────────────────
+
+    /**
+     * @return void
+     */
+    public function test_validate_returns_all_data_on_success(): void
+    {
+        $request = new Request(method: 'POST', uri: '/', body: ['name' => 'Alice']);
+
+        $data = $this->controller->callValidate($request, ['name' => 'required|string']);
+
+        $this->assertSame(['name' => 'Alice'], $data);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_validate_throws_validation_exception_on_failure(): void
+    {
+        $request = new Request(method: 'POST', uri: '/');
+
+        $this->expectException(ValidationException::class);
+
+        $this->controller->callValidate($request, ['name' => 'required']);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_validate_exception_contains_field_errors(): void
+    {
+        $request = new Request(method: 'POST', uri: '/');
+
+        try {
+            $this->controller->callValidate($request, ['email' => 'required|email']);
+            $this->fail('Expected ValidationException');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('email', $e->errors());
+        }
+    }
 }
 
 /**
@@ -174,5 +224,16 @@ class ConcreteController extends Controller
     public function callAbort(int $status, string $message = ''): never
     {
         $this->abort($status, $message);
+    }
+
+    /**
+     * @param Request                                                          $request
+     * @param array<string, string|list<string|RuleInterface|ConditionalRule>> $rules
+     *
+     * @return array<string, mixed>
+     */
+    public function callValidate(Request $request, array $rules): array
+    {
+        return $this->validate($request, $rules);
     }
 }

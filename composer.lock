@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ea0292d710a4f28fe927e82ad69143ac",
+    "content-hash": "6286bdd81278dfc8c9ae84710a017c57",
     "packages": [
         {
             "name": "ez-php/console",
@@ -292,6 +292,68 @@
                 "source": "https://github.com/ez-php/i18n"
             },
             "time": "2026-03-21T15:34:04+00:00"
+        },
+        {
+            "name": "ez-php/validation",
+            "version": "0.6.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ez-php/validation.git",
+                "reference": "849f4b12eae0a1cff85982e2d05c1266f9df4de1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ez-php/validation/zipball/849f4b12eae0a1cff85982e2d05c1266f9df4de1",
+                "reference": "849f4b12eae0a1cff85982e2d05c1266f9df4de1",
+                "shasum": ""
+            },
+            "require": {
+                "ez-php/contracts": "0.*",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "ez-php/docker": "0.*",
+                "ez-php/i18n": "0.*",
+                "ez-php/testing": "0.*",
+                "friendsofphp/php-cs-fixer": "^3.94",
+                "phpstan/phpstan": "^2.1",
+                "phpstan/phpstan-deprecation-rules": "^2.0",
+                "phpstan/phpstan-strict-rules": "^2.0",
+                "phpunit/phpunit": "^13.0"
+            },
+            "suggest": {
+                "ez-php/i18n": "Required for localised validation error messages via Translator."
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "EzPhp\\Validation\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andreas Uretschnig",
+                    "email": "andreas.uretschnig@gmail.com"
+                }
+            ],
+            "description": "Validation module for the ez-php framework — rule-based validator with database-backed unique/exists rules and optional i18n support",
+            "homepage": "https://github.com/ez-php/validation",
+            "keywords": [
+                "ez-php",
+                "framework",
+                "php",
+                "validation",
+                "validator"
+            ],
+            "support": {
+                "issues": "https://github.com/ez-php/validation/issues",
+                "source": "https://github.com/ez-php/validation"
+            },
+            "time": "2026-03-21T16:16:48+00:00"
         }
     ],
     "packages-dev": [
