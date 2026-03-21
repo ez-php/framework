@@ -43,6 +43,50 @@ $response = $app->handle(\EzPhp\Http\RequestFactory::fromGlobals());
 (new \EzPhp\Http\ResponseEmitter())->emit($response);
 ```
 
+## Routing
+
+### Basic routes
+
+```php
+$router->get('/users', fn (Request $r): Response => ...);
+$router->post('/users', [UserController::class, 'store']);
+$router->put('/users/{id}', fn (Request $r): Response => ...);
+$router->patch('/users/{id}', fn (Request $r): Response => ...);
+$router->delete('/users/{id}', fn (Request $r): Response => ...);
+```
+
+### Route groups
+
+```php
+$router->group('/admin', function (Router $r): void {
+    $r->get('/dashboard', fn (): Response => ...);
+    $r->get('/users', fn (): Response => ...);
+}, middleware: [AuthMiddleware::class]);
+```
+
+### Named routes and URL generation
+
+```php
+$router->get('/users/{id}', fn (): Response => ...)->name('users.show');
+
+$url = $router->route('users.show', ['id' => 42]); // '/users/42'
+```
+
+### HTTP method override (`_method`)
+
+HTML forms only support `GET` and `POST`. To send `PUT`, `PATCH`, or `DELETE` from a form, add a hidden `_method` field to a `POST` form:
+
+```html
+<form method="POST" action="/users/42">
+    <input type="hidden" name="_method" value="DELETE">
+    <!-- … -->
+</form>
+```
+
+The router reads `_method` from the parsed request body and overrides the HTTP method before route matching.
+
+> **Security note:** `_method` is only evaluated for `POST` requests. Because it is read from the parsed body (`$_POST`), it is only effective when the form is submitted as `application/x-www-form-urlencoded` or `multipart/form-data`. JSON requests and requests with other content types are **not** affected.
+
 ## Optional modules
 
 - [ez-php/orm](https://github.com/ez-php/orm) — Active Record ORM with query builder and schema builder
