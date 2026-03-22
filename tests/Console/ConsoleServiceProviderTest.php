@@ -12,6 +12,7 @@ use EzPhp\Config\ConfigServiceProvider;
 use EzPhp\Config\ConfigValidator;
 use EzPhp\Console\Command\ConfigCacheCommand;
 use EzPhp\Console\Command\ConfigClearCommand;
+use EzPhp\Console\Command\DoctorCommand;
 use EzPhp\Console\Command\EnvCheckCommand;
 use EzPhp\Console\Command\ListCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
@@ -80,6 +81,7 @@ use Tests\DatabaseTestCase;
 #[UsesClass(TinkerCommand::class)]
 #[UsesClass(ConfigCacheCommand::class)]
 #[UsesClass(ConfigClearCommand::class)]
+#[UsesClass(DoctorCommand::class)]
 #[UsesClass(EnvCheckCommand::class)]
 #[UsesClass(ListCommand::class)]
 #[UsesClass(ScheduleRunCommand::class)]
@@ -112,6 +114,7 @@ final class ConsoleServiceProviderTest extends DatabaseTestCase
         $this->assertInstanceOf(MakeProviderCommand::class, $this->app()->make(MakeProviderCommand::class));
         $this->assertInstanceOf(ServeCommand::class, $this->app()->make(ServeCommand::class));
         $this->assertInstanceOf(TinkerCommand::class, $this->app()->make(TinkerCommand::class));
+        $this->assertInstanceOf(DoctorCommand::class, $this->app()->make(DoctorCommand::class));
     }
 
     /**
@@ -139,6 +142,7 @@ final class ConsoleServiceProviderTest extends DatabaseTestCase
         $this->assertStringContainsString('make:provider', $output);
         $this->assertStringContainsString('tinker', $output);
         $this->assertStringContainsString('schedule:run', $output);
+        $this->assertStringContainsString('doctor', $output);
     }
 
     /**

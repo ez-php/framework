@@ -8,6 +8,7 @@ use EzPhp\Application\Application;
 use EzPhp\Config\ConfigLoader;
 use EzPhp\Console\Command\ConfigCacheCommand;
 use EzPhp\Console\Command\ConfigClearCommand;
+use EzPhp\Console\Command\DoctorCommand;
 use EzPhp\Console\Command\EnvCheckCommand;
 use EzPhp\Console\Command\ListCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
@@ -92,6 +93,10 @@ final class ConsoleServiceProvider extends ServiceProvider
             return new EnvCheckCommand($app->basePath('.env.example'));
         });
 
+        $this->app->bind(DoctorCommand::class, function (Application $app): DoctorCommand {
+            return new DoctorCommand($app->basePath('.env.example'));
+        });
+
         $this->app->bind(ConfigCacheCommand::class, function (Application $app): ConfigCacheCommand {
             return new ConfigCacheCommand(
                 $app->make(ConfigLoader::class),
@@ -119,6 +124,7 @@ final class ConsoleServiceProvider extends ServiceProvider
                 $app->make(MakeProviderCommand::class),
                 $app->make(TinkerCommand::class),
                 $app->make(EnvCheckCommand::class),
+                $app->make(DoctorCommand::class),
             ];
 
             foreach ($app->getCommands() as $class) {
