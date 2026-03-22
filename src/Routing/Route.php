@@ -64,6 +64,12 @@ final class Route
      */
     public function where(string $param, string $pattern): self
     {
+        if (@preg_match('#' . $pattern . '#', '') === false) {
+            throw new \InvalidArgumentException(
+                "Invalid regex pattern for route parameter '$param': $pattern"
+            );
+        }
+
         $this->constraints[$param] = $pattern;
         return $this;
     }

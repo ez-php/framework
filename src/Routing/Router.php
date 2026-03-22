@@ -162,10 +162,12 @@ final class Router
         $this->groupPrefix = $previousPrefix . $prefix;
         $this->groupMiddleware = array_merge($previousMiddleware, $middleware);
 
-        $callback($this);
-
-        $this->groupPrefix = $previousPrefix;
-        $this->groupMiddleware = $previousMiddleware;
+        try {
+            $callback($this);
+        } finally {
+            $this->groupPrefix = $previousPrefix;
+            $this->groupMiddleware = $previousMiddleware;
+        }
     }
 
     /**

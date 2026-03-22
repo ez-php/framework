@@ -526,6 +526,54 @@ final class RouterTest extends TestCase
         $this->assertSame([], $publicRoute->getMiddleware());
     }
 
+    // --- Group state restored after exception ---
+
+    /**
+     * @return void
+     */
+    public function test_group_prefix_restored_after_callback_throws(): void
+    {
+        $router = new Router();
+
+        try {
+            $router->group('/api', function (Router $r): void {
+                $r->get('/users', fn () => 'users');
+                throw new \RuntimeException('callback error');
+            });
+        } catch (\RuntimeException) {
+            // expected
+        }
+
+        // Route registered after the failed group must not inherit /api prefix
+        $router->get('/health', fn () => 'ok');
+        $route = $router->retrieveRoute(new Request('GET', '/health'));
+        $this->assertInstanceOf(Route::class, $route);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_group_middleware_restored_after_callback_throws(): void
+    {
+        /** @var class-string<MiddlewareInterface> $mw */
+        $mw = MiddlewareInterface::class;
+
+        $router = new Router();
+
+        try {
+            $router->group('/api', function (Router $r): void {
+                throw new \RuntimeException('callback error');
+            }, [$mw]);
+        } catch (\RuntimeException) {
+            // expected
+        }
+
+        // Route registered after the failed group must not inherit group middleware
+        $router->get('/public', fn () => 'public');
+        $public = $router->retrieveRoute(new Request('GET', '/public'));
+        $this->assertSame([], $public->getMiddleware());
+    }
+
     // --- Redirect-Routes ---
 
     /**
@@ -953,6 +1001,31 @@ final class RouterTest extends TestCase
         $response = $route->run($request);
 
         $this->assertSame('any-value', $response->body());
+    }
+
+    // --- where() rejects invalid regex patterns ---
+
+    /**
+     * @return void
+     */
+    public function test_where_throws_on_invalid_regex_pattern(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/id/');
+
+        $router = new Router();
+        $router->get('/users/{id}', fn () => 'ok')->where('id', '[');
+    }
+
+    /**
+     * @return void
+     */
+    public function test_where_throws_on_invalid_regex_pattern_for_optional_param(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $router = new Router();
+        $router->get('/posts/{slug?}', fn () => 'ok')->where('slug', '(unclosed');
     }
 
     // --- Fallback Route (item 29) ---
