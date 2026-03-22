@@ -112,6 +112,10 @@ final class Container
      */
     public function make(string $class, array $overrides = []): object
     {
+        if (trim($class) === '') {
+            throw new ContainerException('Class name must not be empty.');
+        }
+
         if (!class_exists($class) && !interface_exists($class)) {
             throw new ContainerException("Class '$class' does not exist");
         }

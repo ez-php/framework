@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Migration;
 
 use EzPhp\Database\Database;
+use EzPhp\Migration\MigrationException;
 use EzPhp\Migration\Migrator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -17,6 +18,7 @@ use Throwable;
  * @package Tests\Migration
  */
 #[CoversClass(Migrator::class)]
+#[CoversClass(MigrationException::class)]
 #[UsesClass(Database::class)]
 final class MigratorTest extends TestCase
 {
@@ -299,6 +301,75 @@ final class MigratorTest extends TestCase
     {
         $status = $this->migrator->status();
         $this->assertSame([], $status);
+    }
+
+    /**
+     * @param string $filename
+     * @param string $upSql
+     *
+     * @return void
+     */
+    private function createMigrationFileWithFailingDown(string $filename, string $upSql): void
+    {
+        file_put_contents($this->path . '/' . $filename, <<<'PHP'
+            <?php
+            return new class implements \EzPhp\Migration\MigrationInterface {
+                public function up(\PDO $pdo): void { $pdo->exec('CREATE_SQL'); }
+                public function down(\PDO $pdo): void {
+                    throw new \RuntimeException('down() failed intentionally');
+                }
+            };
+            PHP);
+
+        // Replace placeholder with actual SQL
+        $content = file_get_contents($this->path . '/' . $filename);
+        assert(is_string($content));
+        file_put_contents(
+            $this->path . '/' . $filename,
+            str_replace('CREATE_SQL', $upSql, $content),
+        );
+    }
+
+    /**
+     * @return void
+     * @throws Throwable
+     */
+    public function test_rollback_throws_migration_exception_when_down_fails(): void
+    {
+        $this->createMigrationFileWithFailingDown(
+            '0001_create_users_table.php',
+            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
+        );
+
+        $this->migrator->migrate();
+
+        $this->expectException(MigrationException::class);
+        $this->expectExceptionMessage('0001_create_users_table.php');
+
+        $this->migrator->rollback();
+    }
+
+    /**
+     * @return void
+     * @throws Throwable
+     */
+    public function test_rollback_leaves_migration_tracked_when_down_fails(): void
+    {
+        $this->createMigrationFileWithFailingDown(
+            '0001_create_users_table.php',
+            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
+        );
+
+        $this->migrator->migrate();
+
+        try {
+            $this->migrator->rollback();
+        } catch (MigrationException) {
+            // expected
+        }
+
+        $status = $this->migrator->status();
+        $this->assertSame('Ran', $status[0]['status']);
     }
 
     /**

@@ -138,10 +138,16 @@ final class Migrator
 
         foreach ($ran as $file) {
             $migration = $this->loadMigration($file);
-            $this->db->transaction(function () use ($migration, $file): void {
+            try {
                 $migration->down($this->db->getPdo());
-                $this->db->query('DELETE FROM migrations WHERE migration = ?', [$file]);
-            });
+            } catch (Throwable $e) {
+                throw new MigrationException(
+                    "Failed to roll back migration '{$file}': " . $e->getMessage(),
+                    0,
+                    $e,
+                );
+            }
+            $this->db->query('DELETE FROM migrations WHERE migration = ?', [$file]);
         }
 
         return $ran;

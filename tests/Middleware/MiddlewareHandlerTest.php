@@ -187,6 +187,27 @@ final class MiddlewareHandlerTest extends TestCase
     /**
      * @return void
      */
+    public function test_duplicate_priority_entries_are_deduplicated(): void
+    {
+        $container = new Container();
+        $container->bind(PrefixAMiddleware::class);
+        $container->bind(PrefixBMiddleware::class);
+
+        $handler = new MiddlewareHandler($container);
+        $handler->add(PrefixAMiddleware::class);
+        $handler->add(PrefixBMiddleware::class);
+        // A appears twice — should be treated as if listed once
+        $handler->setPriority([PrefixAMiddleware::class, PrefixAMiddleware::class, PrefixBMiddleware::class]);
+
+        $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
+
+        // Deterministic: A wraps B wraps handler
+        $this->assertSame('A>B>handler', $response->body());
+    }
+
+    /**
+     * @return void
+     */
     public function test_no_priority_preserves_original_order(): void
     {
         $container = new Container();

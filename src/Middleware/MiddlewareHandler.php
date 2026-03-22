@@ -82,7 +82,7 @@ final class MiddlewareHandler
      */
     public function setPriority(array $priority): void
     {
-        $this->priority = $priority;
+        $this->priority = array_values(array_unique($priority));
     }
 
     /**
