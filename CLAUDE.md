@@ -303,7 +303,6 @@ Thin PDO wrapper. Not a DBAL. The ORM and query builder live in `ez-php/orm`.
 
 - `query(sql, bindings)` — Positional bindings with type detection (null/bool/int/string)
 - `transaction(callable)` — Auto-rollback on exception; returns callable's return value
-- `table(name)` — Returns a `QueryBuilder` from `ez-php/orm` (cross-package bridge point)
 
 ---
 
@@ -334,7 +333,7 @@ Thin PDO wrapper. Not a DBAL. The ORM and query builder live in `ez-php/orm`.
 - **`Application::bind()` wraps callables** — Ensures the Application is always injected into user bindings, decoupling the user from the Container API.
 - **Router does not execute middleware** — Separation of concerns: `Router::retrieveRoute()` only resolves; `MiddlewareHandler` executes.
 - **Database is intentionally minimal** — No query builder, no schema builder in this package. Those belong in `ez-php/orm`.
-- **`Database::table()` depends on `ez-php/orm`** — The only cross-module dependency in the core. Acceptable as ORM is a sibling package in the monorepo.
+- **`Database` has no `table()` method** — A `table()` shortcut that returned an ORM `QueryBuilder` was considered but deliberately not implemented. Adding it would create a runtime dependency from the framework core on `ez-php/orm`, which violates module-boundary rules and is not declared in `composer.json`. Code that needs a `QueryBuilder` must resolve `ez-php/orm`'s `QueryBuilder` directly (e.g. via the container or a service provider). If a future bridge is needed, implement a `QueryBuilderFactoryInterface` in `ez-php/contracts` and bind it in `DatabaseServiceProvider`.
 - **Migrations use raw PDO** — `up(PDO)` / `down(PDO)` to keep migrations dependency-free; they must not rely on the ORM or Database class.
 - **`CorsMiddleware` is a concrete helper** — Provided as a convenience; not part of the routing or middleware infrastructure.
 

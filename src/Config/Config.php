@@ -27,6 +27,11 @@ final readonly class Config implements ConfigInterface
     }
 
     /**
+     * Retrieve a config value by dot-notation key, or $default when the key is absent.
+     *
+     * Missing key convention: returns $default (null by default) when any segment of
+     * the dot-path does not exist. Never throws.
+     *
      * @param string $key
      * @param mixed  $default
      *
