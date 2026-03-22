@@ -370,6 +370,23 @@ final class RouterTest extends TestCase
     /**
      * @return void
      */
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_named_route_generates_url_strips_literal_preceding_unprovided_optional(): void
+    {
+        $router = new Router();
+        $router->get('/users/{id?}/posts/{postId?}', fn () => 'ok')->name('user.posts');
+
+        // Both provided — full URL
+        $this->assertSame('/users/123/posts/456', $router->route('user.posts', ['id' => '123', 'postId' => '456']));
+        // Only id provided — /posts literal must be removed because postId is absent
+        $this->assertSame('/users/123', $router->route('user.posts', ['id' => '123']));
+        // Neither provided — base literal stays
+        $this->assertSame('/users', $router->route('user.posts'));
+    }
+
     public function test_named_route_throws_for_unknown_name(): void
     {
         $router = new Router();

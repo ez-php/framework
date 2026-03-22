@@ -217,22 +217,91 @@ final class Route
     }
 
     /**
+     * Generate a URL for this route by substituting the given parameter values.
+     *
+     * Optional parameters ({param?}) that are not provided — together with any
+     * literal segments that immediately precede them and have become "dangling"
+     * (i.e. all segments to their right are removed) — are stripped from the
+     * generated URL from right to left.
+     *
+     * A literal is only stripped when:
+     *   (a) every segment to its right has already been removed, AND
+     *   (b) there is at least one optional segment to its left (filled or not).
+     *
+     * Condition (b) prevents base-path literals (e.g. /users in /users/{id?})
+     * from being removed when no parameters are provided at all; only literals
+     * that sit between optional parameters can ever be stripped.
+     *
      * @param array<string, string> $params
      *
      * @return string
      */
     public function generateUrl(array $params): string
     {
-        $url = $this->path;
+        $rawSegments = explode('/', $this->path);
+        $n = count($rawSegments);
 
-        foreach ($params as $key => $value) {
-            $quoted = preg_quote($key, '/');
-            $url = (string) preg_replace('/\{' . $quoted . '\?\}/', $value, $url);
-            $url = (string) preg_replace('/\{' . $quoted . '\}/', $value, $url);
+        // Track which segments are optional and whether they are filled.
+        $isOptional = array_fill(0, $n, false);
+        $removed = array_fill(0, $n, false);
+
+        foreach ($rawSegments as $i => $token) {
+            if (preg_match('/^\{([a-zA-Z_][a-zA-Z0-9_]*)\?\}$/', $token, $m)) {
+                $isOptional[$i] = true;
+                if (!array_key_exists($m[1], $params)) {
+                    $removed[$i] = true;
+                }
+            }
         }
 
-        // Remove any remaining optional segments that were not provided
-        $url = (string) preg_replace('/\/\{[^}]+\?\}/', '', $url);
+        // Propagate removal to dangling literals (right-to-left).
+        for ($i = $n - 1; $i >= 0; $i--) {
+            if ($isOptional[$i] || preg_match('/^\{[a-zA-Z_][a-zA-Z0-9_]*\}$/', $rawSegments[$i])) {
+                // Optional params were handled above; required params are never removed.
+                continue;
+            }
+
+            // Only process literal segments.
+            $allRightRemoved = true;
+            for ($j = $i + 1; $j < $n; $j++) {
+                if (!$removed[$j]) {
+                    $allRightRemoved = false;
+                    break;
+                }
+            }
+
+            if (!$allRightRemoved) {
+                continue;
+            }
+
+            // Remove this literal only when there is any optional to its left.
+            // A literal between two optional params (e.g. /posts in /users/{id?}/posts/{slug?})
+            // becomes dangling when all optionals to its right are removed.
+            for ($j = 0; $j < $i; $j++) {
+                if ($isOptional[$j]) {
+                    $removed[$i] = true;
+                    break;
+                }
+            }
+        }
+
+        // Build the URL from all non-removed segments.
+        $parts = [];
+        foreach ($rawSegments as $i => $token) {
+            if ($removed[$i]) {
+                continue;
+            }
+
+            if (preg_match('/^\{([a-zA-Z_][a-zA-Z0-9_]*)\?\}$/', $token, $m)) {
+                $parts[] = (string) ($params[$m[1]] ?? '');
+            } elseif (preg_match('/^\{([a-zA-Z_][a-zA-Z0-9_]*)\}$/', $token, $m)) {
+                $parts[] = (string) ($params[$m[1]] ?? $token);
+            } else {
+                $parts[] = $token;
+            }
+        }
+
+        $url = implode('/', $parts);
 
         return $url !== '' ? $url : '/';
     }
