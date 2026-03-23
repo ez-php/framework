@@ -1,6 +1,6 @@
 {
   "name": "ez-php/framework",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Lightweight PHP framework core — dependency injection, routing, middleware, and database migrations",
   "type": "library",
   "license": "MIT",
