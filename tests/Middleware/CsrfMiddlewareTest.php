@@ -333,4 +333,40 @@ final class CsrfMiddlewareTest extends TestCase
             );
         }
     }
+
+    /**
+     * `_token` present but not a string (e.g. array via form manipulation) → 403.
+     *
+     * @return void
+     */
+    public function test_rejects_when_token_input_is_array(): void
+    {
+        $router = new Router();
+        $router->post('/submit', fn () => 'ok');
+
+        $middleware = $this->makeMiddleware($router, $this->makeStore());
+
+        $request = new Request('POST', '/submit', body: ['_token' => ['nested', 'array']]);
+        $response = $middleware->handle($request, fn (Request $r): Response => new Response('ok'));
+
+        $this->assertSame(403, $response->status());
+    }
+
+    /**
+     * X-CSRF-TOKEN header present but not a string → 403.
+     *
+     * @return void
+     */
+    public function test_rejects_when_token_header_is_non_string(): void
+    {
+        $router = new Router();
+        $router->post('/submit', fn () => 'ok');
+
+        $middleware = $this->makeMiddleware($router, $this->makeStore());
+
+        $request = new Request('POST', '/submit', headers: ['x-csrf-token' => ['array', 'value']]);
+        $response = $middleware->handle($request, fn (Request $r): Response => new Response('ok'));
+
+        $this->assertSame(403, $response->status());
+    }
 }

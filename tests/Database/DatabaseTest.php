@@ -118,4 +118,83 @@ final class DatabaseTest extends TestCase
         $result = $this->db->transaction(fn (): string => 'ok');
         $this->assertSame('ok', $result);
     }
+
+    // ── type binding ──────────────────────────────────────────────────────────
+
+    /**
+     * null is bound with PDO::PARAM_NULL — stored as NULL, returned as null.
+     *
+     * @return void
+     */
+    public function test_query_binds_null(): void
+    {
+        $this->db->query('CREATE TABLE t (val TEXT)');
+        $this->db->query('INSERT INTO t (val) VALUES (?)', [null]);
+
+        $rows = $this->db->query('SELECT val FROM t WHERE val IS NULL');
+
+        $this->assertCount(1, $rows);
+        $this->assertNull($rows[0]['val']);
+    }
+
+    /**
+     * true is bound with PDO::PARAM_BOOL — SQLite stores 1.
+     *
+     * @return void
+     */
+    public function test_query_binds_bool_true(): void
+    {
+        $this->db->query('CREATE TABLE t (val INTEGER)');
+        $this->db->query('INSERT INTO t (val) VALUES (?)', [true]);
+
+        $rows = $this->db->query('SELECT val FROM t WHERE val = 1');
+
+        $this->assertCount(1, $rows);
+    }
+
+    /**
+     * false is bound with PDO::PARAM_BOOL — SQLite stores 0.
+     *
+     * @return void
+     */
+    public function test_query_binds_bool_false(): void
+    {
+        $this->db->query('CREATE TABLE t (val INTEGER)');
+        $this->db->query('INSERT INTO t (val) VALUES (?)', [false]);
+
+        $rows = $this->db->query('SELECT val FROM t WHERE val = 0');
+
+        $this->assertCount(1, $rows);
+    }
+
+    /**
+     * Negative integers are bound with PDO::PARAM_INT and round-trip correctly.
+     *
+     * @return void
+     */
+    public function test_query_binds_negative_int(): void
+    {
+        $this->db->query('CREATE TABLE t (val INTEGER)');
+        $this->db->query('INSERT INTO t (val) VALUES (?)', [-42]);
+
+        $rows = $this->db->query('SELECT val FROM t WHERE val = ?', [-42]);
+
+        $this->assertCount(1, $rows);
+        $this->assertSame(-42, $rows[0]['val']);
+    }
+
+    /**
+     * Floats are cast to string and bound with PDO::PARAM_STR.
+     *
+     * @return void
+     */
+    public function test_query_binds_float_as_string(): void
+    {
+        $this->db->query('CREATE TABLE t (val TEXT)');
+        $this->db->query('INSERT INTO t (val) VALUES (?)', [1.5]);
+
+        $rows = $this->db->query('SELECT val FROM t');
+
+        $this->assertSame('1.5', $rows[0]['val']);
+    }
 }
