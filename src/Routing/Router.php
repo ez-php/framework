@@ -21,7 +21,9 @@ use InvalidArgumentException;
 final class Router
 {
     /**
-     * @var Route[]
+     * Routes partitioned by HTTP method for O(1) method lookup.
+     *
+     * @var array<string, list<Route>>
      */
     private array $routes = [];
 
@@ -124,8 +126,8 @@ final class Router
         $fullPath = $this->groupPrefix . $path;
         $method = strtoupper($method);
 
-        foreach ($this->routes as $existing) {
-            if ($existing->getMethod() === $method && $existing->getPath() === $fullPath) {
+        foreach ($this->routes[$method] ?? [] as $existing) {
+            if ($existing->getPath() === $fullPath) {
                 throw new InvalidArgumentException(
                     "Duplicate route: $method $fullPath is already registered."
                 );
@@ -142,7 +144,7 @@ final class Router
             $route->middleware($middleware);
         }
 
-        $this->routes[] = $route;
+        $this->routes[$method][] = $route;
 
         return $route;
     }
@@ -303,9 +305,11 @@ final class Router
      */
     public function route(string $name, array $params = []): string
     {
-        foreach ($this->routes as $route) {
-            if ($route->getName() === $name) {
-                return $route->generateUrl($params);
+        foreach ($this->routes as $methodRoutes) {
+            foreach ($methodRoutes as $route) {
+                if ($route->getName() === $name) {
+                    return $route->generateUrl($params);
+                }
             }
         }
 
@@ -374,7 +378,7 @@ final class Router
             }
         }
 
-        foreach ($this->routes as $route) {
+        foreach ($this->routes[$request->method()] ?? [] as $route) {
             if (($matched = $route->matches($request)) !== null) {
                 return $matched;
             }

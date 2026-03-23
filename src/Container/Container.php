@@ -41,6 +41,14 @@ final class Container
     private array $tags = [];
 
     /**
+     * ReflectionClass cache — keyed by class name to avoid re-instantiating
+     * Reflection on every container build call for the same class.
+     *
+     * @var array<class-string, ReflectionClass<object>>
+     */
+    private array $reflectionCache = [];
+
+    /**
      * @template T of object
      * @param class-string<T> $class
      * @param class-string|callable|null $value
@@ -220,7 +228,11 @@ final class Container
      */
     private function build(string $class, array $overrides = []): object
     {
-        $reflection = new ReflectionClass($class);
+        if (!isset($this->reflectionCache[$class])) {
+            $this->reflectionCache[$class] = new ReflectionClass($class);
+        }
+
+        $reflection = $this->reflectionCache[$class];
 
         if (!$reflection->isInstantiable()) {
             $kind = $reflection->isInterface() ? 'Interface' : 'Abstract class';
