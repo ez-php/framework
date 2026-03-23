@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Routing;
 
 use EzPhp\Contracts\ContainerInterface;
+use EzPhp\Exceptions\NotFoundException;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
 use EzPhp\Http\Response;
@@ -14,6 +15,7 @@ use EzPhp\Routing\Route;
 use EzPhp\Routing\Router;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
 
 /**
@@ -24,6 +26,7 @@ use Tests\TestCase;
 #[CoversClass(Router::class)]
 #[CoversClass(Route::class)]
 #[CoversClass(RouteException::class)]
+#[UsesClass(NotFoundException::class)]
 final class RouterTest extends TestCase
 {
     /**
@@ -1122,6 +1125,79 @@ final class RouterTest extends TestCase
         $route = $router->retrieveRoute(new Request('GET', '/any'));
         $this->assertSame('second', $route->run(new Request('GET', '/any'))->body());
     }
+
+    // ── model bindings ────────────────────────────────────────────────────────
+
+    /**
+     * Default resolver calls <ModelClass>::find($id) and returns the bound object.
+     *
+     * @return void
+     * @throws RouteException
+     */
+    public function test_model_default_resolver_returns_found_model(): void
+    {
+        $router = new Router();
+        $router->get('/users/{user}', fn (Request $r): string => 'ok');
+        $router->model('user', ModelBindingStub::class);
+
+        $request = new Request('GET', '/users/42');
+        $route = $router->retrieveRoute($request);
+
+        $this->assertInstanceOf(ModelBindingStub::class, $route->getParams()['user']);
+        /** @var ModelBindingStub $model */
+        $model = $route->getParams()['user'];
+        $this->assertSame('42', $model->id);
+    }
+
+    /**
+     * A custom resolver closure is used instead of the default find().
+     *
+     * @return void
+     * @throws RouteException
+     */
+    public function test_model_custom_resolver_is_used(): void
+    {
+        $router = new Router();
+        $router->get('/posts/{post}', fn (Request $r): string => 'ok');
+        $router->model('post', ModelBindingStub::class, fn (string $id): object => new ModelBindingStub('custom-' . $id));
+
+        $request = new Request('GET', '/posts/7');
+        $route = $router->retrieveRoute($request);
+
+        /** @var ModelBindingStub $model */
+        $model = $route->getParams()['post'];
+        $this->assertSame('custom-7', $model->id);
+    }
+
+    /**
+     * Resolver returning null throws NotFoundException.
+     *
+     * @return void
+     */
+    public function test_model_resolver_returning_null_throws_not_found(): void
+    {
+        $router = new Router();
+        $router->get('/items/{item}', fn (Request $r): string => 'ok');
+        $router->model('item', ModelBindingStub::class, fn (string $id): ?object => null);
+
+        $this->expectException(NotFoundException::class);
+        $router->retrieveRoute(new Request('GET', '/items/99'));
+    }
+
+    /**
+     * Default resolver returns null (model not found) → NotFoundException.
+     *
+     * @return void
+     */
+    public function test_model_default_resolver_null_throws_not_found(): void
+    {
+        $router = new Router();
+        $router->get('/things/{thing}', fn (Request $r): string => 'ok');
+        $router->model('thing', ModelBindingNotFoundStub::class);
+
+        $this->expectException(NotFoundException::class);
+        $router->retrieveRoute(new Request('GET', '/things/1'));
+    }
 }
 
 /**
@@ -1266,5 +1342,50 @@ class ArrayDispatchTestContainer implements ContainerInterface
      */
     public function instance(string $abstract, object $instance): void
     {
+    }
+}
+
+/**
+ * Minimal model stub whose static find() returns a new instance with the given id.
+ *
+ * @package Tests\Routing
+ */
+class ModelBindingStub
+{
+    /**
+     * ModelBindingStub Constructor
+     *
+     * @param string $id
+     */
+    public function __construct(public readonly string $id = '')
+    {
+    }
+
+    /**
+     * @param string $id
+     *
+     * @return self|null
+     */
+    public static function find(string $id): ?self
+    {
+        return new self($id);
+    }
+}
+
+/**
+ * Stub whose static find() always returns null — simulates a missing model.
+ *
+ * @package Tests\Routing
+ */
+class ModelBindingNotFoundStub
+{
+    /**
+     * @param string $id
+     *
+     * @return static|null
+     */
+    public static function find(string $id): ?static
+    {
+        return null;
     }
 }

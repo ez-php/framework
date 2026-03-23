@@ -212,6 +212,104 @@ final class CsrfMiddlewareTest extends TestCase
     /**
      * @return void
      */
+    public function test_rate_limiter_returns_429_when_limit_exceeded(): void
+    {
+        $router = new Router();
+        $router->post('/login', fn () => 'ok');
+
+        $limiter = new class () implements \EzPhp\Middleware\CsrfRateLimiterInterface {
+            public function attempt(string $key, int $maxAttempts, int $decaySeconds): bool
+            {
+                return false;
+            }
+
+            public function tooManyAttempts(string $key, int $maxAttempts): bool
+            {
+                return true;
+            }
+        };
+
+        $middleware = new CsrfMiddleware($router, $this->makeStore(), $limiter);
+        $request = new Request('POST', '/login', server: ['REMOTE_ADDR' => '1.2.3.4']);
+
+        $response = $middleware->handle($request, fn (Request $r): Response => new Response('ok'));
+
+        $this->assertSame(429, $response->status());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_rate_limiter_records_attempt_and_returns_403_when_under_limit(): void
+    {
+        $router = new Router();
+        $router->post('/login', fn () => 'ok');
+
+        $attempts = 0;
+        $limiter = new class ($attempts) implements \EzPhp\Middleware\CsrfRateLimiterInterface {
+            public function __construct(public int &$attempts)
+            {
+            }
+
+            public function attempt(string $key, int $maxAttempts, int $decaySeconds): bool
+            {
+                $this->attempts++;
+                return true;
+            }
+
+            public function tooManyAttempts(string $key, int $maxAttempts): bool
+            {
+                return false;
+            }
+        };
+
+        $middleware = new CsrfMiddleware($router, $this->makeStore(), $limiter);
+        $request = new Request('POST', '/login', server: ['REMOTE_ADDR' => '1.2.3.4']);
+
+        $response = $middleware->handle($request, fn (Request $r): Response => new Response('ok'));
+
+        $this->assertSame(403, $response->status());
+        $this->assertSame(1, $attempts);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_rate_limiter_not_called_when_token_is_valid(): void
+    {
+        $router = new Router();
+        $router->post('/login', fn () => 'ok');
+
+        $called = false;
+        $limiter = new class ($called) implements \EzPhp\Middleware\CsrfRateLimiterInterface {
+            public function __construct(public bool &$called)
+            {
+            }
+
+            public function attempt(string $key, int $maxAttempts, int $decaySeconds): bool
+            {
+                $this->called = true;
+                return true;
+            }
+
+            public function tooManyAttempts(string $key, int $maxAttempts): bool
+            {
+                $this->called = true;
+                return false;
+            }
+        };
+
+        $middleware = new CsrfMiddleware($router, $this->makeStore(), $limiter);
+        $request = new Request('POST', '/login', body: ['_token' => self::TOKEN]);
+
+        $middleware->handle($request, fn (Request $r): Response => new Response('ok'));
+
+        $this->assertFalse($called);
+    }
+
+    /**
+     * @return void
+     */
     public function test_put_and_patch_and_delete_require_token(): void
     {
         foreach (['PUT', 'PATCH', 'DELETE'] as $method) {

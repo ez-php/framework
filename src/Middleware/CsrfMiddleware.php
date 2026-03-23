@@ -21,12 +21,18 @@ use EzPhp\Routing\Router;
  * check this flag — if the route is not found (404), CSRF is skipped (the
  * request will fail at the routing stage anyway).
  *
+ * Optional rate limiting on token mismatches:
+ *   Pass a CsrfRateLimiterInterface instance to throttle repeated failures.
+ *   On limit exceeded the middleware returns 429 instead of 403.
+ *   Alternatively, place ThrottleMiddleware globally before CsrfMiddleware to
+ *   throttle all requests regardless of token validity.
+ *
  * Usage (in bootstrap or service provider):
  *   $app->middleware(CsrfMiddleware::class);
  *
  * @package EzPhp\Middleware
  */
-final readonly class CsrfMiddleware implements MiddlewareInterface
+final class CsrfMiddleware implements MiddlewareInterface
 {
     /**
      * HTTP methods that do not mutate state and therefore bypass CSRF.
@@ -38,13 +44,21 @@ final readonly class CsrfMiddleware implements MiddlewareInterface
     /**
      * CsrfMiddleware Constructor
      *
-     * @param Router                  $router     Used to check whether the matched route
-     *                                            is marked as CSRF-exempt via withoutCsrf().
-     * @param CsrfTokenStoreInterface $tokenStore Backing store for the CSRF token.
+     * @param Router                       $router      Used to check whether the matched route
+     *                                                  is marked as CSRF-exempt via withoutCsrf().
+     * @param CsrfTokenStoreInterface      $tokenStore  Backing store for the CSRF token.
+     * @param CsrfRateLimiterInterface|null $rateLimiter Optional rate limiter; when provided,
+     *                                                  token mismatches are recorded and the
+     *                                                  response is 429 once the limit is exceeded.
+     * @param int                          $maxAttempts  Maximum CSRF failures per window (default: 5).
+     * @param int                          $decaySeconds Window length in seconds (default: 60).
      */
     public function __construct(
-        private Router $router,
-        private CsrfTokenStoreInterface $tokenStore,
+        private readonly Router $router,
+        private readonly CsrfTokenStoreInterface $tokenStore,
+        private readonly ?CsrfRateLimiterInterface $rateLimiter = null,
+        private readonly int $maxAttempts = 5,
+        private readonly int $decaySeconds = 60,
     ) {
     }
 
@@ -68,10 +82,36 @@ final readonly class CsrfMiddleware implements MiddlewareInterface
         $requestToken = $this->extractToken($request);
 
         if (!hash_equals($sessionToken, $requestToken)) {
-            return new Response('CSRF token mismatch.', 403);
+            return $this->handleTokenMismatch($request);
         }
 
         return $next($request);
+    }
+
+    /**
+     * Handle a CSRF token mismatch: apply rate limiting when configured,
+     * then return 429 on limit exceeded or 403 otherwise.
+     *
+     * @param Request $request
+     *
+     * @return Response
+     */
+    private function handleTokenMismatch(Request $request): Response
+    {
+        if ($this->rateLimiter === null) {
+            return new Response('CSRF token mismatch.', 403);
+        }
+
+        $ip = $request->server('REMOTE_ADDR', 'unknown');
+        $key = 'csrf_mismatch:' . (is_string($ip) ? $ip : 'unknown');
+
+        if ($this->rateLimiter->tooManyAttempts($key, $this->maxAttempts)) {
+            return new Response('Too Many Requests.', 429);
+        }
+
+        $this->rateLimiter->attempt($key, $this->maxAttempts, $this->decaySeconds);
+
+        return new Response('CSRF token mismatch.', 403);
     }
 
     /**
