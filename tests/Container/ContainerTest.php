@@ -104,6 +104,18 @@ final class ContainerTest extends TestCase
      * @return void
      * @throws ReflectionException
      */
+    public function test_make_throws_descriptive_exception_for_empty_class_name_with_overrides(): void
+    {
+        $container = new Container();
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage('Class name must not be empty.');
+        $container->make('', ['param' => 'value']); // @phpstan-ignore-line
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
     public function test_autowiring_resolves_class_dependency(): void
     {
         $container = new Container();
