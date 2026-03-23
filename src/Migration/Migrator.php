@@ -136,19 +136,21 @@ final class Migrator
             'migration',
         );
 
-        foreach ($ran as $file) {
-            $migration = $this->loadMigration($file);
-            try {
-                $migration->down($this->db->getPdo());
-            } catch (Throwable $e) {
-                throw new MigrationException(
-                    "Failed to roll back migration '{$file}': " . $e->getMessage(),
-                    0,
-                    $e,
-                );
+        $this->db->transaction(function () use ($ran): void {
+            foreach ($ran as $file) {
+                $migration = $this->loadMigration($file);
+                try {
+                    $migration->down($this->db->getPdo());
+                } catch (Throwable $e) {
+                    throw new MigrationException(
+                        "Failed to roll back migration '{$file}': " . $e->getMessage(),
+                        0,
+                        $e,
+                    );
+                }
+                $this->db->query('DELETE FROM migrations WHERE migration = ?', [$file]);
             }
-            $this->db->query('DELETE FROM migrations WHERE migration = ?', [$file]);
-        }
+        });
 
         return $ran;
     }

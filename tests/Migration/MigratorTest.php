@@ -373,6 +373,42 @@ final class MigratorTest extends TestCase
     }
 
     /**
+     * Rollback order is DESC by filename: 0002 is processed first (succeeds),
+     * 0001 is processed second (throws). Without a batch-level transaction,
+     * 0002 would be deleted from the migrations table before the exception,
+     * leaving the table in an inconsistent state. With the batch transaction
+     * the entire rollback is undone and both entries remain tracked.
+     *
+     * @return void
+     * @throws Throwable
+     */
+    public function test_rollback_is_atomic_when_second_down_fails(): void
+    {
+        $this->createMigrationFile(
+            '0002_create_posts_table.php',
+            'CREATE TABLE posts (id INTEGER PRIMARY KEY, title TEXT)',
+            'DROP TABLE posts',
+        );
+        $this->createMigrationFileWithFailingDown(
+            '0001_create_users_table.php',
+            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
+        );
+
+        $this->migrator->migrate();
+
+        try {
+            $this->migrator->rollback();
+        } catch (MigrationException) {
+            // expected — second down() intentionally throws
+        }
+
+        // Both entries must still be tracked; the partial delete of 0002 was rolled back
+        $status = $this->migrator->status();
+        $this->assertSame('Ran', $status[0]['status']); // 0001
+        $this->assertSame('Ran', $status[1]['status']); // 0002
+    }
+
+    /**
      * @return void
      * @throws Throwable
      */
