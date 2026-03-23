@@ -320,18 +320,10 @@ final class Router
      */
     public function retrieveRoute(Request $request): Route
     {
-        // HTTP method override for HTML forms (POST with _method field)
-        if ($request->method() === 'POST') {
-            $override = $request->input('_method');
-            if (is_string($override) && $override !== '') {
-                $request = $request->withMethod(strtoupper($override));
-            }
-        }
+        $matched = $this->matchRoute($request);
 
-        foreach ($this->routes as $route) {
-            if (($matched = $route->matches($request)) !== null) {
-                return $this->applyModelBindings($matched);
-            }
+        if ($matched !== null) {
+            return $this->applyModelBindings($matched);
         }
 
         if ($this->fallbackRoute !== null) {
@@ -357,6 +349,24 @@ final class Router
      */
     public function isCsrfExemptRoute(Request $request): bool
     {
+        $matched = $this->matchRoute($request);
+
+        return $matched !== null && $matched->isCsrfExempt();
+    }
+
+    /**
+     * Apply HTTP method override and find the first matching route.
+     *
+     * Handles the `_method` POST field override (for HTML form PUT/PATCH/DELETE),
+     * then iterates over registered routes and returns the first match, or null.
+     *
+     * @param Request $request
+     *
+     * @return Route|null
+     */
+    private function matchRoute(Request $request): ?Route
+    {
+        // HTTP method override for HTML forms (POST with _method field)
         if ($request->method() === 'POST') {
             $override = $request->input('_method');
             if (is_string($override) && $override !== '') {
@@ -366,11 +376,11 @@ final class Router
 
         foreach ($this->routes as $route) {
             if (($matched = $route->matches($request)) !== null) {
-                return $matched->isCsrfExempt();
+                return $matched;
             }
         }
 
-        return false;
+        return null;
     }
 
     /**
