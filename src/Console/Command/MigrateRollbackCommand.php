@@ -11,6 +11,7 @@ use Throwable;
 /**
  * Class MigrateRollbackCommand
  *
+ * @internal
  * @package EzPhp\Console\Command
  */
 final readonly class MigrateRollbackCommand implements CommandInterface

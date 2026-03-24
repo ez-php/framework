@@ -13,6 +13,7 @@ use EzPhp\Console\CommandInterface;
  * Bootstraps the application and opens an interactive PsySH REPL with $app pre-set.
  * Requires psy/psysh to be installed (composer require --dev psy/psysh).
  *
+ * @internal
  * @package EzPhp\Console\Command
  */
 final readonly class TinkerCommand implements CommandInterface

@@ -13,6 +13,7 @@ use EzPhp\Console\CommandInterface;
  * actual environment. Prints OK/MISSING for each key and returns exit code 1
  * if any key is missing, 0 if all are present.
  *
+ * @internal
  * @package EzPhp\Console\Command
  */
 final readonly class EnvCheckCommand implements CommandInterface

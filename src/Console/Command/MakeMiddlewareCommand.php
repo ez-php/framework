@@ -9,6 +9,7 @@ use EzPhp\Console\CommandInterface;
 /**
  * Class MakeMiddlewareCommand
  *
+ * @internal
  * @package EzPhp\Console\Command
  */
 final readonly class MakeMiddlewareCommand implements CommandInterface

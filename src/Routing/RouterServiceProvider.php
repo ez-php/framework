@@ -10,6 +10,7 @@ use ReflectionException;
 /**
  * Class RouterServiceProvider
  *
+ * @internal
  * @package EzPhp\Routing
  */
 final class RouterServiceProvider extends ServiceProvider

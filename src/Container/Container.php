@@ -163,6 +163,8 @@ final class Container
      * Register a contextual binding factory.
      * Called internally by {@see ContextualBindingBuilder::give()}.
      *
+     * @internal Called by ContextualBindingBuilder; use $container->when()->needs()->give() instead.
+     *
      * @param string   $concrete
      * @param string   $abstract
      * @param callable $factory

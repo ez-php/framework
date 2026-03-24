@@ -15,6 +15,7 @@ use EzPhp\Routing\RouterServiceProvider;
 /**
  * Class CoreServiceProviders
  *
+ * @internal
  * @package EzPhp\Application
  */
 final class CoreServiceProviders

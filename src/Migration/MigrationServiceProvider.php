@@ -11,6 +11,7 @@ use EzPhp\ServiceProvider\ServiceProvider;
 /**
  * Class MigrationServiceProvider
  *
+ * @internal
  * @package EzPhp\Migration
  */
 final class MigrationServiceProvider extends ServiceProvider

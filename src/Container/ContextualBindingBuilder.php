@@ -14,6 +14,7 @@ namespace EzPhp\Container;
  *             ->needs(LoggerInterface::class)
  *             ->give(FileLogger::class);
  *
+ * @internal
  * @package EzPhp\Container
  */
 final class ContextualBindingBuilder

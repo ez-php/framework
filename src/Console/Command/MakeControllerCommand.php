@@ -9,6 +9,7 @@ use EzPhp\Console\CommandInterface;
 /**
  * Class MakeControllerCommand
  *
+ * @internal
  * @package EzPhp\Console\Command
  */
 final readonly class MakeControllerCommand implements CommandInterface

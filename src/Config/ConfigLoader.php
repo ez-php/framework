@@ -9,6 +9,7 @@ use EzPhp\Exceptions\ConfigException;
 /**
  * Class ConfigLoader
  *
+ * @internal
  * @package EzPhp\Config
  */
 final readonly class ConfigLoader

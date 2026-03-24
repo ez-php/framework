@@ -12,6 +12,7 @@ use EzPhp\Routing\Route;
 /**
  * Class MiddlewareHandler
  *
+ * @internal
  * @package EzPhp\Middleware
  */
 final class MiddlewareHandler

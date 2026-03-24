@@ -10,6 +10,7 @@ use EzPhp\Console\Input;
 /**
  * Class MakeMigrationCommand
  *
+ * @internal
  * @package EzPhp\Console\Command
  */
 final readonly class MakeMigrationCommand implements CommandInterface

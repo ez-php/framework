@@ -317,6 +317,8 @@ final class Router
     }
 
     /**
+     * @internal Called by MiddlewareHandler during request dispatch; not part of the public router API.
+     *
      * @param Request $request
      *
      * @return Route
@@ -346,6 +348,8 @@ final class Router
      *
      * Returns false for unmatched requests (they will produce a 404 in the main
      * dispatch; the CSRF check is irrelevant).
+     *
+     * @internal Called by CsrfMiddleware; not part of the public router API.
      *
      * @param Request $request
      *

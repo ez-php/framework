@@ -23,6 +23,7 @@ use EzPhp\Console\Schedule\Scheduler;
  * ScheduleRunCommand needs Console. The closure resolves Console lazily at
  * handle() time, after the singleton is already cached in the container.
  *
+ * @internal
  * @package EzPhp\Console\Command
  */
 final class ScheduleRunCommand implements CommandInterface

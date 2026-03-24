@@ -17,6 +17,7 @@ use EzPhp\Console\Output;
  * Usage:
  *   ez config:clear
  *
+ * @internal
  * @package EzPhp\Console\Command
  */
 final class ConfigClearCommand implements CommandInterface

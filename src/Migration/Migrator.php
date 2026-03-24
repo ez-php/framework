@@ -10,6 +10,7 @@ use Throwable;
 /**
  * Class Migrator
  *
+ * @internal
  * @package EzPhp\Migration
  */
 final class Migrator

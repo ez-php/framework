@@ -13,6 +13,7 @@ use Throwable;
  *
  * Rolls back all executed migrations and re-runs them from scratch.
  *
+ * @internal
  * @package EzPhp\Console\Command
  */
 final readonly class MigrateFreshCommand implements CommandInterface

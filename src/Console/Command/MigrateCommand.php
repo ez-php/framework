@@ -11,6 +11,7 @@ use Throwable;
 /**
  * Class MigrateCommand
  *
+ * @internal
  * @package EzPhp\Console\Command
  */
 final readonly class MigrateCommand implements CommandInterface

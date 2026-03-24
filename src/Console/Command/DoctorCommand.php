@@ -16,6 +16,7 @@ use PDOException;
  * - .env.example completeness against the current environment
  * - Database connectivity (if DB_* vars are configured)
  *
+ * @internal
  * @package EzPhp\Console\Command
  */
 final readonly class DoctorCommand implements CommandInterface

@@ -13,6 +13,7 @@ use Throwable;
  * Renders a self-contained HTML debug page for exceptions in development mode.
  * Shows exception class, message, file/line, full stack trace, and request context.
  *
+ * @internal
  * @package EzPhp\Exceptions
  */
 final class DebugHtmlRenderer

@@ -13,6 +13,7 @@ use EzPhp\ServiceProvider\ServiceProvider;
 /**
  * Class ExceptionHandlerServiceProvider
  *
+ * @internal
  * @package EzPhp\Exceptions
  */
 final class ExceptionHandlerServiceProvider extends ServiceProvider

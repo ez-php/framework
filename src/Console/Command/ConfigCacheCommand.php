@@ -22,6 +22,7 @@ use EzPhp\Exceptions\ConfigException;
  * The cache is written to `bootstrap/cache/config.php` relative to the
  * application root. The directory is created automatically if absent.
  *
+ * @internal
  * @package EzPhp\Console\Command
  */
 final class ConfigCacheCommand implements CommandInterface

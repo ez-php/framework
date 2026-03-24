@@ -12,6 +12,7 @@ use EzPhp\Console\Output;
  *
  * Lists all registered console commands with their short description.
  *
+ * @internal
  * @package EzPhp\Console\Command
  */
 final readonly class ListCommand implements CommandInterface

@@ -12,6 +12,7 @@ use EzPhp\Console\Input;
  *
  * Starts the built-in PHP web server pointing at the application's public/ directory.
  *
+ * @internal
  * @package EzPhp\Console\Command
  */
 final readonly class ServeCommand implements CommandInterface

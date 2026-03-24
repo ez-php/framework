@@ -13,6 +13,7 @@ use EzPhp\Migration\Migrator;
  *
  * Shows the status of every migration file: Pending or Ran (with batch number).
  *
+ * @internal
  * @package EzPhp\Console\Command
  */
 final readonly class MigrateStatusCommand implements CommandInterface

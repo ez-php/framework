@@ -11,6 +11,7 @@ use EzPhp\ServiceProvider\ServiceProvider;
 /**
  * Class ConfigServiceProvider
  *
+ * @internal
  * @package EzPhp\Config
  */
 final class ConfigServiceProvider extends ServiceProvider

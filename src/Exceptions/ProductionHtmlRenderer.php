@@ -19,6 +19,7 @@ use EzPhp\I18n\Translator;
  *
  * Custom templates receive a single variable: int $status.
  *
+ * @internal
  * @package EzPhp\Exceptions
  */
 final readonly class ProductionHtmlRenderer

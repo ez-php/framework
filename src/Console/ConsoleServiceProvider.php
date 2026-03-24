@@ -29,6 +29,7 @@ use EzPhp\ServiceProvider\ServiceProvider;
 /**
  * Class ConsoleServiceProvider
  *
+ * @internal
  * @package EzPhp\Console
  */
 final class ConsoleServiceProvider extends ServiceProvider

@@ -86,6 +86,8 @@ final class Route
     }
 
     /**
+     * @internal Called by MiddlewareHandler; not part of the public route API.
+     *
      * @return array<int, class-string<MiddlewareInterface>>
      */
     public function getMiddleware(): array
@@ -168,6 +170,8 @@ final class Route
      * Return a clone of this route with the given resolved params replacing the
      * current raw string params. Used by the Router after applying model bindings.
      *
+     * @internal Called by Router after model binding; not part of the public route API.
+     *
      * @param array<string, mixed> $resolvedParams
      *
      * @return static
@@ -182,6 +186,8 @@ final class Route
     /**
      * Returns a clone of this route with matched params populated,
      * or null if the route does not match the request.
+     *
+     * @internal Called by Router during dispatch; not part of the public route API.
      *
      * @param Request $request
      *
@@ -217,6 +223,8 @@ final class Route
     }
 
     /**
+     * @internal Called by Router::route(); use $router->route(name, params) instead.
+     *
      * Generate a URL for this route by substituting the given parameter values.
      *
      * Optional parameters ({param?}) that are not provided — together with any
@@ -307,6 +315,8 @@ final class Route
     }
 
     /**
+     * @internal Called by MiddlewareHandler; not part of the public route API.
+     *
      * @param Request $request
      *
      * @return Response

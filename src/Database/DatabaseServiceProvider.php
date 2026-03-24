@@ -13,6 +13,7 @@ use EzPhp\ServiceProvider\ServiceProvider;
 /**
  * Class DatabaseServiceProvider
  *
+ * @internal
  * @package EzPhp\Database
  */
 final class DatabaseServiceProvider extends ServiceProvider

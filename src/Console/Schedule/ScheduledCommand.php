@@ -130,6 +130,8 @@ final class ScheduledCommand
     /**
      * Check whether this command is due at the given time.
      *
+     * @internal Called by Scheduler::dueCommands(); not part of the public scheduled command API.
+     *
      * @param DateTimeInterface $time The time to check against (typically the current time).
      *
      * @return bool
