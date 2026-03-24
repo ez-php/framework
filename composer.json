@@ -1,6 +1,6 @@
 {
   "name": "ez-php/framework",
-  "version": "0.9.3",
+  "version": "1.0.0",
   "description": "Lightweight PHP framework core — dependency injection, routing, middleware, and database migrations",
   "type": "library",
   "license": "MIT",
@@ -19,16 +19,16 @@
   "require": {
     "php": "^8.5",
     "ext-pdo": "*",
-    "ez-php/contracts": "0.*",
-    "ez-php/dotenv": "0.*",
-    "ez-php/http": "0.*",
-    "ez-php/console": "0.*",
-    "ez-php/i18n": "0.*",
-    "ez-php/validation": "0.*"
+    "ez-php/contracts": "^1.0",
+    "ez-php/dotenv": "^1.0",
+    "ez-php/http": "^1.0",
+    "ez-php/console": "^1.0",
+    "ez-php/i18n": "^1.0",
+    "ez-php/validation": "^1.0"
   },
   "require-dev": {
-    "ez-php/docker": "0.*",
-    "ez-php/testing-application": "0.*",
+    "ez-php/docker": "^1.0",
+    "ez-php/testing-application": "^1.0",
     "phpunit/phpunit": "^13.0",
     "phpstan/phpstan": "^2.1",
     "friendsofphp/php-cs-fixer": "^3.94",
