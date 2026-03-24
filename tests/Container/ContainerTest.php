@@ -438,6 +438,32 @@ final class ContainerTest extends TestCase
 
         $this->assertSame($a, $b);
     }
+
+    // ─── build() — non-instantiable types ────────────────────────────────────
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_make_throws_for_unbound_interface(): void
+    {
+        $container = new Container();
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage("Interface 'Tests\\Container\\ContainerTestInterface' cannot be instantiated directly.");
+        $container->make(ContainerTestInterface::class);
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_make_throws_for_unbound_abstract_class(): void
+    {
+        $container = new Container();
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage("Abstract class 'Tests\\Container\\AbstractContainerStub' cannot be instantiated directly.");
+        $container->make(AbstractContainerStub::class);
+    }
 }
 
 /**
@@ -637,5 +663,14 @@ class TaggedHandlerB
  * @package Tests\Container
  */
 class TaggedHandlerC
+{
+}
+
+/**
+ * Class AbstractContainerStub
+ *
+ * @package Tests\Container
+ */
+abstract class AbstractContainerStub
 {
 }

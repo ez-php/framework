@@ -1198,6 +1198,86 @@ final class RouterTest extends TestCase
         $this->expectException(NotFoundException::class);
         $router->retrieveRoute(new Request('GET', '/things/1'));
     }
+
+    // ─── Route::getMethod() ───────────────────────────────────────────────────
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_route_get_method_returns_http_method(): void
+    {
+        $router = new Router();
+        $router->get('/ping', fn () => 'pong');
+
+        $route = $router->retrieveRoute(new Request('GET', '/ping'));
+
+        $this->assertSame('GET', $route->getMethod());
+    }
+
+    // ─── Route::withoutCsrf() / isCsrfExempt() ───────────────────────────────
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_route_is_not_csrf_exempt_by_default(): void
+    {
+        $router = new Router();
+        $router->get('/page', fn () => 'ok');
+
+        $route = $router->retrieveRoute(new Request('GET', '/page'));
+
+        $this->assertFalse($route->isCsrfExempt());
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_without_csrf_marks_route_as_exempt(): void
+    {
+        $router = new Router();
+        $router->post('/api/webhook', fn () => 'ok')->withoutCsrf();
+
+        $route = $router->retrieveRoute(new Request('POST', '/api/webhook'));
+
+        $this->assertTrue($route->isCsrfExempt());
+    }
+
+    // ─── Router::isCsrfExemptRoute() ─────────────────────────────────────────
+
+    /**
+     * @return void
+     */
+    public function test_is_csrf_exempt_route_returns_true_for_exempt_route(): void
+    {
+        $router = new Router();
+        $router->post('/api/webhook', fn () => 'ok')->withoutCsrf();
+
+        $this->assertTrue($router->isCsrfExemptRoute(new Request('POST', '/api/webhook')));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_is_csrf_exempt_route_returns_false_for_non_exempt_route(): void
+    {
+        $router = new Router();
+        $router->get('/page', fn () => 'ok');
+
+        $this->assertFalse($router->isCsrfExemptRoute(new Request('GET', '/page')));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_is_csrf_exempt_route_returns_false_for_unmatched_request(): void
+    {
+        $router = new Router();
+
+        $this->assertFalse($router->isCsrfExemptRoute(new Request('GET', '/not-registered')));
+    }
 }
 
 /**
