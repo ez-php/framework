@@ -372,4 +372,35 @@ final class ApplicationTest extends TestCase
 
         $this->assertSame($replacement, $app->make(Router::class));
     }
+
+    // ─── route() — named URL generation ──────────────────────────────────────
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_route_generates_url_for_named_route(): void
+    {
+        $app = new Application();
+        $app->bootstrap();
+
+        $app->make(Router::class)->get('/users/{id}', fn (Request $r): Response => new Response('ok'))->name('user.show');
+
+        $url = $app->route('user.show', ['id' => '42']);
+
+        $this->assertSame('/users/42', $url);
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_route_throws_for_unknown_name(): void
+    {
+        $app = new Application();
+        $app->bootstrap();
+
+        $this->expectException(RouteException::class);
+        $app->route('does.not.exist');
+    }
 }

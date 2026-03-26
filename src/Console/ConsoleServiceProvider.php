@@ -12,9 +12,14 @@ use EzPhp\Console\Command\DoctorCommand;
 use EzPhp\Console\Command\EnvCheckCommand;
 use EzPhp\Console\Command\ListCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
+use EzPhp\Console\Command\MakeEventCommand;
+use EzPhp\Console\Command\MakeListenerCommand;
 use EzPhp\Console\Command\MakeMiddlewareCommand;
 use EzPhp\Console\Command\MakeMigrationCommand;
+use EzPhp\Console\Command\MakeModelCommand;
 use EzPhp\Console\Command\MakeProviderCommand;
+use EzPhp\Console\Command\MakeRequestCommand;
+use EzPhp\Console\Command\MakeTestCommand;
 use EzPhp\Console\Command\MigrateCommand;
 use EzPhp\Console\Command\MigrateFreshCommand;
 use EzPhp\Console\Command\MigrateRollbackCommand;
@@ -82,6 +87,26 @@ final class ConsoleServiceProvider extends ServiceProvider
             return new MakeProviderCommand($app->basePath('src'));
         });
 
+        $this->app->bind(MakeModelCommand::class, function (Application $app): MakeModelCommand {
+            return new MakeModelCommand($app->basePath('app'));
+        });
+
+        $this->app->bind(MakeEventCommand::class, function (Application $app): MakeEventCommand {
+            return new MakeEventCommand($app->basePath('app'));
+        });
+
+        $this->app->bind(MakeListenerCommand::class, function (Application $app): MakeListenerCommand {
+            return new MakeListenerCommand($app->basePath('app'));
+        });
+
+        $this->app->bind(MakeRequestCommand::class, function (Application $app): MakeRequestCommand {
+            return new MakeRequestCommand($app->basePath('app'));
+        });
+
+        $this->app->bind(MakeTestCommand::class, function (Application $app): MakeTestCommand {
+            return new MakeTestCommand($app->basePath('tests'));
+        });
+
         $this->app->bind(ServeCommand::class, function (Application $app): ServeCommand {
             return new ServeCommand($app->basePath('public'));
         });
@@ -123,6 +148,11 @@ final class ConsoleServiceProvider extends ServiceProvider
                 $app->make(MakeControllerCommand::class),
                 $app->make(MakeMiddlewareCommand::class),
                 $app->make(MakeProviderCommand::class),
+                $app->make(MakeModelCommand::class),
+                $app->make(MakeEventCommand::class),
+                $app->make(MakeListenerCommand::class),
+                $app->make(MakeRequestCommand::class),
+                $app->make(MakeTestCommand::class),
                 $app->make(TinkerCommand::class),
                 $app->make(EnvCheckCommand::class),
                 $app->make(DoctorCommand::class),

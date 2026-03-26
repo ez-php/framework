@@ -253,6 +253,27 @@ final class Application implements ContainerInterface
     }
 
     /**
+     * Generate a URL for a named route.
+     *
+     * Delegates to Router::route(). The Router must be bootstrapped (i.e. routes
+     * must have been loaded via RouterServiceProvider::boot()) before calling this.
+     *
+     * Example:
+     *   $app->route('user.show', ['id' => 42]);  // → '/users/42'
+     *
+     * @param string               $name   The route name as registered via ->name('...').
+     * @param array<string, string> $params Named parameter values to substitute into the path.
+     *
+     * @return string
+     * @throws \EzPhp\Exceptions\RouteException When no named route with the given name exists.
+     * @throws ReflectionException
+     */
+    public function route(string $name, array $params = []): string
+    {
+        return $this->make(Router::class)->route($name, $params);
+    }
+
+    /**
      * Register an existing object as a shared instance in the container.
      * Useful in boot() to decorate a previously resolved service.
      *

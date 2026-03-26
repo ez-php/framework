@@ -178,6 +178,11 @@ src/
 │   │   ├── MakeMigrationCommand.php  — Creates a timestamped migration stub
 │   │   ├── MakeMiddlewareCommand.php — Scaffolds a middleware class in src/Middleware/
 │   │   ├── MakeProviderCommand.php   — Scaffolds a service provider in src/Providers/
+│   │   ├── MakeModelCommand.php      — Scaffolds an Active Record model in app/Models/
+│   │   ├── MakeEventCommand.php      — Scaffolds an event class in app/Events/
+│   │   ├── MakeListenerCommand.php   — Scaffolds an event listener in app/Listeners/
+│   │   ├── MakeRequestCommand.php    — Scaffolds a form request class in app/Requests/
+│   │   ├── MakeTestCommand.php       — Scaffolds a test class in tests/ (unit/feature/http)
 │   │   ├── MigrateCommand.php        — Runs all pending migrations
 │   │   ├── MigrateRollbackCommand.php — Rolls back the last migration batch
 │   │   ├── MigrateFreshCommand.php   — Rolls back all migrations and re-runs them from scratch
@@ -261,6 +266,7 @@ Central runtime kernel. Orchestrates the entire request lifecycle.
 - `bind(class, value)` — Delegates to Container; wraps callables transparently
 - `register(ServiceProvider::class)` — Queues a user provider (must be called before bootstrap)
 - `middleware(MiddlewareInterface::class)` — Adds a class-string to the global middleware stack
+- `route(name, params)` → `string` — Generates a URL for a named route; delegates to `Router::route()`
 - `basePath(string)` → `string` — Resolves a path relative to the project root
 
 Bootstrap is **idempotent** — safe to call multiple times; subsequent calls are no-ops.
@@ -274,6 +280,7 @@ Resolution order: cached instance → registered binding → autowire → `Conta
 - Bindings are stored as closures; calling `bind()` with a class-string or null auto-wraps it
 - Autowiring uses `ReflectionClass` to recursively resolve constructor parameters
 - Interfaces and abstract classes **cannot** be autowired — bind them explicitly in a provider
+- **Circular dependency detection** — when `build()` detects a class already in the current resolution stack it throws `ContainerException` with the full dependency chain (e.g. `Circular dependency detected while resolving 'A': A → B → A`)
 
 ---
 
@@ -284,6 +291,7 @@ Resolution order: cached instance → registered binding → autowire → `Conta
 - HTTP method override: POST field `_method` overrides the real method
 - Duplicate route detection on registration
 - `group(prefix, callback)` supports nested prefixes via a stack
+- **Named route URL generation** — `$router->route('user.show', ['id' => 42])` or `$app->route('user.show', ['id' => 42])` returns the URL with parameters substituted; throws `RouteException` if the name is not found. Register names via `->name('...')` on any `Route` returned by `get()`, `post()`, etc.
 
 ---
 
@@ -322,6 +330,56 @@ Thin PDO wrapper. Not a DBAL. The ORM and query builder live in `ez-php/orm`.
 1. **Status mapping:** `RouteException` → 404, everything else → 500
 2. **Response format:** Checks `Accept: application/json` for JSON; otherwise plain text
 3. **Debug mode:** Shows real exception message on 500; production hides it as "Internal Server Error"
+
+---
+
+### CSRF Protection (`src/Middleware/CsrfMiddleware.php`)
+
+`CsrfMiddleware` verifies the `_token` form field (or `X-CSRF-TOKEN` header) on all state-changing requests (POST, PUT, PATCH, DELETE). Routes can opt out with `->withoutCsrf()`.
+
+**Required infrastructure setup:**
+
+`CsrfMiddleware` depends on `CsrfTokenStoreInterface`. The built-in implementation `SessionCsrfTokenStore` reads and writes the token from PHP's native session (`$_SESSION`). The session **must be active** before `CsrfMiddleware` runs.
+
+**Step-by-step setup in a service provider:**
+
+```php
+// 1. Create a middleware that starts the session
+final class SessionStartMiddleware implements MiddlewareInterface
+{
+    public function handle(Request $request, callable $next): Response
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        return $next($request);
+    }
+}
+
+// 2. In a service provider register() method, bind the token store
+$this->app->bind(CsrfTokenStoreInterface::class, SessionCsrfTokenStore::class);
+
+// 3. Register both middleware globally — session start must come first
+$app->middleware(SessionStartMiddleware::class, CsrfMiddleware::class);
+```
+
+**In HTML forms**, include the hidden token field:
+
+```html
+<input type="hidden" name="_token" value="<?= htmlspecialchars($_SESSION['_csrf_token'] ?? '') ?>">
+```
+
+**For AJAX/fetch requests**, send the token in the `X-CSRF-TOKEN` header:
+
+```js
+fetch('/api/data', { headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content } });
+```
+
+**Routes that do not need CSRF** (e.g. API webhooks authenticated via HMAC):
+
+```php
+$router->post('/webhook/stripe', [WebhookController::class, 'handle'])->withoutCsrf();
+```
 
 ---
 

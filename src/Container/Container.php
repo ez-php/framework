@@ -49,6 +49,14 @@ final class Container
     private array $reflectionCache = [];
 
     /**
+     * Resolution stack used for circular-dependency detection.
+     * Keys are class names currently being built; the stack is unwound via finally.
+     *
+     * @var array<string, true>
+     */
+    private array $resolutionStack = [];
+
+    /**
      * @template T of object
      * @param class-string<T> $class
      * @param class-string|callable|null $value
@@ -116,6 +124,7 @@ final class Container
      * @param array<string, mixed> $overrides Named constructor parameter overrides.
      *
      * @return T
+     * @throws ContainerException
      * @throws ReflectionException
      */
     public function make(string $class, array $overrides = []): object
@@ -229,6 +238,33 @@ final class Container
      * @throws ReflectionException
      */
     private function build(string $class, array $overrides = []): object
+    {
+        if (isset($this->resolutionStack[$class])) {
+            $chain = implode(' → ', array_keys($this->resolutionStack)) . ' → ' . $class;
+            throw new ContainerException(
+                "Circular dependency detected while resolving '$class': $chain"
+            );
+        }
+
+        $this->resolutionStack[$class] = true;
+
+        try {
+            return $this->doBuild($class, $overrides);
+        } finally {
+            unset($this->resolutionStack[$class]);
+        }
+    }
+
+    /**
+     * @template T of object
+     * @param class-string<T>      $class
+     * @param array<string, mixed> $overrides Named constructor parameter overrides.
+     *
+     * @return T
+     * @throws ContainerException
+     * @throws ReflectionException
+     */
+    private function doBuild(string $class, array $overrides = []): object
     {
         if (!isset($this->reflectionCache[$class])) {
             $this->reflectionCache[$class] = new ReflectionClass($class);

@@ -439,6 +439,40 @@ final class ContainerTest extends TestCase
         $this->assertSame($a, $b);
     }
 
+    // ─── build() — circular dependency detection ─────────────────────────────
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_make_throws_for_circular_dependency(): void
+    {
+        $container = new Container();
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessageMatches('/Circular dependency detected/');
+        $container->make(CircularA::class);
+    }
+
+    /**
+     * The error message must include the full dependency chain so developers can
+     * identify which classes form the cycle.
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_circular_dependency_exception_contains_chain(): void
+    {
+        $container = new Container();
+
+        try {
+            $container->make(CircularA::class);
+            $this->fail('Expected ContainerException');
+        } catch (ContainerException $e) {
+            $this->assertStringContainsString('CircularA', $e->getMessage());
+            $this->assertStringContainsString('CircularB', $e->getMessage());
+        }
+    }
+
     // ─── build() — non-instantiable types ────────────────────────────────────
 
     /**
@@ -673,4 +707,44 @@ class TaggedHandlerC
  */
 abstract class AbstractContainerStub
 {
+}
+
+/**
+ * Class CircularA
+ *
+ * Used to test circular-dependency detection in the Container.
+ * CircularA → CircularB → CircularA forms the cycle.
+ *
+ * @package Tests\Container
+ */
+class CircularA
+{
+    /**
+     * CircularA Constructor
+     *
+     * @param CircularB $b
+     */
+    public function __construct(public CircularB $b)
+    {
+    }
+}
+
+/**
+ * Class CircularB
+ *
+ * Used to test circular-dependency detection in the Container.
+ * CircularB → CircularA → CircularB forms the cycle.
+ *
+ * @package Tests\Container
+ */
+class CircularB
+{
+    /**
+     * CircularB Constructor
+     *
+     * @param CircularA $a
+     */
+    public function __construct(public CircularA $a)
+    {
+    }
 }
