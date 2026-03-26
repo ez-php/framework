@@ -72,6 +72,34 @@ final class Database implements DatabaseInterface
     }
 
     /**
+     * @param string                   $sql
+     * @param array<int|string, mixed> $bindings
+     *
+     * @return int
+     */
+    public function execute(string $sql, array $bindings = []): int
+    {
+        $stmt = $this->pdo->prepare($sql);
+
+        foreach (array_values($bindings) as $i => $value) {
+            if ($value === null) {
+                $stmt->bindValue($i + 1, $value, PDO::PARAM_NULL);
+            } elseif (is_bool($value)) {
+                $stmt->bindValue($i + 1, $value, PDO::PARAM_BOOL);
+            } elseif (is_int($value)) {
+                $stmt->bindValue($i + 1, $value, PDO::PARAM_INT);
+            } else {
+                /** @var string|float $value */
+                $stmt->bindValue($i + 1, (string) $value, PDO::PARAM_STR);
+            }
+        }
+
+        $stmt->execute();
+
+        return $stmt->rowCount();
+    }
+
+    /**
      * @template T
      *
      * @param callable(): T $fn
