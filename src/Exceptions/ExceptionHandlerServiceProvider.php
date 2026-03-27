@@ -8,6 +8,7 @@ use EzPhp\Application\Application;
 use EzPhp\Config\Config;
 use EzPhp\Contracts\ExceptionHandlerInterface;
 use EzPhp\I18n\Translator;
+use EzPhp\Middleware\DebugToolbarMiddleware;
 use EzPhp\ServiceProvider\ServiceProvider;
 
 /**
@@ -32,5 +33,20 @@ final class ExceptionHandlerServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(ExceptionHandler::class, fn () => $this->app->make(ExceptionHandlerInterface::class));
+    }
+
+    /**
+     * @return void
+     */
+    public function boot(): void
+    {
+        /** @var Application $app */
+        $app = $this->app;
+
+        $debug = (bool) $app->make(Config::class)->get('app.debug', false);
+
+        if ($debug) {
+            $app->middleware(DebugToolbarMiddleware::class);
+        }
     }
 }

@@ -35,6 +35,7 @@ final class DatabaseServiceProvider extends ServiceProvider
             $password = $config->string('db.password', '');
 
             if ($driver === 'sqlite') {
+                ConfigValidator::assertNotEmpty('db.database', $database);
                 $dsn = "sqlite:$database";
 
                 return new Database($dsn, '', '');
@@ -42,6 +43,10 @@ final class DatabaseServiceProvider extends ServiceProvider
 
             $host = $config->string('db.host');
             $port = $config->string('db.port');
+
+            ConfigValidator::assertNotEmpty('db.host', $host);
+            ConfigValidator::assertNotEmpty('db.database', $database);
+            ConfigValidator::assertNotEmpty('db.username', $username);
 
             $dsn = sprintf(
                 'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',

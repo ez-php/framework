@@ -10,6 +10,7 @@ use EzPhp\Console\Command\ConfigCacheCommand;
 use EzPhp\Console\Command\ConfigClearCommand;
 use EzPhp\Console\Command\DoctorCommand;
 use EzPhp\Console\Command\EnvCheckCommand;
+use EzPhp\Console\Command\IdeGenerateCommand;
 use EzPhp\Console\Command\ListCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
 use EzPhp\Console\Command\MakeEventCommand;
@@ -134,6 +135,10 @@ final class ConsoleServiceProvider extends ServiceProvider
             return new ConfigClearCommand($app->basePath('bootstrap/cache/config.php'));
         });
 
+        $this->app->bind(IdeGenerateCommand::class, function (Application $app): IdeGenerateCommand {
+            return new IdeGenerateCommand($app->basePath());
+        });
+
         $this->app->bind(Console::class, function (Application $app): Console {
             /** @var list<CommandInterface> $commands */
             $commands = [
@@ -156,6 +161,7 @@ final class ConsoleServiceProvider extends ServiceProvider
                 $app->make(TinkerCommand::class),
                 $app->make(EnvCheckCommand::class),
                 $app->make(DoctorCommand::class),
+                $app->make(IdeGenerateCommand::class),
             ];
 
             foreach ($app->getCommands() as $class) {

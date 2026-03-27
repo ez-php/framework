@@ -188,8 +188,9 @@ src/
 │   │   ├── MigrateFreshCommand.php   — Rolls back all migrations and re-runs them from scratch
 │   │   ├── MigrateStatusCommand.php  — Shows the status of all migrations (pending / ran)
 │   │   ├── ScheduleRunCommand.php    — Runs all due scheduled commands (trigger with system cron)
-│   │   ├── ServeCommand.php          — Starts the built-in PHP web server
+│   │   ├── ServeCommand.php          — Starts the built-in PHP web server; --watch flag polls for PHP file changes and auto-restarts
 │   │   ├── TinkerCommand.php         — Opens an interactive REPL with the application bootstrapped (requires psy/psysh)
+│   │   ├── IdeGenerateCommand.php    — Generates _ide_helpers.php PHPDoc stubs for installed static façades
 │   │   └── ListCommand.php           — Lists all available commands
 │   └── Schedule/
 │       ├── Scheduler.php             — Registry of ScheduledCommands; command() adds entries; dueCommands() filters by time
@@ -210,6 +211,7 @@ src/
 │   └── RouteException.php            — Thrown when no route matches (default: "Route not found")
 ├── Middleware/
 │   ├── CorsMiddleware.php            — Adds CORS headers; returns 204 for OPTIONS
+│   ├── DebugToolbarMiddleware.php    — Injects HTML debug toolbar into responses when APP_DEBUG=true; registered by ExceptionHandlerServiceProvider
 │   ├── MiddlewareHandler.php         — Builds and executes global + route middleware pipelines
 │   ├── MiddlewareInterface.php       — Contract: handle(Request, callable) → Response
 │   └── TerminableMiddleware.php      — Extension: terminate(Request, Response) → void
@@ -242,6 +244,7 @@ tests/
 ├── Exceptions/DefaultExceptionHandlerTest.php
 ├── Exceptions/ExceptionHandlerServiceProviderTest.php
 ├── Middleware/CorsMiddlewareTest.php
+├── Middleware/DebugToolbarMiddlewareTest.php
 ├── Middleware/MiddlewareHandlerTest.php
 ├── Middleware/TerminableMiddlewareTest.php
 ├── Migration/MigrationServiceProviderTest.php
