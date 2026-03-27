@@ -498,6 +498,113 @@ final class ContainerTest extends TestCase
         $this->expectExceptionMessage("Abstract class 'Tests\\Container\\AbstractContainerStub' cannot be instantiated directly.");
         $container->make(AbstractContainerStub::class);
     }
+
+    // ─── scope() ─────────────────────────────────────────────────────────────
+
+    /**
+     * scope() returns a new Container instance, not the same object.
+     *
+     * @return void
+     */
+    public function test_scope_returns_new_container(): void
+    {
+        $parent = new Container();
+        $child = $parent->scope();
+
+        $this->assertInstanceOf(Container::class, $child);
+        $this->assertNotSame($parent, $child);
+    }
+
+    /**
+     * Bindings registered on the parent are available in the scoped child.
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_scope_inherits_parent_bindings(): void
+    {
+        $parent = new Container();
+        $parent->bind(ContainerTestInterface::class, ContainerTestImplementation::class);
+
+        $child = $parent->scope();
+        $resolved = $child->make(ContainerTestInterface::class);
+
+        $this->assertInstanceOf(ContainerTestImplementation::class, $resolved);
+    }
+
+    /**
+     * Instances resolved in the child scope are not the same objects as those
+     * resolved in the parent — the child starts with an empty instance cache.
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_scope_instances_are_isolated_from_parent(): void
+    {
+        $parent = new Container();
+        $parentInstance = $parent->make(AutowiringService::class);
+
+        $child = $parent->scope();
+        $childInstance = $child->make(AutowiringService::class);
+
+        $this->assertNotSame($parentInstance, $childInstance);
+    }
+
+    /**
+     * Instances inside one scope do not affect a sibling scope.
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_scope_instances_do_not_leak_between_sibling_scopes(): void
+    {
+        $parent = new Container();
+
+        $child1 = $parent->scope();
+        $child2 = $parent->scope();
+
+        $instance1 = $child1->make(AutowiringService::class);
+        $instance2 = $child2->make(AutowiringService::class);
+
+        $this->assertNotSame($instance1, $instance2);
+    }
+
+    /**
+     * Within the same scope, make() still acts as a singleton cache.
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_scope_caches_instances_within_itself(): void
+    {
+        $parent = new Container();
+        $child = $parent->scope();
+
+        $a = $child->make(AutowiringService::class);
+        $b = $child->make(AutowiringService::class);
+
+        $this->assertSame($a, $b);
+    }
+
+    /**
+     * Resolving a service inside a scope does not pollute the parent cache.
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_scope_does_not_pollute_parent_cache(): void
+    {
+        $parent = new Container();
+        $child = $parent->scope();
+
+        $child->make(AutowiringService::class);
+
+        // Parent should resolve its own fresh instance, not the child's
+        $parentInstance = $parent->make(AutowiringService::class);
+        $childInstance = $child->make(AutowiringService::class);
+
+        $this->assertNotSame($parentInstance, $childInstance);
+    }
 }
 
 /**

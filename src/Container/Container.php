@@ -57,6 +57,33 @@ final class Container
     private array $resolutionStack = [];
 
     /**
+     * Create a child (scoped) container that inherits all bindings from this
+     * container but starts with an empty instance cache.
+     *
+     * Instances resolved inside the child scope are stored only in the child —
+     * they never leak back to the parent. This makes it safe to use one child
+     * container per request in multi-tenant or parallel-request scenarios.
+     *
+     * Typical usage:
+     *
+     *   $requestContainer = $container->scope();
+     *   // $requestContainer has the same bindings as $container
+     *   // but every make() creates a fresh instance
+     *
+     * @return static
+     */
+    public function scope(): static
+    {
+        $child = new static();
+        $child->bindings = $this->bindings;
+        $child->contextualBindings = $this->contextualBindings;
+        $child->tags = $this->tags;
+        $child->reflectionCache = $this->reflectionCache;
+
+        return $child;
+    }
+
+    /**
      * @template T of object
      * @param class-string<T> $class
      * @param class-string|callable|null $value
