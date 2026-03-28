@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace EzPhp\Exceptions;
 
-use EzPhp\Http\Request;
+use EzPhp\Http\RequestInterface;
 use Throwable;
 
 /**
@@ -19,12 +19,12 @@ use Throwable;
 final class DebugHtmlRenderer
 {
     /**
-     * @param Throwable $e
-     * @param Request   $request
+     * @param Throwable        $e
+     * @param RequestInterface $request
      *
      * @return string
      */
-    public function render(Throwable $e, Request $request): string
+    public function render(Throwable $e, RequestInterface $request): string
     {
         $class = get_class($e);
         $message = $this->esc($e->getMessage());

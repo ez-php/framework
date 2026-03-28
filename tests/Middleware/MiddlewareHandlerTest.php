@@ -6,6 +6,7 @@ namespace Tests\Middleware;
 
 use EzPhp\Container\Container;
 use EzPhp\Http\Request;
+use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
 use EzPhp\Middleware\MiddlewareHandler;
 use EzPhp\Middleware\MiddlewareInterface;
@@ -280,7 +281,7 @@ final class AppendMiddleware implements MiddlewareInterface
      *
      * @return Response
      */
-    public function handle(Request $request, callable $next): Response
+    public function handle(RequestInterface $request, callable $next): Response
     {
         /** @var Response $response */
         $response = $next($request);
@@ -299,7 +300,7 @@ final class PrefixAMiddleware implements MiddlewareInterface
      *
      * @return Response
      */
-    public function handle(Request $request, callable $next): Response
+    public function handle(RequestInterface $request, callable $next): Response
     {
         /** @var Response $response */
         $response = $next($request);
@@ -318,7 +319,7 @@ final class PrefixBMiddleware implements MiddlewareInterface
      *
      * @return Response
      */
-    public function handle(Request $request, callable $next): Response
+    public function handle(RequestInterface $request, callable $next): Response
     {
         /** @var Response $response */
         $response = $next($request);
@@ -337,7 +338,7 @@ final class ShortCircuitMiddleware implements MiddlewareInterface
      *
      * @return Response
      */
-    public function handle(Request $request, callable $next): Response
+    public function handle(RequestInterface $request, callable $next): Response
     {
         return new Response('short-circuit', 403);
     }

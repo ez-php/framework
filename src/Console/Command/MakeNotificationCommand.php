@@ -7,19 +7,19 @@ namespace EzPhp\Console\Command;
 use EzPhp\Console\CommandInterface;
 
 /**
- * Class MakeMiddlewareCommand
+ * Class MakeNotificationCommand
  *
  * @internal
  * @package EzPhp\Console\Command
  */
-final readonly class MakeMiddlewareCommand implements CommandInterface
+final readonly class MakeNotificationCommand implements CommandInterface
 {
     /**
-     * MakeMiddlewareCommand Constructor
+     * MakeNotificationCommand Constructor
      *
-     * @param string $srcPath
+     * @param string $appPath
      */
-    public function __construct(private string $srcPath)
+    public function __construct(private string $appPath)
     {
     }
 
@@ -28,7 +28,7 @@ final readonly class MakeMiddlewareCommand implements CommandInterface
      */
     public function getName(): string
     {
-        return 'make:middleware';
+        return 'make:notification';
     }
 
     /**
@@ -36,7 +36,7 @@ final readonly class MakeMiddlewareCommand implements CommandInterface
      */
     public function getDescription(): string
     {
-        return 'Create a new middleware class';
+        return 'Create a new notification class';
     }
 
     /**
@@ -44,7 +44,7 @@ final readonly class MakeMiddlewareCommand implements CommandInterface
      */
     public function getHelp(): string
     {
-        return 'Usage: ez make:middleware <ClassName>';
+        return 'Usage: ez make:notification <ClassName>';
     }
 
     /**
@@ -57,11 +57,11 @@ final readonly class MakeMiddlewareCommand implements CommandInterface
         $name = $args[0] ?? null;
 
         if ($name === null || !preg_match('/^[A-Za-z][A-Za-z0-9]*$/', $name)) {
-            fwrite(STDERR, "Usage: ez make:middleware <ClassName>\n");
+            fwrite(STDERR, "Usage: ez make:notification <ClassName>\n");
             return 1;
         }
 
-        $dir = $this->srcPath . DIRECTORY_SEPARATOR . 'Middleware';
+        $dir = $this->appPath . DIRECTORY_SEPARATOR . 'Notifications';
         $filename = "$name.php";
         $fullPath = $dir . DIRECTORY_SEPARATOR . $filename;
 
@@ -70,16 +70,16 @@ final readonly class MakeMiddlewareCommand implements CommandInterface
         }
 
         if (file_exists($fullPath)) {
-            fwrite(STDERR, "Middleware already exists: $filename\n");
+            fwrite(STDERR, "Notification already exists: $filename\n");
             return 1;
         }
 
         if (file_put_contents($fullPath, $this->stub($name)) === false) {
-            fwrite(STDERR, "Failed to create middleware: $filename\n");
+            fwrite(STDERR, "Failed to create notification: $filename\n");
             return 1;
         }
 
-        echo "Created: src/Middleware/$filename\n";
+        echo "Created: app/Notifications/$filename\n";
 
         return 0;
     }
@@ -96,18 +96,26 @@ final readonly class MakeMiddlewareCommand implements CommandInterface
 
             declare(strict_types=1);
 
-            namespace App\\Middleware;
+            namespace App\\Notifications;
 
-            use EzPhp\\Http\\RequestInterface;
-            use EzPhp\\Http\\Response;
-            use EzPhp\\Middleware\\MiddlewareInterface;
+            use EzPhp\\Notification\\NotificationInterface;
 
-            final class $name implements MiddlewareInterface
+            final class $name implements NotificationInterface
             {
-                public function handle(RequestInterface \$request, callable \$next): Response
+                /**
+                 * @return list<string>
+                 */
+                public function via(): array
                 {
-                    /** @var Response */
-                    return \$next(\$request);
+                    return ['mail'];
+                }
+
+                /**
+                 * @return array<string, mixed>
+                 */
+                public function toArray(): array
+                {
+                    return [];
                 }
             }
             PHP;

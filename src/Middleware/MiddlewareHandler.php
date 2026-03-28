@@ -38,6 +38,11 @@ final class MiddlewareHandler
     private array $aliases = [];
 
     /**
+     * @var array<string, list<string>>
+     */
+    private array $groups = [];
+
+    /**
      * MiddlewareHandler Constructor
      *
      * @param Container $container
@@ -72,6 +77,20 @@ final class MiddlewareHandler
     }
 
     /**
+     * Register named middleware groups. A group maps a short name (e.g. 'api') to a
+     * list of middleware class-strings or aliases. Groups are expanded before the
+     * pipeline is built so that route middleware can reference group names.
+     *
+     * @param array<string, list<string>> $groups
+     *
+     * @return void
+     */
+    public function setGroups(array $groups): void
+    {
+        $this->groups = $groups;
+    }
+
+    /**
      * Set the middleware priority order. Middleware appearing earlier in the
      * list will run first, regardless of the order they were added. Middleware
      * not in the priority list retains its original relative order and runs
@@ -96,7 +115,9 @@ final class MiddlewareHandler
      */
     public function handle(Route $route, Request $request): Response
     {
-        $stack = $this->sortByPriority(array_merge($this->middleware, $route->getMiddleware()));
+        $stack = $this->sortByPriority(
+            $this->expandGroups(array_merge($this->middleware, $route->getMiddleware()))
+        );
         $this->resolved = [];
 
         return $this->buildPipeline(
@@ -120,7 +141,11 @@ final class MiddlewareHandler
     {
         $this->resolved = [];
 
-        return $this->buildPipeline($terminal, $this->sortByPriority($this->middleware), 0)($request);
+        return $this->buildPipeline(
+            $terminal,
+            $this->sortByPriority($this->expandGroups($this->middleware)),
+            0,
+        )($request);
     }
 
     /**
@@ -136,7 +161,7 @@ final class MiddlewareHandler
     {
         return $this->buildPipeline(
             fn (Request $r): Response => $route->run($r),
-            $route->getMiddleware(),
+            $this->expandGroups($route->getMiddleware()),
             0,
         )($request);
     }
@@ -157,6 +182,31 @@ final class MiddlewareHandler
                 $middleware->terminate($request, $response);
             }
         }
+    }
+
+    /**
+     * Expand group names in a middleware stack to their constituent entries.
+     * Entries that are not registered group names are passed through unchanged.
+     *
+     * @param array<int, string> $stack
+     *
+     * @return array<int, string>
+     */
+    private function expandGroups(array $stack): array
+    {
+        $result = [];
+
+        foreach ($stack as $entry) {
+            if (isset($this->groups[$entry])) {
+                foreach ($this->groups[$entry] as $class) {
+                    $result[] = $class;
+                }
+            } else {
+                $result[] = $entry;
+            }
+        }
+
+        return $result;
     }
 
     /**

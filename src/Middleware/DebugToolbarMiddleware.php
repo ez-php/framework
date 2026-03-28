@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace EzPhp\Middleware;
 
-use EzPhp\Http\Request;
+use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
 
 /**
@@ -39,12 +39,12 @@ final class DebugToolbarMiddleware implements MiddlewareInterface
     }
 
     /**
-     * @param Request  $request
-     * @param callable $next
+     * @param RequestInterface $request
+     * @param callable         $next
      *
      * @return Response
      */
-    public function handle(Request $request, callable $next): Response
+    public function handle(RequestInterface $request, callable $next): Response
     {
         $this->startTime = microtime(true);
 
@@ -72,34 +72,18 @@ final class DebugToolbarMiddleware implements MiddlewareInterface
             $body = str_replace('</html>', $toolbar . '</html>', $body);
         }
 
-        $new = new Response($body, $response->status());
-        foreach ($response->headers() as $name => $value) {
-            $new = $new->withHeader($name, $value);
-        }
-        foreach ($response->cookies() as $cookie) {
-            $new = $new->withCookie(
-                $cookie->name(),
-                $cookie->value(),
-                $cookie->ttl(),
-                $cookie->path(),
-                $cookie->domain(),
-                $cookie->isSecure(),
-                $cookie->isHttpOnly(),
-            );
-        }
-
-        return $new;
+        return $response->withBody($body);
     }
 
     /**
      * Render the toolbar HTML snippet.
      *
-     * @param Request  $request
-     * @param Response $response
+     * @param RequestInterface $request
+     * @param Response         $response
      *
      * @return string
      */
-    private function renderToolbar(Request $request, Response $response): string
+    private function renderToolbar(RequestInterface $request, Response $response): string
     {
         $elapsed = round((microtime(true) - $this->startTime) * 1000, 2);
         $memory = round(memory_get_peak_usage(true) / 1_048_576, 2);

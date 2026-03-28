@@ -10,6 +10,7 @@ use EzPhp\Contracts\ExceptionHandlerInterface;
 use EzPhp\Exceptions\ApplicationException;
 use EzPhp\Exceptions\ContainerException;
 use EzPhp\Http\Request;
+use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
 use EzPhp\Middleware\MiddlewareHandler;
 use EzPhp\Middleware\MiddlewareInterface;
@@ -62,6 +63,11 @@ final class Application implements ContainerInterface
      * @var array<string, class-string<MiddlewareInterface>>
      */
     private array $middlewareAliases = [];
+
+    /**
+     * @var array<string, list<string>>
+     */
+    private array $middlewareGroups = [];
 
     /**
      * @var list<class-string>
@@ -157,6 +163,34 @@ final class Application implements ContainerInterface
     }
 
     /**
+     * Register a named middleware group.
+     *
+     * Groups allow multiple middlewares to be referenced by a single name on routes.
+     * Example: $app->middlewareGroup('api', [AuthMiddleware::class, ThrottleMiddleware::class])
+     *
+     * @param string       $name    Short group name (e.g. 'api', 'web').
+     * @param list<string> $classes Middleware class-strings or aliases in the group.
+     *
+     * @return $this
+     */
+    public function middlewareGroup(string $name, array $classes): self
+    {
+        $this->middlewareGroups[$name] = $classes;
+
+        return $this;
+    }
+
+    /**
+     * Return all registered middleware groups.
+     *
+     * @return array<string, list<string>>
+     */
+    public function getMiddlewareGroups(): array
+    {
+        return $this->middlewareGroups;
+    }
+
+    /**
      * Register one or more global middleware classes.
      *
      * @param class-string<MiddlewareInterface> ...$classes
@@ -211,6 +245,7 @@ final class Application implements ContainerInterface
 
         if (!$this->middlewarePushed) {
             $handler->setAliases($this->middlewareAliases);
+            $handler->setGroups($this->middlewareGroups);
             foreach ($this->globalMiddleware as $class) {
                 $handler->add($class);
             }
@@ -250,6 +285,36 @@ final class Application implements ContainerInterface
         $this->activateDeferredProviderFor($class);
 
         return $this->container->make($class);
+    }
+
+    /**
+     * Create a redirect response to the given URL.
+     *
+     * @param string $url    Absolute or relative URL to redirect to.
+     * @param int    $status HTTP status code (default: 302 Found).
+     *
+     * @return Response
+     */
+    public function redirect(string $url, int $status = 302): Response
+    {
+        return (new Response('', $status))->withHeader('Location', $url);
+    }
+
+    /**
+     * Create a redirect response back to the previous page using the Referer header.
+     * Falls back to '/' when the Referer header is absent or empty.
+     *
+     * @param RequestInterface $request
+     * @param int              $status  HTTP status code (default: 302 Found).
+     *
+     * @return Response
+     */
+    public function back(RequestInterface $request, int $status = 302): Response
+    {
+        $referer = $request->header('referer', '');
+        $url = is_string($referer) && $referer !== '' ? $referer : '/';
+
+        return $this->redirect($url, $status);
     }
 
     /**

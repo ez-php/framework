@@ -13,8 +13,11 @@ use EzPhp\Console\Command\EnvCheckCommand;
 use EzPhp\Console\Command\IdeGenerateCommand;
 use EzPhp\Console\Command\ListCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
+use EzPhp\Console\Command\MakeChannelCommand;
 use EzPhp\Console\Command\MakeEventCommand;
+use EzPhp\Console\Command\MakeJobCommand;
 use EzPhp\Console\Command\MakeListenerCommand;
+use EzPhp\Console\Command\MakeNotificationCommand;
 use EzPhp\Console\Command\MakeMiddlewareCommand;
 use EzPhp\Console\Command\MakeMigrationCommand;
 use EzPhp\Console\Command\MakeModelCommand;
@@ -100,6 +103,18 @@ final class ConsoleServiceProvider extends ServiceProvider
             return new MakeListenerCommand($app->basePath('app'));
         });
 
+        $this->app->bind(MakeJobCommand::class, function (Application $app): MakeJobCommand {
+            return new MakeJobCommand($app->basePath('app'));
+        });
+
+        $this->app->bind(MakeNotificationCommand::class, function (Application $app): MakeNotificationCommand {
+            return new MakeNotificationCommand($app->basePath('app'));
+        });
+
+        $this->app->bind(MakeChannelCommand::class, function (Application $app): MakeChannelCommand {
+            return new MakeChannelCommand($app->basePath('app'));
+        });
+
         $this->app->bind(MakeRequestCommand::class, function (Application $app): MakeRequestCommand {
             return new MakeRequestCommand($app->basePath('app'));
         });
@@ -156,6 +171,9 @@ final class ConsoleServiceProvider extends ServiceProvider
                 $app->make(MakeModelCommand::class),
                 $app->make(MakeEventCommand::class),
                 $app->make(MakeListenerCommand::class),
+                $app->make(MakeJobCommand::class),
+                $app->make(MakeNotificationCommand::class),
+                $app->make(MakeChannelCommand::class),
                 $app->make(MakeRequestCommand::class),
                 $app->make(MakeTestCommand::class),
                 $app->make(TinkerCommand::class),

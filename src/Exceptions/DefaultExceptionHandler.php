@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace EzPhp\Exceptions;
 
-use EzPhp\Http\Request;
+use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
 use EzPhp\I18n\Translator;
 use Throwable;
@@ -22,7 +22,7 @@ use Throwable;
 class DefaultExceptionHandler implements ExceptionHandler
 {
     /**
-     * @var list<array{0: class-string, 1: callable(Throwable, Request): Response}>
+     * @var list<array{0: class-string, 1: callable(Throwable, RequestInterface): Response}>
      */
     private array $renderables = [];
 
@@ -46,8 +46,8 @@ class DefaultExceptionHandler implements ExceptionHandler
      * The renderer callable receives the exception and the request, and must return a Response.
      * The first matching renderer is used (checked in registration order).
      *
-     * @param class-string                                $exceptionClass
-     * @param callable(Throwable, Request): Response      $renderer
+     * @param class-string                                        $exceptionClass
+     * @param callable(Throwable, RequestInterface): Response     $renderer
      *
      * @return $this
      */
@@ -59,12 +59,12 @@ class DefaultExceptionHandler implements ExceptionHandler
     }
 
     /**
-     * @param Throwable $e
-     * @param Request   $request
+     * @param Throwable        $e
+     * @param RequestInterface $request
      *
      * @return Response
      */
-    public function render(Throwable $e, Request $request): Response
+    public function render(Throwable $e, RequestInterface $request): Response
     {
         // Check custom renderers first (in registration order)
         foreach ($this->renderables as [$class, $renderer]) {

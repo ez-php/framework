@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace EzPhp\Middleware;
 
-use EzPhp\Http\Request;
+use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
 
 /**
@@ -31,12 +31,12 @@ final readonly class CorsMiddleware implements MiddlewareInterface
     }
 
     /**
-     * @param Request  $request
-     * @param callable $next
+     * @param RequestInterface $request
+     * @param callable         $next
      *
      * @return Response
      */
-    public function handle(Request $request, callable $next): Response
+    public function handle(RequestInterface $request, callable $next): Response
     {
         if ($request->method() === 'OPTIONS') {
             return $this->addCorsHeaders(new Response('', 204));

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace EzPhp\Middleware;
 
-use EzPhp\Http\Request;
+use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
 use EzPhp\Routing\Router;
 
@@ -63,12 +63,12 @@ final class CsrfMiddleware implements MiddlewareInterface
     }
 
     /**
-     * @param Request  $request
-     * @param callable $next
+     * @param RequestInterface $request
+     * @param callable         $next
      *
      * @return Response
      */
-    public function handle(Request $request, callable $next): Response
+    public function handle(RequestInterface $request, callable $next): Response
     {
         if (in_array($request->method(), self::SAFE_METHODS, true)) {
             return $next($request);
@@ -92,11 +92,11 @@ final class CsrfMiddleware implements MiddlewareInterface
      * Handle a CSRF token mismatch: apply rate limiting when configured,
      * then return 429 on limit exceeded or 403 otherwise.
      *
-     * @param Request $request
+     * @param RequestInterface $request
      *
      * @return Response
      */
-    private function handleTokenMismatch(Request $request): Response
+    private function handleTokenMismatch(RequestInterface $request): Response
     {
         if ($this->rateLimiter === null) {
             return new Response('CSRF token mismatch.', 403);
@@ -117,11 +117,11 @@ final class CsrfMiddleware implements MiddlewareInterface
     /**
      * Extract the CSRF token from form input `_token` or the X-CSRF-TOKEN header.
      *
-     * @param Request $request
+     * @param RequestInterface $request
      *
      * @return string
      */
-    private function extractToken(Request $request): string
+    private function extractToken(RequestInterface $request): string
     {
         $fromInput = $request->input('_token');
         if (is_string($fromInput) && $fromInput !== '') {

@@ -6,6 +6,7 @@ namespace Tests\Middleware;
 
 use EzPhp\Container\Container;
 use EzPhp\Http\Request;
+use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
 use EzPhp\Middleware\MiddlewareHandler;
 use EzPhp\Middleware\MiddlewareInterface;
@@ -107,12 +108,12 @@ final class RecordingTerminableMiddleware implements TerminableMiddleware
     public static bool $terminated = false;
 
     /**
-     * @param Request  $request
-     * @param callable $next
+     * @param RequestInterface $request
+     * @param callable         $next
      *
      * @return Response
      */
-    public function handle(Request $request, callable $next): Response
+    public function handle(RequestInterface $request, callable $next): Response
     {
         /** @var Response */
         return $next($request);
@@ -138,12 +139,12 @@ final class NonTerminableTrackingMiddleware implements MiddlewareInterface
     public static bool $terminated = false;
 
     /**
-     * @param Request  $request
-     * @param callable $next
+     * @param RequestInterface $request
+     * @param callable         $next
      *
      * @return Response
      */
-    public function handle(Request $request, callable $next): Response
+    public function handle(RequestInterface $request, callable $next): Response
     {
         /** @var Response */
         return $next($request);
@@ -160,12 +161,12 @@ final class CapturingTerminableMiddleware implements TerminableMiddleware
     public static ?Response $capturedResponse = null;
 
     /**
-     * @param Request  $request
-     * @param callable $next
+     * @param RequestInterface $request
+     * @param callable         $next
      *
      * @return Response
      */
-    public function handle(Request $request, callable $next): Response
+    public function handle(RequestInterface $request, callable $next): Response
     {
         /** @var Response */
         return $next($request);
