@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.2.0] — 2026-03-28
+
+### Changed
+- `CorsMiddleware`, `CsrfMiddleware`, and `DebugToolbarMiddleware` — `handle()` now accepts `RequestInterface` instead of `Request`, satisfying the updated `MiddlewareInterface` contract
+- `DefaultExceptionHandler` and `DebugHtmlRenderer` — `render()` now accepts `RequestInterface`; custom renderers registered via `renderable()` must accept `RequestInterface` as well
+- `Application::back()` — parameter widened to `RequestInterface`
+- `Router::isCsrfExemptRoute()` — parameter widened to `RequestInterface`
+- `MiddlewareHandler` — middleware group entries are now typed as `class-string<MiddlewareInterface>` throughout (property, `setGroups()`, `expandGroups()`); same change applied to `Application::middlewareGroup()` and `getMiddlewareGroups()`
+- Updated `ez-php/contracts` and `ez-php/http` dependency constraints to `^1.2`
+
+---
+
 ## [v1.1.0] — 2026-03-28
 
 ### Added
