@@ -72,7 +72,23 @@ final class DebugToolbarMiddleware implements MiddlewareInterface
             $body = str_replace('</html>', $toolbar . '</html>', $body);
         }
 
-        return $response->withBody($body);
+        $new = new Response($body, $response->status());
+        foreach ($response->headers() as $name => $value) {
+            $new = $new->withHeader($name, $value);
+        }
+        foreach ($response->cookies() as $cookie) {
+            $new = $new->withCookie(
+                $cookie->name(),
+                $cookie->value(),
+                $cookie->ttl(),
+                $cookie->path(),
+                $cookie->domain(),
+                $cookie->isSecure(),
+                $cookie->isHttpOnly(),
+            );
+        }
+
+        return $new;
     }
 
     /**
