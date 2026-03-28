@@ -43,7 +43,10 @@ final class ExceptionHandlerServiceProvider extends ServiceProvider
         /** @var Application $app */
         $app = $this->app;
 
-        $debug = (bool) $app->make(Config::class)->get('app.debug', false);
+        // Read APP_DEBUG directly from the environment instead of resolving Config,
+        // to keep Config lazy — test code sets env vars after bootstrap() and before
+        // the first make() call; eager Config resolution would freeze the values too early.
+        $debug = (bool) filter_var(getenv('APP_DEBUG'), FILTER_VALIDATE_BOOLEAN);
 
         if ($debug) {
             $app->middleware(DebugToolbarMiddleware::class);
