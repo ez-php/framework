@@ -10,6 +10,7 @@ use EzPhp\Exceptions\HttpException;
 use EzPhp\Exceptions\ProductionHtmlRenderer;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
+use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -226,7 +227,7 @@ final class DefaultExceptionHandlerTest extends TestCase
         $handler = new DefaultExceptionHandler();
         $handler->renderable(
             HttpException::class,
-            function (Throwable $e, Request $r): Response {
+            function (Throwable $e, RequestInterface $r): Response {
                 /** @var HttpException $e */
                 return new Response('custom:' . $e->getStatusCode(), $e->getStatusCode());
             }
@@ -247,11 +248,11 @@ final class DefaultExceptionHandlerTest extends TestCase
         $handler = new DefaultExceptionHandler();
         $handler->renderable(
             HttpException::class,
-            fn (Throwable $e, Request $r): Response => new Response('first', 200)
+            fn (Throwable $e, RequestInterface $r): Response => new Response('first', 200)
         );
         $handler->renderable(
             HttpException::class,
-            fn (Throwable $e, Request $r): Response => new Response('second', 200)
+            fn (Throwable $e, RequestInterface $r): Response => new Response('second', 200)
         );
 
         $request = new Request('GET', '/');
@@ -268,7 +269,7 @@ final class DefaultExceptionHandlerTest extends TestCase
         $handler = new DefaultExceptionHandler();
         $handler->renderable(
             HttpException::class,
-            fn (Throwable $e, Request $r): Response => new Response('custom', 200)
+            fn (Throwable $e, RequestInterface $r): Response => new Response('custom', 200)
         );
 
         $request = new Request('GET', '/', headers: ['accept' => 'application/json']);
@@ -286,7 +287,7 @@ final class DefaultExceptionHandlerTest extends TestCase
         $handler = new DefaultExceptionHandler();
         $result = $handler->renderable(
             HttpException::class,
-            fn (Throwable $e, Request $r): Response => new Response('', 200)
+            fn (Throwable $e, RequestInterface $r): Response => new Response('', 200)
         );
 
         $this->assertSame($handler, $result);

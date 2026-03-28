@@ -9,6 +9,7 @@ use EzPhp\Contracts\ContainerInterface;
 use EzPhp\Exceptions\NotFoundException;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
+use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
 use EzPhp\Middleware\MiddlewareInterface;
 use InvalidArgumentException;
@@ -351,12 +352,16 @@ final class Router
      *
      * @internal Called by CsrfMiddleware; not part of the public router API.
      *
-     * @param Request $request
+     * @param RequestInterface $request
      *
      * @return bool
      */
-    public function isCsrfExemptRoute(Request $request): bool
+    public function isCsrfExemptRoute(RequestInterface $request): bool
     {
+        if (!$request instanceof Request) {
+            return false;
+        }
+
         $matched = $this->matchRoute($request);
 
         return $matched !== null && $matched->isCsrfExempt();

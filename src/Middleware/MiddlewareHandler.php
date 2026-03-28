@@ -38,7 +38,7 @@ final class MiddlewareHandler
     private array $aliases = [];
 
     /**
-     * @var array<string, list<string>>
+     * @var array<string, list<class-string<MiddlewareInterface>>>
      */
     private array $groups = [];
 
@@ -81,7 +81,7 @@ final class MiddlewareHandler
      * list of middleware class-strings or aliases. Groups are expanded before the
      * pipeline is built so that route middleware can reference group names.
      *
-     * @param array<string, list<string>> $groups
+     * @param array<string, list<class-string<MiddlewareInterface>>> $groups
      *
      * @return void
      */
@@ -188,9 +188,9 @@ final class MiddlewareHandler
      * Expand group names in a middleware stack to their constituent entries.
      * Entries that are not registered group names are passed through unchanged.
      *
-     * @param array<int, string> $stack
+     * @param array<int, class-string<MiddlewareInterface>> $stack
      *
-     * @return array<int, string>
+     * @return array<int, class-string<MiddlewareInterface>>
      */
     private function expandGroups(array $stack): array
     {

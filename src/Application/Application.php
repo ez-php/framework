@@ -65,7 +65,7 @@ final class Application implements ContainerInterface
     private array $middlewareAliases = [];
 
     /**
-     * @var array<string, list<string>>
+     * @var array<string, list<class-string<\EzPhp\Middleware\MiddlewareInterface>>>
      */
     private array $middlewareGroups = [];
 
@@ -169,7 +169,7 @@ final class Application implements ContainerInterface
      * Example: $app->middlewareGroup('api', [AuthMiddleware::class, ThrottleMiddleware::class])
      *
      * @param string       $name    Short group name (e.g. 'api', 'web').
-     * @param list<string> $classes Middleware class-strings or aliases in the group.
+     * @param list<class-string<\EzPhp\Middleware\MiddlewareInterface>> $classes Middleware class-strings in the group.
      *
      * @return $this
      */
@@ -183,7 +183,7 @@ final class Application implements ContainerInterface
     /**
      * Return all registered middleware groups.
      *
-     * @return array<string, list<string>>
+     * @return array<string, list<class-string<\EzPhp\Middleware\MiddlewareInterface>>>
      */
     public function getMiddlewareGroups(): array
     {
