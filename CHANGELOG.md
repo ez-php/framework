@@ -6,6 +6,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.1.0] — 2026-03-28
+
+### Added
+- `make:model` command — scaffolds an Active Record model in `app/Models/`
+- `make:event` command — scaffolds an event class in `app/Events/`
+- `make:listener` command — scaffolds an event listener in `app/Listeners/`
+- `make:request` command — scaffolds a form request class in `app/Requests/`
+- `make:test` command — scaffolds a test class (unit/feature/http) in `tests/`
+- `ide:generate` command — generates `_ide_helpers.php` PHPDoc stubs for installed static façades
+- `DebugToolbarMiddleware` — auto-registered by `ExceptionHandlerServiceProvider` when `APP_DEBUG=true`; injects a fixed HTML toolbar with status code, method/URI, latency, and peak memory
+- Container scoping — `Container::scope()` creates a child container for isolated, request-scoped service resolution
+- Circular dependency detection in `Container` — throws `ContainerException` with the full dependency chain instead of a stack overflow
+
+### Changed
+- `ServeCommand` — added `--watch` flag; polls `app/`, `config/`, and `routes/` for PHP file changes and auto-restarts the built-in server
+- `DatabaseServiceProvider` — validates `db.host`, `db.database`, and `db.username` at bootstrap; throws `ConfigException` with a clear message instead of a cryptic PDO error
+
+---
+
 ## [v1.0.1] — 2026-03-25
 
 ### Changed
