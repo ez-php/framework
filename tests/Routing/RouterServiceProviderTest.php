@@ -12,6 +12,8 @@ use EzPhp\Config\ConfigServiceProvider;
 use EzPhp\Console\Command\MakeMigrationCommand;
 use EzPhp\Console\Command\MigrateCommand;
 use EzPhp\Console\Command\MigrateRollbackCommand;
+use EzPhp\Console\Command\RouteCacheCommand;
+use EzPhp\Console\Command\RouteClearCommand;
 use EzPhp\Console\ConsoleServiceProvider;
 use EzPhp\Container\Container;
 use EzPhp\Database\Database;
@@ -61,6 +63,8 @@ use Tests\TestCase;
 #[UsesClass(MigrateCommand::class)]
 #[UsesClass(MigrateRollbackCommand::class)]
 #[UsesClass(MakeMigrationCommand::class)]
+#[UsesClass(RouteCacheCommand::class)]
+#[UsesClass(RouteClearCommand::class)]
 final class RouterServiceProviderTest extends TestCase
 {
     /**
@@ -121,5 +125,101 @@ final class RouterServiceProviderTest extends TestCase
         $response = $app->handle(new Request('GET', '/'));
 
         $this->assertSame(404, $response->status());
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_boot_loads_routes_from_cache_when_cache_exists(): void
+    {
+        $tmpDir = sys_get_temp_dir() . '/ez-php-route-cache-test-' . uniqid();
+        mkdir($tmpDir . '/bootstrap/cache', 0o777, true);
+        mkdir($tmpDir . '/config', 0o777, true);
+
+        // Write a route cache that maps GET /cached → a simple handler
+        $cacheData = [
+            [
+                'method' => 'GET',
+                'path' => '/cached',
+                'name' => 'cached.route',
+                'handler' => [\stdClass::class, 'index'],
+                'middleware' => [],
+                'constraints' => [],
+                'csrfExempt' => false,
+            ],
+        ];
+
+        file_put_contents(
+            $tmpDir . '/bootstrap/cache/routes.php',
+            '<?php return ' . var_export($cacheData, true) . ';' . "\n"
+        );
+
+        $app = new Application($tmpDir);
+        $app->bootstrap();
+
+        // Route was loaded from cache — verify it exists via names()
+        $router = $app->make(Router::class);
+        $names = $router->names();
+
+        $this->assertArrayHasKey('cached.route', $names);
+        $this->assertSame('/cached', $names['cached.route']);
+
+        // Clean up
+        unlink($tmpDir . '/bootstrap/cache/routes.php');
+        rmdir($tmpDir . '/bootstrap/cache');
+        rmdir($tmpDir . '/bootstrap');
+        rmdir($tmpDir . '/config');
+        rmdir($tmpDir);
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_boot_skips_routes_file_when_cache_exists(): void
+    {
+        $tmpDir = sys_get_temp_dir() . '/ez-php-route-cache-skip-' . uniqid();
+        mkdir($tmpDir . '/bootstrap/cache', 0o777, true);
+        mkdir($tmpDir . '/config', 0o777, true);
+        mkdir($tmpDir . '/routes', 0o777, true);
+
+        // routes/web.php would register GET /web — but cache takes priority
+        file_put_contents($tmpDir . '/routes/web.php', '<?php $router->get(\'/web\', fn () => \'from-file\');');
+
+        // Cache only has GET /cached — so /web must NOT be registered
+        $cacheData = [
+            [
+                'method' => 'GET',
+                'path' => '/cached',
+                'name' => null,
+                'handler' => [\stdClass::class, 'index'],
+                'middleware' => [],
+                'constraints' => [],
+                'csrfExempt' => false,
+            ],
+        ];
+
+        file_put_contents(
+            $tmpDir . '/bootstrap/cache/routes.php',
+            '<?php return ' . var_export($cacheData, true) . ';' . "\n"
+        );
+
+        $app = new Application($tmpDir);
+        $app->bootstrap();
+
+        $router = $app->make(Router::class);
+
+        // /web must not exist — it was in the file but cache was used instead
+        $this->assertSame([], $router->names()); // /cached has no name
+
+        // Clean up
+        unlink($tmpDir . '/bootstrap/cache/routes.php');
+        unlink($tmpDir . '/routes/web.php');
+        rmdir($tmpDir . '/bootstrap/cache');
+        rmdir($tmpDir . '/bootstrap');
+        rmdir($tmpDir . '/routes');
+        rmdir($tmpDir . '/config');
+        rmdir($tmpDir);
     }
 }

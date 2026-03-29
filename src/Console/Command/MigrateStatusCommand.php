@@ -61,19 +61,25 @@ final readonly class MigrateStatusCommand implements CommandInterface
         $rows = $this->migrator->status();
 
         if ($rows === []) {
-            echo "No migration files found.\n";
+            Output::line('No migration files found.');
             return 0;
         }
+
+        $tableRows = [];
 
         foreach ($rows as $row) {
             $status = $row['status'] === 'Ran'
                 ? Output::colorize('Ran', 32)
                 : Output::colorize('Pending', 33);
 
-            $batch = $row['batch'] !== null ? "  (batch {$row['batch']})" : '';
-
-            echo sprintf("  %-10s %s%s\n", $status, $row['migration'], $batch);
+            $tableRows[] = [
+                $status,
+                $row['migration'],
+                $row['batch'] !== null ? (string) $row['batch'] : '-',
+            ];
         }
+
+        Output::table(['Status', 'Migration', 'Batch'], $tableRows);
 
         return 0;
     }

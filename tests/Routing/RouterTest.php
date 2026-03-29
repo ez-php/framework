@@ -400,6 +400,50 @@ final class RouterTest extends TestCase
     /**
      * @return void
      */
+    public function test_names_returns_empty_array_when_no_named_routes(): void
+    {
+        $router = new Router();
+        $router->get('/users', fn () => 'users');
+
+        $this->assertSame([], $router->names());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_names_returns_name_to_path_map(): void
+    {
+        $router = new Router();
+        $router->get('/users', fn () => 'users')->name('users.index');
+        $router->get('/users/{id}', fn () => 'user')->name('users.show');
+
+        $this->assertSame([
+            'users.index' => '/users',
+            'users.show' => '/users/{id}',
+        ], $router->names());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_names_updates_after_adding_new_named_route(): void
+    {
+        $router = new Router();
+        $router->get('/users', fn () => 'users')->name('users.index');
+
+        $this->assertSame(['users.index' => '/users'], $router->names());
+
+        $router->get('/posts', fn () => 'posts')->name('posts.index');
+
+        $this->assertSame([
+            'users.index' => '/users',
+            'posts.index' => '/posts',
+        ], $router->names());
+    }
+
+    /**
+     * @return void
+     */
     public function test_route_name_is_retrievable(): void
     {
         $router = new Router();

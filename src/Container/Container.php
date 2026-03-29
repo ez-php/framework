@@ -256,6 +256,24 @@ final class Container
     }
 
     /**
+     * Resolve all services registered under the given tag as a lazy iterable.
+     *
+     * Equivalent to makeTagged() but returns an iterable so callers may
+     * iterate without committing to an array up-front. Useful for plugin
+     * architectures (health probes, notification channels, log drivers, …)
+     * where the full list is iterated exactly once.
+     *
+     * @param string $tag
+     *
+     * @return iterable<object>
+     * @throws ReflectionException
+     */
+    public function tagged(string $tag): iterable
+    {
+        return $this->makeTagged($tag);
+    }
+
+    /**
      * @template T of object
      * @param class-string<T>      $class
      * @param array<string, mixed> $overrides Named constructor parameter overrides.

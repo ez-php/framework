@@ -366,6 +366,45 @@ final class ContainerTest extends TestCase
         $this->assertInstanceOf(TaggedHandlerA::class, $instances[0]);
     }
 
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_tagged_returns_iterable_of_tagged_services(): void
+    {
+        $container = new Container();
+        $container->tag([TaggedHandlerA::class, TaggedHandlerB::class], 'handlers');
+
+        $result = $container->tagged('handlers');
+
+        $items = [];
+        foreach ($result as $item) {
+            $items[] = $item;
+        }
+
+        $this->assertCount(2, $items);
+        $this->assertInstanceOf(TaggedHandlerA::class, $items[0]);
+        $this->assertInstanceOf(TaggedHandlerB::class, $items[1]);
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_tagged_returns_empty_iterable_for_unknown_tag(): void
+    {
+        $container = new Container();
+
+        $result = $container->tagged('unknown');
+
+        $items = [];
+        foreach ($result as $item) {
+            $items[] = $item;
+        }
+
+        $this->assertCount(0, $items);
+    }
+
     // -------------------------------------------------------------------------
     // alias()
     // -------------------------------------------------------------------------

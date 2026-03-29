@@ -45,6 +45,14 @@ final class Router
     private array $groupMiddleware = [];
 
     /**
+     * Lazy-built name → Route map for O(1) named-route lookup.
+     * Rebuilt on demand; invalidated whenever a new route is registered.
+     *
+     * @var array<string, Route>|null
+     */
+    private ?array $namedRoutes = null;
+
+    /**
      * Router Constructor
      *
      * @param ContainerInterface|null $container Optional container used to resolve
@@ -141,11 +149,17 @@ final class Router
 
         $route = new Route($method, $fullPath, $callable);
 
+        if (is_array($handler)) {
+            /** @var array{0: class-string, 1: string} $handler */
+            $route->withRawHandler($handler);
+        }
+
         foreach ($this->groupMiddleware as $middleware) {
             $route->middleware($middleware);
         }
 
         $this->routes[$method][] = $route;
+        $this->namedRoutes = null; // invalidate the name map
 
         return $route;
     }
@@ -298,23 +312,46 @@ final class Router
     }
 
     /**
-     * @param string               $name
-     * @param array<string, string> $params
+     * Generate the URL for a named route with optional parameter substitution.
+     *
+     * Lookup is O(1) after the first call per registration batch; the internal
+     * name map is built lazily and invalidated whenever a new route is added.
+     *
+     * @param string                $name   The route name set via ->name('...').
+     * @param array<string, string> $params Named parameter values to substitute.
      *
      * @return string
-     * @throws RouteException
+     * @throws RouteException When no route with the given name exists.
      */
     public function route(string $name, array $params = []): string
     {
-        foreach ($this->routes as $methodRoutes) {
-            foreach ($methodRoutes as $route) {
-                if ($route->getName() === $name) {
-                    return $route->generateUrl($params);
-                }
-            }
+        $map = $this->resolveNamedRouteMap();
+
+        if (!isset($map[$name])) {
+            throw new RouteException("Named route '$name' not found");
         }
 
-        throw new RouteException("Named route '$name' not found");
+        return $map[$name]->generateUrl($params);
+    }
+
+    /**
+     * Return the full name → path mapping for all named routes.
+     *
+     * Useful for introspection, link generation in views, and IDE helpers.
+     * The returned paths are the raw route patterns (e.g. '/users/{id}'),
+     * not resolved URLs.
+     *
+     * @return array<string, string>
+     */
+    public function names(): array
+    {
+        $result = [];
+
+        foreach ($this->resolveNamedRouteMap() as $name => $route) {
+            $result[$name] = $route->getPath();
+        }
+
+        return $result;
     }
 
     /**
@@ -365,6 +402,71 @@ final class Router
         $matched = $this->matchRoute($request);
 
         return $matched !== null && $matched->isCsrfExempt();
+    }
+
+    /**
+     * Export all cacheable routes as a serializable array for route:cache.
+     *
+     * Only routes whose handler was registered as [Controller::class, 'method']
+     * are included. Closure-based routes cannot be serialized and are silently
+     * skipped. The returned data can be written to a PHP file with var_export()
+     * and later loaded by RouterServiceProvider to bypass routes/web.php.
+     *
+     * @return list<array{method: string, path: string, name: string|null, handler: array{0: class-string, 1: string}, middleware: array<int, class-string<\EzPhp\Middleware\MiddlewareInterface>>, constraints: array<string, string>, csrfExempt: bool}>
+     */
+    public function toCache(): array
+    {
+        $data = [];
+
+        foreach ($this->routes as $methodRoutes) {
+            foreach ($methodRoutes as $route) {
+                $rawHandler = $route->getRawHandler();
+
+                if ($rawHandler === null) {
+                    continue;
+                }
+
+                $data[] = [
+                    'method' => $route->getMethod(),
+                    'path' => $route->getPath(),
+                    'name' => $route->getName(),
+                    'handler' => $rawHandler,
+                    'middleware' => $route->getMiddleware(),
+                    'constraints' => $route->getConstraints(),
+                    'csrfExempt' => $route->isCsrfExempt(),
+                ];
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Build (or return the cached) name → Route map.
+     *
+     * O(n) on first call after any route registration; O(1) for all subsequent
+     * calls until the next route is added (which resets $namedRoutes to null).
+     *
+     * @return array<string, Route>
+     */
+    private function resolveNamedRouteMap(): array
+    {
+        if ($this->namedRoutes !== null) {
+            return $this->namedRoutes;
+        }
+
+        $this->namedRoutes = [];
+
+        foreach ($this->routes as $methodRoutes) {
+            foreach ($methodRoutes as $route) {
+                $name = $route->getName();
+                if ($name !== null) {
+                    $this->namedRoutes[$name] = $route;
+                }
+            }
+        }
+
+        return $this->namedRoutes;
     }
 
     /**

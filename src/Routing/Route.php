@@ -35,6 +35,15 @@ final class Route
 
     private bool $csrfExempt = false;
 
+    /**
+     * Original [Controller::class, 'method'] array handler, preserved for
+     * route caching. Set by Router when an array handler is registered.
+     * Null for closure-based routes, which cannot be serialized.
+     *
+     * @var array{0: class-string, 1: string}|null
+     */
+    private ?array $rawHandler = null;
+
     private readonly Closure $handler;
 
     /**
@@ -153,6 +162,43 @@ final class Route
     public function isCsrfExempt(): bool
     {
         return $this->csrfExempt;
+    }
+
+    /**
+     * Store the original [Controller::class, 'method'] handler for caching.
+     *
+     * @internal Called by Router immediately after route registration.
+     *
+     * @param array{0: class-string, 1: string} $handler
+     *
+     * @return $this
+     */
+    public function withRawHandler(array $handler): self
+    {
+        $this->rawHandler = $handler;
+
+        return $this;
+    }
+
+    /**
+     * Return the original array handler used for route caching, or null for
+     * closure-based routes that cannot be serialized.
+     *
+     * @return array{0: class-string, 1: string}|null
+     */
+    public function getRawHandler(): ?array
+    {
+        return $this->rawHandler;
+    }
+
+    /**
+     * Return all per-parameter regex constraints registered via where().
+     *
+     * @return array<string, string>
+     */
+    public function getConstraints(): array
+    {
+        return $this->constraints;
     }
 
     /**

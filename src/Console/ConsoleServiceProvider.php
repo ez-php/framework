@@ -28,11 +28,14 @@ use EzPhp\Console\Command\MigrateCommand;
 use EzPhp\Console\Command\MigrateFreshCommand;
 use EzPhp\Console\Command\MigrateRollbackCommand;
 use EzPhp\Console\Command\MigrateStatusCommand;
+use EzPhp\Console\Command\RouteCacheCommand;
+use EzPhp\Console\Command\RouteClearCommand;
 use EzPhp\Console\Command\ScheduleRunCommand;
 use EzPhp\Console\Command\ServeCommand;
 use EzPhp\Console\Command\TinkerCommand;
 use EzPhp\Console\Schedule\Scheduler;
 use EzPhp\Migration\Migrator;
+use EzPhp\Routing\Router;
 use EzPhp\ServiceProvider\ServiceProvider;
 
 /**
@@ -150,6 +153,17 @@ final class ConsoleServiceProvider extends ServiceProvider
             return new ConfigClearCommand($app->basePath('bootstrap/cache/config.php'));
         });
 
+        $this->app->bind(RouteCacheCommand::class, function (Application $app): RouteCacheCommand {
+            return new RouteCacheCommand(
+                $app->make(Router::class),
+                $app->basePath('bootstrap/cache/routes.php'),
+            );
+        });
+
+        $this->app->bind(RouteClearCommand::class, function (Application $app): RouteClearCommand {
+            return new RouteClearCommand($app->basePath('bootstrap/cache/routes.php'));
+        });
+
         $this->app->bind(IdeGenerateCommand::class, function (Application $app): IdeGenerateCommand {
             return new IdeGenerateCommand($app->basePath());
         });
@@ -159,6 +173,8 @@ final class ConsoleServiceProvider extends ServiceProvider
             $commands = [
                 $app->make(ConfigCacheCommand::class),
                 $app->make(ConfigClearCommand::class),
+                $app->make(RouteCacheCommand::class),
+                $app->make(RouteClearCommand::class),
                 $app->make(ServeCommand::class),
                 $app->make(MigrateCommand::class),
                 $app->make(MigrateRollbackCommand::class),
