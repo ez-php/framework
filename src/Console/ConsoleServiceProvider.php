@@ -9,6 +9,7 @@ use EzPhp\Config\ConfigLoader;
 use EzPhp\Console\Command\ConfigCacheCommand;
 use EzPhp\Console\Command\ConfigClearCommand;
 use EzPhp\Console\Command\DbSeedCommand;
+use EzPhp\Console\Command\DbSetupCommand;
 use EzPhp\Console\Command\DoctorCommand;
 use EzPhp\Console\Command\EnvCheckCommand;
 use EzPhp\Console\Command\IdeGenerateCommand;
@@ -96,6 +97,16 @@ final class ConsoleServiceProvider extends ServiceProvider
             /** @var string $env */
             $env = (string) getenv('APP_ENV');
             return new DbSeedCommand(
+                $app->make(SeederRunner::class),
+                $env !== '' ? $env : 'local',
+            );
+        });
+
+        $this->app->bind(DbSetupCommand::class, function (Application $app): DbSetupCommand {
+            /** @var string $env */
+            $env = (string) getenv('APP_ENV');
+            return new DbSetupCommand(
+                $app->make(Migrator::class),
                 $app->make(SeederRunner::class),
                 $env !== '' ? $env : 'local',
             );
@@ -202,6 +213,7 @@ final class ConsoleServiceProvider extends ServiceProvider
                 $app->make(MakeMigrationCommand::class),
                 $app->make(MakeSeederCommand::class),
                 $app->make(DbSeedCommand::class),
+                $app->make(DbSetupCommand::class),
                 $app->make(MakeControllerCommand::class),
                 $app->make(MakeMiddlewareCommand::class),
                 $app->make(MakeProviderCommand::class),

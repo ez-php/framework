@@ -412,6 +412,38 @@ final class MigratorTest extends TestCase
      * @return void
      * @throws Throwable
      */
+    public function test_drop_all_tables_removes_every_table(): void
+    {
+        $this->createMigrationFile(
+            '0001_create_users_table.php',
+            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
+            'DROP TABLE users',
+        );
+        $this->migrator->migrate();
+
+        $dropped = $this->migrator->dropAllTables();
+
+        $this->assertContains('migrations', $dropped);
+        $this->assertContains('users', $dropped);
+
+        // migrate() must recreate the migrations table and re-run all files
+        $ran = $this->migrator->migrate();
+        $this->assertSame(['0001_create_users_table.php'], $ran);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_drop_all_tables_returns_empty_when_no_tables_exist(): void
+    {
+        $dropped = $this->migrator->dropAllTables();
+        $this->assertSame([], $dropped);
+    }
+
+    /**
+     * @return void
+     * @throws Throwable
+     */
     public function test_migration_file_can_be_loaded_repeatedly_without_error(): void
     {
         $this->createMigrationFile(

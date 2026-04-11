@@ -84,6 +84,93 @@ final class Migrator
     }
 
     /**
+     * Drop every table in the current database without running migration down() methods.
+     * Disables foreign key checks on MySQL to avoid constraint errors during the drop.
+     *
+     * @return list<string>  Names of the tables that were dropped.
+     */
+    public function dropAllTables(): array
+    {
+        $pdo = $this->db->getPdo();
+
+        /** @var mixed $driverAttr */
+        $driverAttr = $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
+        $driver = is_string($driverAttr) ? $driverAttr : '';
+
+        if ($driver === 'mysql') {
+            return $this->dropAllTablesMysql($pdo);
+        }
+
+        return $this->dropAllTablesSqlite($pdo);
+    }
+
+    /**
+     * @param \PDO $pdo
+     *
+     * @return list<string>
+     */
+    private function dropAllTablesMysql(\PDO $pdo): array
+    {
+        $stmt = $pdo->query('SHOW TABLES');
+
+        if ($stmt === false) {
+            return [];
+        }
+
+        /** @var list<list<string>> $rows */
+        $rows = $stmt->fetchAll(\PDO::FETCH_NUM);
+
+        /** @var list<string> $tables */
+        $tables = array_values(array_filter(
+            array_map(static fn (array $row): string => (string) ($row[0] ?? ''), $rows),
+            static fn (string $t): bool => $t !== '',
+        ));
+
+        if ($tables === []) {
+            return [];
+        }
+
+        $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+
+        foreach ($tables as $table) {
+            $pdo->exec('DROP TABLE `' . str_replace('`', '``', $table) . '`');
+        }
+
+        $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
+
+        return $tables;
+    }
+
+    /**
+     * @param \PDO $pdo
+     *
+     * @return list<string>
+     */
+    private function dropAllTablesSqlite(\PDO $pdo): array
+    {
+        $stmt = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+
+        if ($stmt === false) {
+            return [];
+        }
+
+        /** @var list<array{name: string}> $rows */
+        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        /** @var list<string> $tables */
+        $tables = array_values(array_filter(
+            array_map(static fn (array $row): string => (string) $row['name'], $rows),
+            static fn (string $t): bool => $t !== '',
+        ));
+
+        foreach ($tables as $table) {
+            $pdo->exec('DROP TABLE IF EXISTS "' . str_replace('"', '""', $table) . '"');
+        }
+
+        return $tables;
+    }
+
+    /**
      * Return the status of every migration file.
      *
      * @return list<array{migration: string, status: string, batch: int|null}>
