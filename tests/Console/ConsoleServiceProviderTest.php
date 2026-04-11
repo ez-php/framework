@@ -12,6 +12,8 @@ use EzPhp\Config\ConfigServiceProvider;
 use EzPhp\Config\ConfigValidator;
 use EzPhp\Console\Command\ConfigCacheCommand;
 use EzPhp\Console\Command\ConfigClearCommand;
+use EzPhp\Console\Command\DbSeedCommand;
+use EzPhp\Console\Command\DbSetupCommand;
 use EzPhp\Console\Command\DoctorCommand;
 use EzPhp\Console\Command\EnvCheckCommand;
 use EzPhp\Console\Command\ListCommand;
@@ -19,6 +21,7 @@ use EzPhp\Console\Command\MakeControllerCommand;
 use EzPhp\Console\Command\MakeMiddlewareCommand;
 use EzPhp\Console\Command\MakeMigrationCommand;
 use EzPhp\Console\Command\MakeProviderCommand;
+use EzPhp\Console\Command\MakeSeederCommand;
 use EzPhp\Console\Command\MigrateCommand;
 use EzPhp\Console\Command\MigrateFreshCommand;
 use EzPhp\Console\Command\MigrateRollbackCommand;
@@ -28,6 +31,7 @@ use EzPhp\Console\Command\ServeCommand;
 use EzPhp\Console\Command\TinkerCommand;
 use EzPhp\Console\Console;
 use EzPhp\Console\ConsoleServiceProvider;
+use EzPhp\Console\Prompt;
 use EzPhp\Console\Schedule\ScheduledCommand;
 use EzPhp\Console\Schedule\Scheduler;
 use EzPhp\Container\Container;
@@ -77,13 +81,17 @@ use Tests\DatabaseTestCase;
 #[UsesClass(MakeControllerCommand::class)]
 #[UsesClass(MakeMiddlewareCommand::class)]
 #[UsesClass(MakeProviderCommand::class)]
+#[UsesClass(MakeSeederCommand::class)]
 #[UsesClass(ServeCommand::class)]
 #[UsesClass(TinkerCommand::class)]
 #[UsesClass(ConfigCacheCommand::class)]
 #[UsesClass(ConfigClearCommand::class)]
+#[UsesClass(DbSeedCommand::class)]
+#[UsesClass(DbSetupCommand::class)]
 #[UsesClass(DoctorCommand::class)]
 #[UsesClass(EnvCheckCommand::class)]
 #[UsesClass(ListCommand::class)]
+#[UsesClass(Prompt::class)]
 #[UsesClass(ScheduleRunCommand::class)]
 #[UsesClass(Scheduler::class)]
 #[UsesClass(ScheduledCommand::class)]
@@ -143,6 +151,8 @@ final class ConsoleServiceProviderTest extends DatabaseTestCase
         $this->assertStringContainsString('tinker', $output);
         $this->assertStringContainsString('schedule:run', $output);
         $this->assertStringContainsString('doctor', $output);
+        $this->assertStringContainsString('db:seed', $output);
+        $this->assertStringContainsString('db:setup', $output);
     }
 
     /**
