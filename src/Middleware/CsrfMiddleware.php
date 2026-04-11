@@ -81,6 +81,12 @@ final class CsrfMiddleware implements MiddlewareInterface
         $sessionToken = $this->tokenStore->getToken();
         $requestToken = $this->extractToken($request);
 
+        // Reject immediately when either token is empty. hash_equals('', '') would
+        // return true, silently bypassing CSRF protection for tokenless requests.
+        if ($sessionToken === '' || $requestToken === '') {
+            return $this->handleTokenMismatch($request);
+        }
+
         if (!hash_equals($sessionToken, $requestToken)) {
             return $this->handleTokenMismatch($request);
         }

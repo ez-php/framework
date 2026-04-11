@@ -26,10 +26,18 @@ final class Database implements DatabaseInterface
      */
     public function __construct(string $dsn, string $username, string $password)
     {
-        $this->pdo = new PDO($dsn, $username, $password, [
+        $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        ]);
+        ];
+
+        // Ensure utf8mb4 charset for MySQL connections to prevent encoding
+        // mismatches and multi-byte character injection vectors.
+        if (str_starts_with($dsn, 'mysql:')) {
+            $options[PDO::MYSQL_ATTR_INIT_COMMAND] = 'SET NAMES utf8mb4';
+        }
+
+        $this->pdo = new PDO($dsn, $username, $password, $options);
     }
 
     /**

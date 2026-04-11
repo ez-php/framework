@@ -335,6 +335,34 @@ final class CsrfMiddlewareTest extends TestCase
     }
 
     /**
+     * When both the session token and the request token are empty strings,
+     * hash_equals('', '') would return true — the middleware must reject the
+     * request before reaching hash_equals.
+     *
+     * @return void
+     */
+    public function test_post_rejected_when_both_session_and_request_token_are_empty(): void
+    {
+        $router = new Router();
+        $router->post('/submit', fn () => 'ok');
+
+        $emptyStore = new class () implements CsrfTokenStoreInterface {
+            public function getToken(): string
+            {
+                return '';
+            }
+        };
+
+        $middleware = new CsrfMiddleware($router, $emptyStore);
+
+        // Request also has no token — both sides are '' which would bypass without the guard.
+        $request = new Request('POST', '/submit');
+        $response = $middleware->handle($request, fn (Request $r): Response => new Response('ok'));
+
+        $this->assertSame(403, $response->status());
+    }
+
+    /**
      * `_token` present but not a string (e.g. array via form manipulation) → 403.
      *
      * @return void
