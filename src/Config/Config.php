@@ -87,6 +87,41 @@ final readonly class Config implements ConfigInterface
     }
 
     /**
+     * Retrieve a config value cast to float.
+     *
+     * @param string $key
+     * @param float  $default
+     *
+     * @return float
+     */
+    public function float(string $key, float $default = 0.0): float
+    {
+        $value = $this->get($key, $default);
+        if (!is_scalar($value) && $value !== null) {
+            return $default;
+        }
+        return (float) $value;
+    }
+
+    /**
+     * Retrieve a config value as array.
+     * Returns $default when the stored value is not an array.
+     *
+     * @param string       $key
+     * @param array<mixed> $default
+     *
+     * @return array<mixed>
+     */
+    public function array(string $key, array $default = []): array
+    {
+        $value = $this->get($key, $default);
+        if (!is_array($value)) {
+            return $default;
+        }
+        return $value;
+    }
+
+    /**
      * Retrieve a config value cast to bool.
      * Handles string values: 'true'/'1' → true, 'false'/'0' → false.
      *

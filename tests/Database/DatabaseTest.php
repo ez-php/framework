@@ -119,6 +119,47 @@ final class DatabaseTest extends TestCase
         $this->assertSame('ok', $result);
     }
 
+    /**
+     * When a DDL statement causes an implicit commit (MySQL behaviour), the PDO
+     * transaction is silently ended. The commit() guard must not throw in that case.
+     *
+     * Simulated here by manually calling commit() on the PDO inside the callable,
+     * which leaves `inTransaction()` returning false before `transaction()` tries
+     * its own commit.
+     *
+     * @return void
+     * @throws Throwable
+     */
+    public function test_transaction_survives_implicit_commit_on_success(): void
+    {
+        $result = $this->db->transaction(function (): string {
+            // Simulate MySQL DDL implicit commit
+            $this->db->getPdo()->commit();
+            return 'ok';
+        });
+
+        $this->assertSame('ok', $result);
+    }
+
+    /**
+     * When an implicit commit has already ended the transaction and the callable
+     * also throws, the rollBack() guard must not throw a second error — only the
+     * original exception must propagate.
+     *
+     * @return void
+     */
+    public function test_transaction_survives_implicit_commit_on_exception(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('post-DDL failure');
+
+        $this->db->transaction(function (): void {
+            // Simulate MySQL DDL implicit commit, then a subsequent failure
+            $this->db->getPdo()->commit();
+            throw new RuntimeException('post-DDL failure');
+        });
+    }
+
     // ── type binding ──────────────────────────────────────────────────────────
 
     /**

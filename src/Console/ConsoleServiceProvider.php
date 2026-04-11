@@ -8,6 +8,7 @@ use EzPhp\Application\Application;
 use EzPhp\Config\ConfigLoader;
 use EzPhp\Console\Command\ConfigCacheCommand;
 use EzPhp\Console\Command\ConfigClearCommand;
+use EzPhp\Console\Command\DbSeedCommand;
 use EzPhp\Console\Command\DoctorCommand;
 use EzPhp\Console\Command\EnvCheckCommand;
 use EzPhp\Console\Command\IdeGenerateCommand;
@@ -23,6 +24,7 @@ use EzPhp\Console\Command\MakeModelCommand;
 use EzPhp\Console\Command\MakeNotificationCommand;
 use EzPhp\Console\Command\MakeProviderCommand;
 use EzPhp\Console\Command\MakeRequestCommand;
+use EzPhp\Console\Command\MakeSeederCommand;
 use EzPhp\Console\Command\MakeTestCommand;
 use EzPhp\Console\Command\MigrateCommand;
 use EzPhp\Console\Command\MigrateFreshCommand;
@@ -35,6 +37,7 @@ use EzPhp\Console\Command\ServeCommand;
 use EzPhp\Console\Command\TinkerCommand;
 use EzPhp\Console\Schedule\Scheduler;
 use EzPhp\Migration\Migrator;
+use EzPhp\Migration\SeederRunner;
 use EzPhp\Routing\Router;
 use EzPhp\ServiceProvider\ServiceProvider;
 
@@ -71,7 +74,10 @@ final class ConsoleServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(MigrateFreshCommand::class, function (Application $app): MigrateFreshCommand {
-            return new MigrateFreshCommand($app->make(Migrator::class));
+            return new MigrateFreshCommand(
+                $app->make(Migrator::class),
+                $app->make(SeederRunner::class),
+            );
         });
 
         $this->app->bind(MigrateStatusCommand::class, function (Application $app): MigrateStatusCommand {
@@ -80,6 +86,19 @@ final class ConsoleServiceProvider extends ServiceProvider
 
         $this->app->bind(MakeMigrationCommand::class, function (Application $app): MakeMigrationCommand {
             return new MakeMigrationCommand($app->basePath('database/migrations'));
+        });
+
+        $this->app->bind(MakeSeederCommand::class, function (Application $app): MakeSeederCommand {
+            return new MakeSeederCommand($app->basePath('database/seeders'));
+        });
+
+        $this->app->bind(DbSeedCommand::class, function (Application $app): DbSeedCommand {
+            /** @var string $env */
+            $env = (string) getenv('APP_ENV');
+            return new DbSeedCommand(
+                $app->make(SeederRunner::class),
+                $env !== '' ? $env : 'local',
+            );
         });
 
         $this->app->bind(MakeControllerCommand::class, function (Application $app): MakeControllerCommand {
@@ -181,6 +200,8 @@ final class ConsoleServiceProvider extends ServiceProvider
                 $app->make(MigrateFreshCommand::class),
                 $app->make(MigrateStatusCommand::class),
                 $app->make(MakeMigrationCommand::class),
+                $app->make(MakeSeederCommand::class),
+                $app->make(DbSeedCommand::class),
                 $app->make(MakeControllerCommand::class),
                 $app->make(MakeMiddlewareCommand::class),
                 $app->make(MakeProviderCommand::class),

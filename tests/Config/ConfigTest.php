@@ -153,6 +153,75 @@ final class ConfigTest extends TestCase
     /**
      * @return void
      */
+    public function test_float_returns_float_value(): void
+    {
+        $config = new Config(['scale' => 1.5]);
+        $this->assertSame(1.5, $config->float('scale'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_float_returns_default_for_missing_key(): void
+    {
+        $this->assertSame(3.3, $this->makeConfig()->float('missing', 3.3));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_float_casts_integer_to_float(): void
+    {
+        $this->assertSame(3306.0, $this->makeConfig()->float('db.port'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_float_casts_string_to_float(): void
+    {
+        $config = new Config(['val' => '2.5']);
+        $this->assertSame(2.5, $config->float('val'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_float_returns_default_for_non_scalar_value(): void
+    {
+        $config = new Config(['val' => ['nested']]);
+        $this->assertSame(0.0, $config->float('val'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_array_returns_array_value(): void
+    {
+        $result = $this->makeConfig()->array('app');
+        $this->assertSame(['name' => 'ez-php', 'debug' => true], $result);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_array_returns_default_for_missing_key(): void
+    {
+        $this->assertSame([], $this->makeConfig()->array('missing'));
+        $this->assertSame(['a'], $this->makeConfig()->array('missing', ['a']));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_array_returns_default_when_value_is_not_array(): void
+    {
+        $this->assertSame([], $this->makeConfig()->array('app.name'));
+    }
+
+    /**
+     * @return void
+     */
     public function test_bool_returns_boolean_value(): void
     {
         $this->assertTrue($this->makeConfig()->bool('app.debug'));

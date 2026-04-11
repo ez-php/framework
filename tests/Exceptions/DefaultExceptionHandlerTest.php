@@ -292,4 +292,125 @@ final class DefaultExceptionHandlerTest extends TestCase
 
         $this->assertSame($handler, $result);
     }
+
+    // --- Exception-to-HTTP mapping registry ---
+
+    /**
+     * @return void
+     */
+    public function test_map_returns_self_for_chaining(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $result = $handler->map(RuntimeException::class, 422, 'RUNTIME_ERROR');
+
+        $this->assertSame($handler, $result);
+    }
+
+    /**
+     * Mapped exception produces the registered status instead of 500.
+     *
+     * @return void
+     */
+    public function test_map_uses_registered_status_for_json_response(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $handler->map(RuntimeException::class, 422, 'RUNTIME_ERROR');
+
+        $request = new Request('GET', '/', headers: ['accept' => 'application/json']);
+        $response = $handler->render(new RuntimeException('something went wrong'), $request);
+
+        $this->assertSame(422, $response->status());
+        $this->assertSame('application/json', $response->headers()['Content-Type']);
+    }
+
+    /**
+     * String code from map() is used as JSON `code` field.
+     *
+     * @return void
+     */
+    public function test_map_uses_string_code_in_json_envelope(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $handler->map(RuntimeException::class, 422, 'INSUFFICIENT_GOLD');
+
+        $request = new Request('GET', '/', headers: ['accept' => 'application/json']);
+        $response = $handler->render(new RuntimeException('not enough gold'), $request);
+
+        /** @var array{error: array{code: string, message: string}} $body */
+        $body = json_decode($response->body(), true);
+        $this->assertSame('INSUFFICIENT_GOLD', $body['error']['code']);
+        $this->assertSame('not enough gold', $body['error']['message']);
+    }
+
+    /**
+     * When no string code is provided, the numeric HTTP status is used as code.
+     *
+     * @return void
+     */
+    public function test_map_uses_numeric_status_as_code_when_no_string_code(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $handler->map(RuntimeException::class, 409);
+
+        $request = new Request('GET', '/', headers: ['accept' => 'application/json']);
+        $response = $handler->render(new RuntimeException('conflict'), $request);
+
+        /** @var array{error: array{code: int, message: string}} $body */
+        $body = json_decode($response->body(), true);
+        $this->assertSame(409, $body['error']['code']);
+    }
+
+    /**
+     * Subclasses of the mapped exception are also caught by the mapping.
+     *
+     * @return void
+     */
+    public function test_map_matches_subclass_of_registered_exception(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $handler->map(\Exception::class, 400, 'BAD_REQUEST');
+
+        $request = new Request('GET', '/', headers: ['accept' => 'application/json']);
+        // RuntimeException extends Exception
+        $response = $handler->render(new RuntimeException('sub'), $request);
+
+        $this->assertSame(400, $response->status());
+    }
+
+    /**
+     * renderable() takes priority over map() for the same exception class.
+     *
+     * @return void
+     */
+    public function test_renderable_takes_priority_over_map(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $handler->renderable(
+            RuntimeException::class,
+            fn (Throwable $e, RequestInterface $r): Response => new Response('from-renderable', 200)
+        );
+        $handler->map(RuntimeException::class, 422, 'RUNTIME_ERROR');
+
+        $request = new Request('GET', '/');
+        $response = $handler->render(new RuntimeException('x'), $request);
+
+        $this->assertSame('from-renderable', $response->body());
+    }
+
+    /**
+     * Mapped exception falls through to HTML renderer for non-JSON requests.
+     *
+     * @return void
+     */
+    public function test_map_returns_html_for_non_json_request(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $handler->map(RuntimeException::class, 422, 'RUNTIME_ERROR');
+
+        $request = new Request('GET', '/');
+        $response = $handler->render(new RuntimeException('oops'), $request);
+
+        $this->assertSame(422, $response->status());
+        $this->assertSame('text/html; charset=utf-8', $response->headers()['Content-Type']);
+    }
 }

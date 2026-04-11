@@ -7,6 +7,7 @@ namespace Tests\Console\Command;
 use EzPhp\Console\Command\MigrateFreshCommand;
 use EzPhp\Database\Database;
 use EzPhp\Migration\Migrator;
+use EzPhp\Migration\SeederRunner;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
@@ -20,9 +21,14 @@ use Throwable;
 #[CoversClass(MigrateFreshCommand::class)]
 #[UsesClass(Migrator::class)]
 #[UsesClass(Database::class)]
+#[UsesClass(SeederRunner::class)]
 final class MigrateFreshCommandTest extends TestCase
 {
     private string $path;
+
+    private string $seederPath;
+
+    private Database $db;
 
     private Migrator $migrator;
 
@@ -31,10 +37,13 @@ final class MigrateFreshCommandTest extends TestCase
      */
     protected function setUp(): void
     {
-        $db = new Database('sqlite::memory:', '', '');
+        $this->db = new Database('sqlite::memory:', '', '');
+        $this->db->query('CREATE TABLE IF NOT EXISTS items (name TEXT)');
         $this->path = sys_get_temp_dir() . '/ez-php-fresh-cmd-' . uniqid();
+        $this->seederPath = sys_get_temp_dir() . '/ez-php-fresh-seeders-' . uniqid();
         mkdir($this->path);
-        $this->migrator = new Migrator($db, $this->path);
+        mkdir($this->seederPath);
+        $this->migrator = new Migrator($this->db, $this->path);
     }
 
     /**
@@ -45,7 +54,11 @@ final class MigrateFreshCommandTest extends TestCase
         foreach (glob($this->path . '/*.php') ?: [] as $file) {
             unlink($file);
         }
+        foreach (glob($this->seederPath . '/*.php') ?: [] as $file) {
+            unlink($file);
+        }
         rmdir($this->path);
+        rmdir($this->seederPath);
     }
 
     /**
@@ -53,7 +66,7 @@ final class MigrateFreshCommandTest extends TestCase
      */
     public function test_name_description_help(): void
     {
-        $command = new MigrateFreshCommand($this->migrator);
+        $command = new MigrateFreshCommand($this->migrator, new SeederRunner($this->db, $this->seederPath));
 
         $this->assertSame('migrate:fresh', $command->getName());
         $this->assertNotEmpty($command->getDescription());
@@ -80,7 +93,7 @@ final class MigrateFreshCommandTest extends TestCase
 
         $this->migrator->migrate();
 
-        $command = new MigrateFreshCommand($this->migrator);
+        $command = new MigrateFreshCommand($this->migrator, new SeederRunner($this->db, $this->seederPath));
 
         ob_start();
         $code = $command->handle([]);
@@ -92,12 +105,44 @@ final class MigrateFreshCommandTest extends TestCase
     }
 
     /**
+     * --seed flag runs seeders after migration.
+     *
+     * @return void
+     * @throws Throwable
+     */
+    public function test_fresh_with_seed_flag_runs_seeders(): void
+    {
+        file_put_contents($this->seederPath . '/TestSeeder.php', <<<'PHP'
+            <?php
+            use EzPhp\Database\Database;
+            use EzPhp\Migration\SeederInterface;
+            return new class implements SeederInterface {
+                public function run(Database $db): void {
+                    $db->execute('INSERT INTO items (name) VALUES (?)', ['seeded']);
+                }
+            };
+            PHP);
+
+        $command = new MigrateFreshCommand($this->migrator, new SeederRunner($this->db, $this->seederPath));
+
+        ob_start();
+        $code = $command->handle(['--seed']);
+        $output = (string) ob_get_clean();
+
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('Seeded: TestSeeder.php', $output);
+
+        $rows = $this->db->query('SELECT name FROM items');
+        $this->assertCount(1, $rows);
+    }
+
+    /**
      * @return void
      * @throws Throwable
      */
     public function test_fresh_with_no_migrations(): void
     {
-        $command = new MigrateFreshCommand($this->migrator);
+        $command = new MigrateFreshCommand($this->migrator, new SeederRunner($this->db, $this->seederPath));
 
         ob_start();
         $code = $command->handle([]);

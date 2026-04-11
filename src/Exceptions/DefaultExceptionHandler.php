@@ -27,6 +27,11 @@ class DefaultExceptionHandler implements ExceptionHandler
     private array $renderables = [];
 
     /**
+     * @var list<array{0: class-string, 1: int, 2: string}>
+     */
+    private array $mappings = [];
+
+    /**
      * DefaultExceptionHandler Constructor
      *
      * @param bool            $debug        Show full exception details in HTML responses.
@@ -59,6 +64,27 @@ class DefaultExceptionHandler implements ExceptionHandler
     }
 
     /**
+     * Register a domain exception → HTTP status mapping.
+     *
+     * When the given exception class (or a subclass) is thrown and no custom
+     * renderable matches it, the handler responds with $status instead of 500.
+     * If $code is non-empty it is used as the JSON `code` field instead of the
+     * numeric HTTP status.
+     *
+     * @param class-string $exceptionClass
+     * @param int          $status
+     * @param string       $code
+     *
+     * @return $this
+     */
+    public function map(string $exceptionClass, int $status, string $code = ''): static
+    {
+        $this->mappings[] = [$exceptionClass, $status, $code];
+
+        return $this;
+    }
+
+    /**
      * @param Throwable        $e
      * @param RequestInterface $request
      *
@@ -70,6 +96,13 @@ class DefaultExceptionHandler implements ExceptionHandler
         foreach ($this->renderables as [$class, $renderer]) {
             if ($e instanceof $class) {
                 return $renderer($e, $request);
+            }
+        }
+
+        // Check domain exception mappings
+        foreach ($this->mappings as [$class, $mappedStatus, $mappedCode]) {
+            if ($e instanceof $class) {
+                return $this->buildMappedResponse($e, $request, $mappedStatus, $mappedCode);
             }
         }
 
@@ -85,6 +118,41 @@ class DefaultExceptionHandler implements ExceptionHandler
         if (str_contains($accept, 'application/json')) {
             $message = $this->resolveMessage($e, $status);
             $envelope = ['error' => ['code' => $status, 'message' => $message]];
+            $json = json_encode($envelope) ?: '{"error":{"code":500,"message":"Internal Server Error"}}';
+
+            return (new Response($json, $status))
+                ->withHeader('Content-Type', 'application/json');
+        }
+
+        $html = $this->debug
+            ? (new DebugHtmlRenderer())->render($e, $request)
+            : (new ProductionHtmlRenderer($this->templatePath, $this->translator))->render($status);
+
+        return (new Response($html, $status))
+            ->withHeader('Content-Type', 'text/html; charset=utf-8');
+    }
+
+    /**
+     * @param Throwable        $e
+     * @param RequestInterface $request
+     * @param int              $status
+     * @param string           $code
+     *
+     * @return Response
+     */
+    private function buildMappedResponse(
+        Throwable $e,
+        RequestInterface $request,
+        int $status,
+        string $code,
+    ): Response {
+        /** @var string $accept */
+        $accept = $request->header('accept', '');
+
+        if (str_contains($accept, 'application/json')) {
+            $jsonCode = $code !== '' ? $code : $status;
+            $message = $e->getMessage();
+            $envelope = ['error' => ['code' => $jsonCode, 'message' => $message]];
             $json = json_encode($envelope) ?: '{"error":{"code":500,"message":"Internal Server Error"}}';
 
             return (new Response($json, $status))

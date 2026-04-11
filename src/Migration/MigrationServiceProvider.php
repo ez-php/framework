@@ -27,5 +27,12 @@ final class MigrationServiceProvider extends ServiceProvider
                 $app->basePath('database/migrations'),
             );
         });
+
+        $this->app->bind(SeederRunner::class, function (Application $app): SeederRunner {
+            return new SeederRunner(
+                $app->make(Database::class),
+                $app->basePath('database/seeders'),
+            );
+        });
     }
 }

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace EzPhp\Console\Command;
 
 use EzPhp\Console\CommandInterface;
+use EzPhp\Console\Input;
 use EzPhp\Migration\Migrator;
+use EzPhp\Migration\SeederRunner;
 use Throwable;
 
 /**
@@ -21,10 +23,13 @@ final readonly class MigrateFreshCommand implements CommandInterface
     /**
      * MigrateFreshCommand Constructor
      *
-     * @param Migrator $migrator
+     * @param Migrator          $migrator
+     * @param SeederRunner|null $seederRunner  Injected when the seeder infrastructure is available.
      */
-    public function __construct(private Migrator $migrator)
-    {
+    public function __construct(
+        private Migrator $migrator,
+        private ?SeederRunner $seederRunner = null,
+    ) {
     }
 
     /**
@@ -48,7 +53,7 @@ final readonly class MigrateFreshCommand implements CommandInterface
      */
     public function getHelp(): string
     {
-        return 'Usage: ez migrate:fresh';
+        return 'Usage: ez migrate:fresh [--seed]';
     }
 
     /**
@@ -59,6 +64,8 @@ final readonly class MigrateFreshCommand implements CommandInterface
      */
     public function handle(array $args): int
     {
+        $input = new Input($args);
+
         $rolled = $this->migrator->rollbackAll();
 
         foreach ($rolled as $file) {
@@ -69,11 +76,17 @@ final readonly class MigrateFreshCommand implements CommandInterface
 
         if ($ran === []) {
             echo "Nothing to migrate.\n";
-            return 0;
+        } else {
+            foreach ($ran as $file) {
+                echo "Migrated: $file\n";
+            }
         }
 
-        foreach ($ran as $file) {
-            echo "Migrated: $file\n";
+        if ($input->hasFlag('seed') && $this->seederRunner !== null) {
+            $seeded = $this->seederRunner->run();
+            foreach ($seeded as $file) {
+                echo "Seeded: $file\n";
+            }
         }
 
         return 0;
