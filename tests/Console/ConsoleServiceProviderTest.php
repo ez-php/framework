@@ -31,7 +31,6 @@ use EzPhp\Console\Command\ServeCommand;
 use EzPhp\Console\Command\TinkerCommand;
 use EzPhp\Console\Console;
 use EzPhp\Console\ConsoleServiceProvider;
-use EzPhp\Console\Prompt;
 use EzPhp\Console\Schedule\ScheduledCommand;
 use EzPhp\Console\Schedule\Scheduler;
 use EzPhp\Container\Container;
@@ -91,7 +90,6 @@ use Tests\DatabaseTestCase;
 #[UsesClass(DoctorCommand::class)]
 #[UsesClass(EnvCheckCommand::class)]
 #[UsesClass(ListCommand::class)]
-#[UsesClass(Prompt::class)]
 #[UsesClass(ScheduleRunCommand::class)]
 #[UsesClass(Scheduler::class)]
 #[UsesClass(ScheduledCommand::class)]

@@ -25,7 +25,6 @@ use Throwable;
 #[UsesClass(Migrator::class)]
 #[UsesClass(SeederRunner::class)]
 #[UsesClass(Database::class)]
-#[UsesClass(Prompt::class)]
 #[UsesClass(MigrationException::class)]
 final class DbSetupCommandTest extends TestCase
 {
