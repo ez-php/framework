@@ -529,7 +529,11 @@ final class Router
                 continue;
             }
 
-            $model = $resolver($raw);
+            try {
+                $model = $resolver($raw);
+            } catch (\Throwable) {
+                throw new NotFoundException("Failed to resolve model binding for '$param'.");
+            }
 
             if ($model === null) {
                 throw new NotFoundException("Model not found for route parameter '$param'.");

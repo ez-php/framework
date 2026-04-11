@@ -44,6 +44,29 @@ class DefaultExceptionHandler implements ExceptionHandler
         private readonly string $templatePath = '',
         private readonly ?Translator $translator = null,
     ) {
+        if ($this->debug && $this->isProductionEnvironment()) {
+            error_log(
+                '[ez-php] WARNING: APP_DEBUG is enabled in a production environment. '
+                . 'Full stack traces and query details will be exposed in error responses. '
+                . 'Set APP_DEBUG=false for production deployments.'
+            );
+        }
+    }
+
+    /**
+     * Return true when the application environment appears to be production.
+     *
+     * Reads APP_ENV from $_SERVER first (populated by the web server), then
+     * $_ENV (populated by putenv / dotenv), with a safe default of false.
+     *
+     * @return bool
+     */
+    private function isProductionEnvironment(): bool
+    {
+        $raw = $_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? '';
+        $env = is_string($raw) ? $raw : '';
+
+        return strtolower($env) === 'production';
     }
 
     /**
