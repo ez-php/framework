@@ -21,12 +21,16 @@ final readonly class CorsMiddleware implements MiddlewareInterface
      * @param string $allowMethods
      * @param string $allowHeaders
      * @param int    $maxAge
+     * @param bool   $enabled     Set to false to disable CORS header injection without
+     *                            removing the middleware from the stack. Useful when
+     *                            CORS is toggled via configuration without code changes.
      */
     public function __construct(
         private string $allowOrigin = '*',
         private string $allowMethods = 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
         private string $allowHeaders = 'Content-Type, Authorization, X-Requested-With',
         private int $maxAge = 86400,
+        private bool $enabled = true,
     ) {
     }
 
@@ -38,6 +42,13 @@ final readonly class CorsMiddleware implements MiddlewareInterface
      */
     public function handle(RequestInterface $request, callable $next): Response
     {
+        if (!$this->enabled) {
+            /** @var Response $response */
+            $response = $next($request);
+
+            return $response;
+        }
+
         if ($request->method() === 'OPTIONS') {
             return $this->addCorsHeaders(new Response('', 204));
         }

@@ -119,4 +119,41 @@ final class CorsMiddlewareTest extends TestCase
         $this->assertSame(201, $response->status());
         $this->assertSame('created', $response->body());
     }
+
+    /**
+     * @return void
+     */
+    public function test_disabled_middleware_passes_through_without_cors_headers(): void
+    {
+        $middleware = new CorsMiddleware(enabled: false);
+
+        $response = $middleware->handle(
+            new Request('GET', '/api/users'),
+            fn (): Response => new Response('ok'),
+        );
+
+        $this->assertSame('ok', $response->body());
+        $this->assertArrayNotHasKey('Access-Control-Allow-Origin', $response->headers());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_disabled_middleware_does_not_intercept_options(): void
+    {
+        $middleware = new CorsMiddleware(enabled: false);
+        $called = false;
+
+        $response = $middleware->handle(
+            new Request('OPTIONS', '/api/users'),
+            function () use (&$called): Response {
+                $called = true;
+                return new Response('from next', 200);
+            },
+        );
+
+        $this->assertTrue($called);
+        $this->assertSame(200, $response->status());
+        $this->assertArrayNotHasKey('Access-Control-Allow-Origin', $response->headers());
+    }
 }
