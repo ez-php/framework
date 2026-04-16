@@ -33,6 +33,7 @@ use EzPhp\Console\Command\MigrateRollbackCommand;
 use EzPhp\Console\Command\MigrateStatusCommand;
 use EzPhp\Console\Command\RouteCacheCommand;
 use EzPhp\Console\Command\RouteClearCommand;
+use EzPhp\Console\Command\ScheduleListCommand;
 use EzPhp\Console\Command\ScheduleRunCommand;
 use EzPhp\Console\Command\ServeCommand;
 use EzPhp\Console\Command\TinkerCommand;
@@ -238,6 +239,7 @@ final class ConsoleServiceProvider extends ServiceProvider
             }
 
             $commands[] = $app->make(ScheduleRunCommand::class);
+            $commands[] = new ScheduleListCommand($app->make(Scheduler::class));
 
             $listCommand = new ListCommand($commands);
 

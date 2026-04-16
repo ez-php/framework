@@ -140,4 +140,30 @@ final class ScheduledCommand
     {
         return ($this->duePredicate)($time);
     }
+
+    /**
+     * Find the next time this command will be due, starting from the given moment.
+     *
+     * Probes up to 7 days (10 080 minute-steps) forward. Returns null when
+     * no due time is found within that window (e.g. the entry has no frequency set).
+     *
+     * @param DateTimeInterface $after Starting point for the search (exclusive).
+     *
+     * @return \DateTimeImmutable|null
+     */
+    public function nextRunAfter(DateTimeInterface $after): ?\DateTimeImmutable
+    {
+        $base = \DateTimeImmutable::createFromInterface($after)
+            ->setTime((int) $after->format('H'), (int) $after->format('i'), 0);
+
+        for ($i = 1; $i <= 10080; $i++) {
+            $candidate = $base->modify("+{$i} minutes");
+
+            if ($this->isDue($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
 }

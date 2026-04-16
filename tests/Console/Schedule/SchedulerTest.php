@@ -167,6 +167,60 @@ final class SchedulerTest extends TestCase
         $this->assertFalse($cmd->isDue(new DateTimeImmutable()));
     }
 
+    // ── nextRunAfter ──────────────────────────────────────────────────────────
+
+    /**
+     * @return void
+     */
+    public function test_next_run_after_returns_null_when_never_due(): void
+    {
+        $cmd = new ScheduledCommand('task'); // no frequency set
+
+        $this->assertNull($cmd->nextRunAfter(new DateTimeImmutable('2025-01-01 12:00:00')));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_next_run_after_returns_next_minute_for_every_minute(): void
+    {
+        $cmd = (new ScheduledCommand('task'))->everyMinute();
+        $after = new DateTimeImmutable('2025-06-15 10:30:00');
+
+        $next = $cmd->nextRunAfter($after);
+
+        $this->assertNotNull($next);
+        $this->assertSame('2025-06-15 10:31', $next->format('Y-m-d H:i'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_next_run_after_returns_next_hour_for_hourly(): void
+    {
+        $cmd = (new ScheduledCommand('task'))->hourly();
+        $after = new DateTimeImmutable('2025-06-15 10:30:00');
+
+        $next = $cmd->nextRunAfter($after);
+
+        $this->assertNotNull($next);
+        $this->assertSame('2025-06-15 11:00', $next->format('Y-m-d H:i'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_next_run_after_returns_midnight_for_daily(): void
+    {
+        $cmd = (new ScheduledCommand('task'))->daily();
+        $after = new DateTimeImmutable('2025-06-15 10:00:00');
+
+        $next = $cmd->nextRunAfter($after);
+
+        $this->assertNotNull($next);
+        $this->assertSame('2025-06-16 00:00', $next->format('Y-m-d H:i'));
+    }
+
     /**
      * @return void
      */
