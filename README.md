@@ -89,13 +89,34 @@ The router reads `_method` from the parsed request body and overrides the HTTP m
 
 ## Optional modules
 
-- [ez-php/orm](https://github.com/ez-php/orm) — Active Record ORM with query builder and schema builder
-- [ez-php/auth](https://github.com/ez-php/auth) — Authentication
-- [ez-php/cache](https://github.com/ez-php/cache) — Cache drivers (array, file, Redis)
-- [ez-php/events](https://github.com/ez-php/events) — Event dispatcher
-- [ez-php/i18n](https://github.com/ez-php/i18n) — Internationalisation
-- [ez-php/validation](https://github.com/ez-php/validation) — Validator
-- [ez-php/http-client](https://github.com/ez-php/http-client) — HTTP client
+- [ez-php/orm](https://github.com/ez-php/orm) — Data Mapper ORM, Query Builder, Schema Builder
+- [ez-php/auth](https://github.com/ez-php/auth) — Session, Bearer token, JWT, and personal access token authentication
+- [ez-php/cache](https://github.com/ez-php/cache) — Array, File, Redis, and Memcached drivers; tags, locks, stampede protection
+- [ez-php/events](https://github.com/ez-php/events) — Synchronous event bus, static `Event` façade, stoppable events
+- [ez-php/i18n](https://github.com/ez-php/i18n) — Locale-based translator, dot-notation keys, `LocaleFormatter`
+- [ez-php/validation](https://github.com/ez-php/validation) — Rule-based validator, `FormRequest`, optional DB/translator integration
+- [ez-php/http-client](https://github.com/ez-php/http-client) — Fluent cURL HTTP client, static `Http` façade, pluggable transport
+- [ez-php/logging](https://github.com/ez-php/logging) — Structured logger, File/JSON/Stack/Null drivers, `RequestContextMiddleware`
+- [ez-php/mail](https://github.com/ez-php/mail) — Transactional email, SMTP/Mailgun/SendGrid/Log/Null drivers
+- [ez-php/view](https://github.com/ez-php/view) — PHP template engine, layouts, sections, partials
+- [ez-php/queue](https://github.com/ez-php/queue) — Async job queue, database and Redis drivers, failed-job management
+- [ez-php/rate-limiter](https://github.com/ez-php/rate-limiter) — Rate limiting, Array/Redis/CacheDelegate drivers, `ThrottleMiddleware`
+- [ez-php/scheduler](https://github.com/ez-php/scheduler) — Cron-based job scheduler with File/Database mutex overlap prevention
+- [ez-php/broadcast](https://github.com/ez-php/broadcast) — Real-time event broadcasting, SSE helpers, Null/Log/Redis/Array drivers
+- [ez-php/search](https://github.com/ez-php/search) — Full-text search, Meilisearch/Elasticsearch/Typesense drivers
+- [ez-php/notification](https://github.com/ez-php/notification) — Multi-channel notifications (mail, broadcast, database)
+- [ez-php/storage](https://github.com/ez-php/storage) — File storage abstraction, Local and S3 drivers
+- [ez-php/health](https://github.com/ez-php/health) — `/health` endpoint with DB, Redis, and Queue probes
+- [ez-php/feature-flags](https://github.com/ez-php/feature-flags) — Feature flag evaluation, File/Database/Array drivers
+- [ez-php/audit](https://github.com/ez-php/audit) — Event-driven audit log, `AuditLogger`, `AuditQuery`
+- [ez-php/metrics](https://github.com/ez-php/metrics) — Prometheus metrics endpoint, Counter/Gauge/Histogram
+- [ez-php/websocket](https://github.com/ez-php/websocket) — RFC 6455 WebSocket server, PHP 8.5 Fibers
+- [ez-php/bignum](https://github.com/ez-php/bignum) — Arbitrary-precision integers and decimals
+- [ez-php/graphql](https://github.com/ez-php/graphql) — GraphQL endpoint, SchemaBuilder
+- [ez-php/money](https://github.com/ez-php/money) — Monetary values, Currency, CurrencyRegistry
+- [ez-php/opcache](https://github.com/ez-php/opcache) — OPcache preloading
+- [ez-php/openapi](https://github.com/ez-php/openapi) — OpenAPI 3.x spec generation, attribute-driven
+- [ez-php/two-factor](https://github.com/ez-php/two-factor) — TOTP two-factor authentication
 
 ## License
 

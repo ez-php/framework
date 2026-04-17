@@ -166,60 +166,94 @@ The framework core — runtime kernel, dependency injection, routing, middleware
 src/
 ├── Application/
 │   ├── Application.php               — Runtime kernel; bootstrap, request handling, DI façade
-│   └── CoreServiceProviders.php      — Ordered list of built-in service providers
+│   ├── CoreServiceProviders.php      — Ordered list of built-in service providers
+│   └── StaticFacade.php              — Abstract base for static façades with setInstance/resetInstance pattern
 ├── Config/
 │   ├── Config.php                    — Immutable dot-notation config store
 │   ├── ConfigLoader.php              — Scans config/*.php and returns keyed array
+│   ├── ConfigValidator.php           — Validates config arrays against required keys
 │   └── ConfigServiceProvider.php    — Binds ConfigLoader and Config to the container
 ├── Console/
 │   ├── ConsoleServiceProvider.php    — Registers Console, Scheduler, and all built-in commands
 │   ├── Command/
-│   │   ├── MakeControllerCommand.php — Scaffolds a controller class in src/Controllers/
-│   │   ├── MakeMigrationCommand.php  — Creates a timestamped migration stub
-│   │   ├── MakeMiddlewareCommand.php — Scaffolds a middleware class in src/Middleware/
-│   │   ├── MakeProviderCommand.php   — Scaffolds a service provider in src/Providers/
-│   │   ├── MakeModelCommand.php      — Scaffolds an Active Record model in app/Models/
-│   │   ├── MakeEventCommand.php      — Scaffolds an event class in app/Events/
-│   │   ├── MakeListenerCommand.php   — Scaffolds an event listener in app/Listeners/
-│   │   ├── MakeRequestCommand.php    — Scaffolds a form request class in app/Requests/
-│   │   ├── MakeTestCommand.php       — Scaffolds a test class in tests/ (unit/feature/http)
-│   │   ├── MigrateCommand.php        — Runs all pending migrations
-│   │   ├── MigrateRollbackCommand.php — Rolls back the last migration batch
-│   │   ├── MigrateFreshCommand.php   — Rolls back all migrations and re-runs them from scratch
-│   │   ├── MigrateStatusCommand.php  — Shows the status of all migrations (pending / ran)
-│   │   ├── ScheduleRunCommand.php    — Runs all due scheduled commands (trigger with system cron)
-│   │   ├── ServeCommand.php          — Starts the built-in PHP web server; --watch flag polls for PHP file changes and auto-restarts
-│   │   ├── TinkerCommand.php         — Opens an interactive REPL with the application bootstrapped (requires psy/psysh)
-│   │   ├── IdeGenerateCommand.php    — Generates _ide_helpers.php PHPDoc stubs for installed static façades
-│   │   └── ListCommand.php           — Lists all available commands
+│   │   ├── ConfigCacheCommand.php    — config:cache — serialises config to a cache file for faster boot
+│   │   ├── ConfigClearCommand.php    — config:clear — deletes the cached config file
+│   │   ├── DbSeedCommand.php         — db:seed — runs seeders registered via SeederRunner
+│   │   ├── DbSetupCommand.php        — db:setup — runs migrations + seeders in one step
+│   │   ├── DoctorCommand.php         — doctor — checks environment, extensions, and config for common issues
+│   │   ├── EnvCheckCommand.php       — env:check — verifies all required .env keys are present
+│   │   ├── IdeGenerateCommand.php    — ide:generate — generates _ide_helpers.php PHPDoc stubs for installed static façades
+│   │   ├── ListCommand.php           — list — lists all available commands with descriptions
+│   │   ├── MakeChannelCommand.php    — make:channel — scaffolds a broadcast channel class in app/Channels/
+│   │   ├── MakeControllerCommand.php — make:controller — scaffolds a controller class in app/Controllers/
+│   │   ├── MakeEventCommand.php      — make:event — scaffolds an event class in app/Events/
+│   │   ├── MakeJobCommand.php        — make:job — scaffolds a queue job class in app/Jobs/
+│   │   ├── MakeListenerCommand.php   — make:listener — scaffolds an event listener in app/Listeners/
+│   │   ├── MakeMiddlewareCommand.php — make:middleware — scaffolds a middleware class in app/Middleware/
+│   │   ├── MakeMigrationCommand.php  — make:migration — creates a timestamped migration stub
+│   │   ├── MakeModelCommand.php      — make:model — scaffolds an Entity + Repository pair in app/Entities/ and app/Repositories/
+│   │   ├── MakeNotificationCommand.php — make:notification — scaffolds a notification class in app/Notifications/
+│   │   ├── MakeProviderCommand.php   — make:provider — scaffolds a service provider in app/Providers/
+│   │   ├── MakeRequestCommand.php    — make:request — scaffolds a FormRequest class in app/Requests/
+│   │   ├── MakeSeederCommand.php     — make:seeder — scaffolds a seeder class in database/seeders/
+│   │   ├── MakeTestCommand.php       — make:test — scaffolds a test class in tests/ (unit/feature/http)
+│   │   ├── MigrateCommand.php        — migrate — runs all pending migrations
+│   │   ├── MigrateFreshCommand.php   — migrate:fresh — rolls back all migrations and re-runs from scratch
+│   │   ├── MigrateRollbackCommand.php — migrate:rollback — rolls back the last migration batch
+│   │   ├── MigrateStatusCommand.php  — migrate:status — shows pending / ran status for all migrations
+│   │   ├── RouteCacheCommand.php     — route:cache — serialises the route list to a cache file
+│   │   ├── RouteClearCommand.php     — route:clear — deletes the cached route file
+│   │   ├── ScheduleListCommand.php   — schedule:list — lists all registered scheduled commands and their next run time
+│   │   ├── ScheduleRunCommand.php    — schedule:run — runs all due scheduled commands (trigger with system cron)
+│   │   ├── ServeCommand.php          — serve — starts the built-in PHP web server; --watch auto-restarts on PHP file changes
+│   │   └── TinkerCommand.php         — tinker — opens an interactive REPL with the application bootstrapped (requires psy/psysh)
 │   └── Schedule/
 │       ├── Scheduler.php             — Registry of ScheduledCommands; command() adds entries; dueCommands() filters by time
 │       └── ScheduledCommand.php      — A command + frequency predicate; everyMinute/hourly/daily/weekly/monthly
 ├── Container/
-│   └── Container.php                 — DI container with singleton cache and autowiring
+│   ├── Container.php                 — DI container with singleton cache and autowiring
+│   └── ContextualBindingBuilder.php  — Fluent builder for contextual bindings: when(A)->needs(B)->give(C)
+├── Controller/
+│   ├── Controller.php                — Abstract base controller; provides helper methods for request access
+│   └── ApiController.php             — Extends Controller; adds json(), created(), noContent() response helpers
 ├── Database/
 │   ├── Database.php                  — Thin PDO wrapper with transactions and QueryBuilder bridge
 │   └── DatabaseServiceProvider.php  — Configures and registers the Database instance
 ├── Exceptions/
 │   ├── ApplicationException.php      — General application-level exception
+│   ├── BadRequestException.php       — 400 HTTP exception
 │   ├── ConfigException.php           — Config loading/access errors
 │   ├── ContainerException.php        — DI resolution errors
-│   ├── DefaultExceptionHandler.php   — Converts exceptions to HTTP responses (debug + JSON support)
+│   ├── DebugHtmlRenderer.php         — Renders a rich HTML error page in debug mode (stack trace, request info)
+│   ├── DefaultExceptionHandler.php   — Dispatches to debug or production renderer; JSON for API requests
 │   ├── ExceptionHandler.php          — Interface: render(Throwable, Request) → Response
 │   ├── ExceptionHandlerServiceProvider.php — Registers DefaultExceptionHandler with debug flag
 │   ├── EzPhpException.php            — Base exception for all framework exceptions
-│   └── RouteException.php            — Thrown when no route matches (default: "Route not found")
+│   ├── ForbiddenException.php        — 403 HTTP exception
+│   ├── HttpException.php             — Generic HTTP exception with configurable status code
+│   ├── NotFoundException.php         — 404 HTTP exception
+│   ├── ProductionHtmlRenderer.php    — Renders a minimal "Something went wrong" page in production mode
+│   ├── RouteException.php            — Thrown when no route matches
+│   └── UnauthorizedException.php     — 401 HTTP exception
 ├── Middleware/
-│   ├── CorsMiddleware.php            — Adds CORS headers; returns 204 for OPTIONS
-│   ├── DebugToolbarMiddleware.php    — Injects HTML debug toolbar into responses when APP_DEBUG=true; registered by ExceptionHandlerServiceProvider
+│   ├── CorsMiddleware.php            — Adds CORS headers; returns 204 for OPTIONS preflight
+│   ├── CsrfMiddleware.php            — CSRF token validation for state-changing requests
+│   ├── CsrfRateLimiterInterface.php  — Optional rate-limiter seam for CSRF brute-force protection
+│   ├── CsrfTokenStoreInterface.php   — Contract for CSRF token storage (session-backed by default)
+│   ├── DebugToolbarMiddleware.php    — Injects HTML debug toolbar into responses when APP_DEBUG=true
 │   ├── MiddlewareHandler.php         — Builds and executes global + route middleware pipelines
 │   ├── MiddlewareInterface.php       — Contract: handle(Request, callable) → Response
+│   ├── SessionCsrfTokenStore.php     — Default CsrfTokenStoreInterface implementation using PHP sessions
 │   └── TerminableMiddleware.php      — Extension: terminate(Request, Response) → void
 ├── Migration/
+│   ├── MigrationException.php        — Thrown on migration errors (up/down/status)
 │   ├── MigrationInterface.php        — Contract: up(PDO) and down(PDO)
 │   ├── MigrationServiceProvider.php  — Registers Migrator with correct path
-│   └── Migrator.php                  — Scans, loads, executes, and rolls back migrations
+│   ├── Migrator.php                  — Scans, loads, executes, and rolls back migrations
+│   ├── SeederInterface.php           — Contract for database seeders: run(PDO): void
+│   └── SeederRunner.php              — Resolves and executes seeders registered via db:seed
 ├── Routing/
+│   ├── ResourceControllerInterface.php — Contract for resourceful controllers: index/show/create/store/edit/update/destroy
 │   ├── Route.php                     — Single route: regex matching, param extraction, handler execution
 │   ├── Router.php                    — Route registry with group support and named URL generation
 │   └── RouterServiceProvider.php    — Binds Router and loads routes/web.php
