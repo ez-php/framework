@@ -190,7 +190,7 @@ src/
 │   │   ├── MakeJobCommand.php        — make:job — scaffolds a queue job class in app/Jobs/
 │   │   ├── MakeListenerCommand.php   — make:listener — scaffolds an event listener in app/Listeners/
 │   │   ├── MakeMiddlewareCommand.php — make:middleware — scaffolds a middleware class in app/Middleware/
-│   │   ├── MakeMigrationCommand.php  — make:migration — creates a timestamped migration stub
+│   │   ├── MakeMigrationCommand.php  — make:migration — creates a timestamped migration stub; detects create_/add_/drop_ name patterns and generates pre-filled stubs
 │   │   ├── MakeModelCommand.php      — make:model — scaffolds an Entity + Repository pair in app/Entities/ and app/Repositories/
 │   │   ├── MakeNotificationCommand.php — make:notification — scaffolds a notification class in app/Notifications/
 │   │   ├── MakeProviderCommand.php   — make:provider — scaffolds a service provider in app/Providers/

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace EzPhp\Migration;
 
+use Closure;
+use EzPhp\Contracts\Schema\SchemaInterface;
 use EzPhp\Database\Database;
 use Throwable;
 
@@ -23,12 +25,15 @@ final class Migrator
     /**
      * Migrator Constructor
      *
-     * @param Database $db
-     * @param string   $path
+     * @param Database                        $db
+     * @param string                          $path
+     * @param (Closure(): SchemaInterface)|null $schemaFactory
      */
     public function __construct(
         private readonly Database $db,
         private readonly string $path,
+        /** @var (Closure(): SchemaInterface)|null */
+        private readonly ?\Closure $schemaFactory = null,
     ) {
     }
 
@@ -48,12 +53,13 @@ final class Migrator
             return [];
         }
 
+        $schema = $this->resolveSchema();
         $batch = $this->getLastBatch() + 1;
 
         foreach ($pending as $file) {
             $migration = $this->loadMigration($file);
-            $this->db->transaction(function () use ($migration, $file, $batch): void {
-                $migration->up($this->db->getPdo());
+            $this->db->transaction(function () use ($migration, $schema, $file, $batch): void {
+                $migration->up($schema);
                 $this->db->query(
                     'INSERT INTO migrations (migration, batch) VALUES (?, ?)',
                     [$file, $batch],
@@ -224,11 +230,13 @@ final class Migrator
             'migration',
         );
 
-        $this->db->transaction(function () use ($ran): void {
+        $schema = $this->resolveSchema();
+
+        $this->db->transaction(function () use ($ran, $schema): void {
             foreach ($ran as $file) {
                 $migration = $this->loadMigration($file);
                 try {
-                    $migration->down($this->db->getPdo());
+                    $migration->down($schema);
                 } catch (Throwable $e) {
                     throw new MigrationException(
                         "Failed to roll back migration '{$file}': " . $e->getMessage(),
@@ -241,6 +249,21 @@ final class Migrator
         });
 
         return $ran;
+    }
+
+    /**
+     * @return SchemaInterface
+     * @throws MigrationException
+     */
+    private function resolveSchema(): SchemaInterface
+    {
+        if ($this->schemaFactory === null) {
+            throw new MigrationException(
+                'No SchemaInterface configured. Register SchemaServiceProvider (ez-php/orm) before running migrations.'
+            );
+        }
+
+        return ($this->schemaFactory)();
     }
 
     /**

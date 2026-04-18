@@ -76,7 +76,7 @@ final readonly class MakeMigrationCommand implements CommandInterface
             return 1;
         }
 
-        if (file_put_contents($fullPath, $this->stub()) === false) {
+        if (file_put_contents($fullPath, $this->stub($name)) === false) {
             fwrite(STDERR, "Failed to create migration: $filename\n");
             return 1;
         }
@@ -87,26 +87,148 @@ final readonly class MakeMigrationCommand implements CommandInterface
     }
 
     /**
+     * @param string $name Migration name (e.g. create_users_table)
+     *
      * @return string
      */
-    private function stub(): string
+    private function stub(string $name): string
+    {
+        if (preg_match('/^create_(.+)_table$/', $name, $m)) {
+            return $this->createTableStub($m[1]);
+        }
+
+        if (preg_match('/^add_.+_to_(.+)_table$/', $name, $m)) {
+            return $this->addColumnsStub($m[1]);
+        }
+
+        if (preg_match('/^drop_(.+)_table$/', $name, $m)) {
+            return $this->dropTableStub($m[1]);
+        }
+
+        return $this->blankStub();
+    }
+
+    /**
+     * @param string $table
+     *
+     * @return string
+     */
+    private function createTableStub(string $table): string
+    {
+        return <<<PHP
+            <?php
+
+            declare(strict_types=1);
+
+            use EzPhp\\Contracts\\Schema\\SchemaInterface;
+            use EzPhp\\Migration\\MigrationInterface;
+            use EzPhp\\Orm\\Schema\\Blueprint;
+
+            return new class implements MigrationInterface {
+                public function up(SchemaInterface \$schema): void
+                {
+                    \$schema->create('$table', function (Blueprint \$table): void {
+                        \$table->id();
+                        \$table->timestamps();
+                    });
+                }
+
+                public function down(SchemaInterface \$schema): void
+                {
+                    \$schema->dropIfExists('$table');
+                }
+            };
+            PHP;
+    }
+
+    /**
+     * @param string $table
+     *
+     * @return string
+     */
+    private function addColumnsStub(string $table): string
+    {
+        return <<<PHP
+            <?php
+
+            declare(strict_types=1);
+
+            use EzPhp\\Contracts\\Schema\\SchemaInterface;
+            use EzPhp\\Migration\\MigrationInterface;
+            use EzPhp\\Orm\\Schema\\Blueprint;
+
+            return new class implements MigrationInterface {
+                public function up(SchemaInterface \$schema): void
+                {
+                    \$schema->table('$table', function (Blueprint \$table): void {
+                        \$table->string('column_name');
+                    });
+                }
+
+                public function down(SchemaInterface \$schema): void
+                {
+                    \$schema->table('$table', function (Blueprint \$table): void {
+                        \$table->dropColumn('column_name');
+                    });
+                }
+            };
+            PHP;
+    }
+
+    /**
+     * @param string $table
+     *
+     * @return string
+     */
+    private function dropTableStub(string $table): string
+    {
+        return <<<PHP
+            <?php
+
+            declare(strict_types=1);
+
+            use EzPhp\\Contracts\\Schema\\SchemaInterface;
+            use EzPhp\\Migration\\MigrationInterface;
+
+            return new class implements MigrationInterface {
+                public function up(SchemaInterface \$schema): void
+                {
+                    \$schema->drop('$table');
+                }
+
+                public function down(SchemaInterface \$schema): void
+                {
+                    // \$schema->create('$table', function (\\EzPhp\\Orm\\Schema\\Blueprint \$table): void {
+                    //     \$table->id();
+                    //     \$table->timestamps();
+                    // });
+                }
+            };
+            PHP;
+    }
+
+    /**
+     * @return string
+     */
+    private function blankStub(): string
     {
         return <<<'PHP'
             <?php
 
             declare(strict_types=1);
 
+            use EzPhp\Contracts\Schema\SchemaInterface;
             use EzPhp\Migration\MigrationInterface;
 
             return new class implements MigrationInterface {
-                public function up(\PDO $pdo): void
+                public function up(SchemaInterface $schema): void
                 {
-                    // $pdo->exec('CREATE TABLE example (id INT AUTO_INCREMENT PRIMARY KEY)');
+                    //
                 }
 
-                public function down(\PDO $pdo): void
+                public function down(SchemaInterface $schema): void
                 {
-                    // $pdo->exec('DROP TABLE IF EXISTS example');
+                    //
                 }
             };
             PHP;

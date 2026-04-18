@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Console\Command;
 
+use Closure;
 use EzPhp\Console\Command\DbSetupCommand;
 use EzPhp\Console\InputStreamInterface;
 use EzPhp\Console\Prompt;
+use EzPhp\Contracts\Schema\SchemaInterface;
 use EzPhp\Database\Database;
 use EzPhp\Migration\MigrationException;
 use EzPhp\Migration\Migrator;
 use EzPhp\Migration\SeederRunner;
+use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
@@ -51,7 +54,47 @@ final class DbSetupCommandTest extends TestCase
         mkdir($this->migrationPath);
         mkdir($this->seederPath);
 
-        $this->migrator = new Migrator($this->db, $this->migrationPath);
+        $pdo = $this->db->getPdo();
+        $schema = new class ($pdo) implements SchemaInterface {
+            public function __construct(private readonly PDO $pdo)
+            {
+            }
+
+            public function create(string $table, Closure $callback): void
+            {
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS \"{$table}\" (id INTEGER PRIMARY KEY)");
+            }
+
+            public function table(string $table, Closure $callback): void
+            {
+            }
+
+            public function drop(string $table): void
+            {
+                $this->pdo->exec("DROP TABLE \"{$table}\"");
+            }
+
+            public function dropIfExists(string $table): void
+            {
+                $this->pdo->exec("DROP TABLE IF EXISTS \"{$table}\"");
+            }
+
+            public function hasTable(string $table): bool
+            {
+                return false;
+            }
+
+            public function hasColumn(string $table, string $column): bool
+            {
+                return false;
+            }
+
+            public function rename(string $from, string $to): void
+            {
+            }
+        };
+
+        $this->migrator = new Migrator($this->db, $this->migrationPath, static fn () => $schema);
         $this->runner = new SeederRunner($this->db, $this->seederPath);
     }
 
@@ -91,11 +134,11 @@ final class DbSetupCommandTest extends TestCase
         file_put_contents($this->migrationPath . '/2026_01_01_000000_create_t.php', <<<'PHP'
             <?php
             return new class implements \EzPhp\Migration\MigrationInterface {
-                public function up(\PDO $pdo): void {
-                    $pdo->exec('CREATE TABLE t (id INTEGER)');
+                public function up(\EzPhp\Contracts\Schema\SchemaInterface $schema): void {
+                    $schema->create('t', fn ($b) => null);
                 }
-                public function down(\PDO $pdo): void {
-                    $pdo->exec('DROP TABLE t');
+                public function down(\EzPhp\Contracts\Schema\SchemaInterface $schema): void {
+                    $schema->dropIfExists('t');
                 }
             };
             PHP);
@@ -154,11 +197,11 @@ final class DbSetupCommandTest extends TestCase
         file_put_contents($this->migrationPath . '/2026_01_01_000000_create_t.php', <<<'PHP'
             <?php
             return new class implements \EzPhp\Migration\MigrationInterface {
-                public function up(\PDO $pdo): void {
-                    $pdo->exec('CREATE TABLE IF NOT EXISTS t (id INTEGER)');
+                public function up(\EzPhp\Contracts\Schema\SchemaInterface $schema): void {
+                    $schema->create('t', fn ($b) => null);
                 }
-                public function down(\PDO $pdo): void {
-                    $pdo->exec('DROP TABLE IF EXISTS t');
+                public function down(\EzPhp\Contracts\Schema\SchemaInterface $schema): void {
+                    $schema->dropIfExists('t');
                 }
             };
             PHP);
@@ -185,11 +228,11 @@ final class DbSetupCommandTest extends TestCase
         file_put_contents($this->migrationPath . '/2026_01_01_000000_create_t.php', <<<'PHP'
             <?php
             return new class implements \EzPhp\Migration\MigrationInterface {
-                public function up(\PDO $pdo): void {
-                    $pdo->exec('CREATE TABLE IF NOT EXISTS t (id INTEGER)');
+                public function up(\EzPhp\Contracts\Schema\SchemaInterface $schema): void {
+                    $schema->create('t', fn ($b) => null);
                 }
-                public function down(\PDO $pdo): void {
-                    $pdo->exec('DROP TABLE IF EXISTS t');
+                public function down(\EzPhp\Contracts\Schema\SchemaInterface $schema): void {
+                    $schema->dropIfExists('t');
                 }
             };
             PHP);
@@ -218,10 +261,10 @@ final class DbSetupCommandTest extends TestCase
         file_put_contents($this->migrationPath . '/2026_01_01_000000_create_t.php', <<<'PHP'
             <?php
             return new class implements \EzPhp\Migration\MigrationInterface {
-                public function up(\PDO $pdo): void {
-                    $pdo->exec('CREATE TABLE IF NOT EXISTS t (id INTEGER)');
+                public function up(\EzPhp\Contracts\Schema\SchemaInterface $schema): void {
+                    $schema->create('t', fn ($b) => null);
                 }
-                public function down(\PDO $pdo): void {
+                public function down(\EzPhp\Contracts\Schema\SchemaInterface $schema): void {
                     throw new \RuntimeException('down() intentionally broken');
                 }
             };
@@ -251,10 +294,10 @@ final class DbSetupCommandTest extends TestCase
         file_put_contents($this->migrationPath . '/2026_01_01_000000_create_t.php', <<<'PHP'
             <?php
             return new class implements \EzPhp\Migration\MigrationInterface {
-                public function up(\PDO $pdo): void {
-                    $pdo->exec('CREATE TABLE IF NOT EXISTS t (id INTEGER)');
+                public function up(\EzPhp\Contracts\Schema\SchemaInterface $schema): void {
+                    $schema->create('t', fn ($b) => null);
                 }
-                public function down(\PDO $pdo): void {
+                public function down(\EzPhp\Contracts\Schema\SchemaInterface $schema): void {
                     throw new \RuntimeException('down() intentionally broken');
                 }
             };

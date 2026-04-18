@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace EzPhp\Migration;
 
-use PDO;
+use EzPhp\Contracts\Schema\SchemaInterface;
 
 /**
  * Interface MigrationInterface
@@ -14,16 +14,16 @@ use PDO;
 interface MigrationInterface
 {
     /**
-     * @param PDO $pdo
+     * @param SchemaInterface $schema
      *
      * @return void
      */
-    public function up(PDO $pdo): void;
+    public function up(SchemaInterface $schema): void;
 
     /**
-     * @param PDO $pdo
+     * @param SchemaInterface $schema
      *
      * @return void
      */
-    public function down(PDO $pdo): void;
+    public function down(SchemaInterface $schema): void;
 }

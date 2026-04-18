@@ -101,10 +101,84 @@ final class MakeMigrationCommandTest extends TestCase
 
         $this->assertIsString($content);
         $this->assertStringContainsString('MigrationInterface', $content);
+        $this->assertStringContainsString('SchemaInterface', $content);
         $this->assertStringContainsString('function up', $content);
         $this->assertStringContainsString('function down', $content);
         $this->assertStringNotContainsString('// TODO', $content);
-        $this->assertStringContainsString('$pdo->exec(', $content);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_create_pattern_generates_schema_create_stub(): void
+    {
+        $command = new MakeMigrationCommand($this->path);
+
+        ob_start();
+        $command->handle(['create_users_table']);
+        ob_get_clean();
+
+        $files = glob($this->path . '/*.php') ?: [];
+        $content = (string) file_get_contents($files[0]);
+
+        $this->assertStringContainsString("\$schema->create('users'", $content);
+        $this->assertStringContainsString('$table->id()', $content);
+        $this->assertStringContainsString('$table->timestamps()', $content);
+        $this->assertStringContainsString("dropIfExists('users')", $content);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_add_columns_pattern_generates_schema_table_stub(): void
+    {
+        $command = new MakeMigrationCommand($this->path);
+
+        ob_start();
+        $command->handle(['add_email_to_users_table']);
+        ob_get_clean();
+
+        $files = glob($this->path . '/*.php') ?: [];
+        $content = (string) file_get_contents($files[0]);
+
+        $this->assertStringContainsString("\$schema->table('users'", $content);
+        $this->assertStringContainsString('dropColumn', $content);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_drop_pattern_generates_schema_drop_stub(): void
+    {
+        $command = new MakeMigrationCommand($this->path);
+
+        ob_start();
+        $command->handle(['drop_posts_table']);
+        ob_get_clean();
+
+        $files = glob($this->path . '/*.php') ?: [];
+        $content = (string) file_get_contents($files[0]);
+
+        $this->assertStringContainsString("\$schema->drop('posts')", $content);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_unrecognised_pattern_generates_blank_stub(): void
+    {
+        $command = new MakeMigrationCommand($this->path);
+
+        ob_start();
+        $command->handle(['some_custom_migration']);
+        ob_get_clean();
+
+        $files = glob($this->path . '/*.php') ?: [];
+        $content = (string) file_get_contents($files[0]);
+
+        $this->assertStringContainsString('SchemaInterface', $content);
+        $this->assertStringContainsString('function up', $content);
+        $this->assertStringContainsString('function down', $content);
     }
 
     /**

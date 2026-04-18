@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Console\Command;
 
+use Closure;
 use EzPhp\Console\Command\MigrateStatusCommand;
+use EzPhp\Contracts\Schema\SchemaInterface;
 use EzPhp\Database\Database;
 use EzPhp\Migration\Migrator;
+use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
@@ -34,7 +37,48 @@ final class MigrateStatusCommandTest extends TestCase
         $db = new Database('sqlite::memory:', '', '');
         $this->path = sys_get_temp_dir() . '/ez-php-status-cmd-' . uniqid();
         mkdir($this->path);
-        $this->migrator = new Migrator($db, $this->path);
+
+        $pdo = $db->getPdo();
+        $schema = new class ($pdo) implements SchemaInterface {
+            public function __construct(private readonly PDO $pdo)
+            {
+            }
+
+            public function create(string $table, Closure $callback): void
+            {
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS \"{$table}\" (id INTEGER PRIMARY KEY)");
+            }
+
+            public function table(string $table, Closure $callback): void
+            {
+            }
+
+            public function drop(string $table): void
+            {
+                $this->pdo->exec("DROP TABLE \"{$table}\"");
+            }
+
+            public function dropIfExists(string $table): void
+            {
+                $this->pdo->exec("DROP TABLE IF EXISTS \"{$table}\"");
+            }
+
+            public function hasTable(string $table): bool
+            {
+                return false;
+            }
+
+            public function hasColumn(string $table, string $column): bool
+            {
+                return false;
+            }
+
+            public function rename(string $from, string $to): void
+            {
+            }
+        };
+
+        $this->migrator = new Migrator($db, $this->path, static fn () => $schema);
     }
 
     /**
@@ -84,16 +128,16 @@ final class MigrateStatusCommandTest extends TestCase
         file_put_contents($this->path . '/2026_01_01_000000_one.php', <<<'PHP'
             <?php
             return new class implements \EzPhp\Migration\MigrationInterface {
-                public function up(\PDO $pdo): void { $pdo->exec('CREATE TABLE a (id INTEGER)'); }
-                public function down(\PDO $pdo): void { $pdo->exec('DROP TABLE a'); }
+                public function up(\EzPhp\Contracts\Schema\SchemaInterface $schema): void { $schema->create('a', fn ($b) => null); }
+                public function down(\EzPhp\Contracts\Schema\SchemaInterface $schema): void { $schema->drop('a'); }
             };
             PHP);
 
         file_put_contents($this->path . '/2026_01_02_000000_two.php', <<<'PHP'
             <?php
             return new class implements \EzPhp\Migration\MigrationInterface {
-                public function up(\PDO $pdo): void { $pdo->exec('CREATE TABLE b (id INTEGER)'); }
-                public function down(\PDO $pdo): void { $pdo->exec('DROP TABLE b'); }
+                public function up(\EzPhp\Contracts\Schema\SchemaInterface $schema): void { $schema->create('b', fn ($b) => null); }
+                public function down(\EzPhp\Contracts\Schema\SchemaInterface $schema): void { $schema->drop('b'); }
             };
             PHP);
 
@@ -103,8 +147,8 @@ final class MigrateStatusCommandTest extends TestCase
         file_put_contents($this->path . '/2026_01_03_000000_three.php', <<<'PHP'
             <?php
             return new class implements \EzPhp\Migration\MigrationInterface {
-                public function up(\PDO $pdo): void { $pdo->exec('CREATE TABLE c (id INTEGER)'); }
-                public function down(\PDO $pdo): void { $pdo->exec('DROP TABLE c'); }
+                public function up(\EzPhp\Contracts\Schema\SchemaInterface $schema): void { $schema->create('c', fn ($b) => null); }
+                public function down(\EzPhp\Contracts\Schema\SchemaInterface $schema): void { $schema->drop('c'); }
             };
             PHP);
 

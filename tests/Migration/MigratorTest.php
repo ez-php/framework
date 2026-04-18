@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Migration;
 
+use Closure;
+use EzPhp\Contracts\Schema\SchemaInterface;
 use EzPhp\Database\Database;
 use EzPhp\Migration\MigrationException;
 use EzPhp\Migration\Migrator;
+use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
@@ -28,6 +31,8 @@ final class MigratorTest extends TestCase
 
     private Migrator $migrator;
 
+    private SchemaInterface $schema;
+
     /**
      * @return void
      */
@@ -36,7 +41,49 @@ final class MigratorTest extends TestCase
         $this->db = new Database('sqlite::memory:', '', '');
         $this->path = sys_get_temp_dir() . '/ez-php-migrations-' . uniqid();
         mkdir($this->path);
-        $this->migrator = new Migrator($this->db, $this->path);
+
+        $pdo = $this->db->getPdo();
+        $this->schema = new class ($pdo) implements SchemaInterface {
+            public function __construct(private readonly PDO $pdo)
+            {
+            }
+
+            public function create(string $table, Closure $callback): void
+            {
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS \"{$table}\" (id INTEGER PRIMARY KEY)");
+            }
+
+            public function table(string $table, Closure $callback): void
+            {
+            }
+
+            public function drop(string $table): void
+            {
+                $this->pdo->exec("DROP TABLE \"{$table}\"");
+            }
+
+            public function dropIfExists(string $table): void
+            {
+                $this->pdo->exec("DROP TABLE IF EXISTS \"{$table}\"");
+            }
+
+            public function hasTable(string $table): bool
+            {
+                return false;
+            }
+
+            public function hasColumn(string $table, string $column): bool
+            {
+                return false;
+            }
+
+            public function rename(string $from, string $to): void
+            {
+            }
+        };
+
+        $schema = $this->schema;
+        $this->migrator = new Migrator($this->db, $this->path, static fn () => $schema);
     }
 
     /**
@@ -52,18 +99,17 @@ final class MigratorTest extends TestCase
 
     /**
      * @param string $filename
-     * @param string $upSql
-     * @param string $downSql
+     * @param string $table
      *
      * @return void
      */
-    private function createMigrationFile(string $filename, string $upSql, string $downSql): void
+    private function createMigrationFile(string $filename, string $table): void
     {
         file_put_contents($this->path . '/' . $filename, <<<PHP
             <?php
             return new class implements \EzPhp\Migration\MigrationInterface {
-                public function up(\PDO \$pdo): void { \$pdo->exec('$upSql'); }
-                public function down(\PDO \$pdo): void { \$pdo->exec('$downSql'); }
+                public function up(\EzPhp\Contracts\Schema\SchemaInterface \$schema): void { \$schema->create('$table', fn (\$b) => null); }
+                public function down(\EzPhp\Contracts\Schema\SchemaInterface \$schema): void { \$schema->drop('$table'); }
             };
             PHP);
     }
@@ -74,11 +120,7 @@ final class MigratorTest extends TestCase
      */
     public function test_migrate_runs_pending_migrations(): void
     {
-        $this->createMigrationFile(
-            '0001_create_users_table.php',
-            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
-            'DROP TABLE users',
-        );
+        $this->createMigrationFile('0001_create_users_table.php', 'users');
 
         $ran = $this->migrator->migrate();
 
@@ -101,11 +143,7 @@ final class MigratorTest extends TestCase
      */
     public function test_migrate_skips_already_ran_migrations(): void
     {
-        $this->createMigrationFile(
-            '0001_create_users_table.php',
-            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
-            'DROP TABLE users',
-        );
+        $this->createMigrationFile('0001_create_users_table.php', 'users');
 
         $this->migrator->migrate();
         $ran = $this->migrator->migrate();
@@ -119,16 +157,8 @@ final class MigratorTest extends TestCase
      */
     public function test_migrate_runs_multiple_in_order(): void
     {
-        $this->createMigrationFile(
-            '0001_create_users_table.php',
-            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
-            'DROP TABLE users',
-        );
-        $this->createMigrationFile(
-            '0002_create_posts_table.php',
-            'CREATE TABLE posts (id INTEGER PRIMARY KEY, title TEXT)',
-            'DROP TABLE posts',
-        );
+        $this->createMigrationFile('0001_create_users_table.php', 'users');
+        $this->createMigrationFile('0002_create_posts_table.php', 'posts');
 
         $ran = $this->migrator->migrate();
 
@@ -144,11 +174,7 @@ final class MigratorTest extends TestCase
      */
     public function test_rollback_reverts_last_batch(): void
     {
-        $this->createMigrationFile(
-            '0001_create_users_table.php',
-            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
-            'DROP TABLE users',
-        );
+        $this->createMigrationFile('0001_create_users_table.php', 'users');
 
         $this->migrator->migrate();
         $rolled = $this->migrator->rollback();
@@ -172,18 +198,10 @@ final class MigratorTest extends TestCase
      */
     public function test_rollback_only_reverts_last_batch(): void
     {
-        $this->createMigrationFile(
-            '0001_create_users_table.php',
-            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
-            'DROP TABLE users',
-        );
+        $this->createMigrationFile('0001_create_users_table.php', 'users');
         $this->migrator->migrate();
 
-        $this->createMigrationFile(
-            '0002_create_posts_table.php',
-            'CREATE TABLE posts (id INTEGER PRIMARY KEY, title TEXT)',
-            'DROP TABLE posts',
-        );
+        $this->createMigrationFile('0002_create_posts_table.php', 'posts');
         $this->migrator->migrate();
 
         $rolled = $this->migrator->rollback();
@@ -201,11 +219,7 @@ final class MigratorTest extends TestCase
      */
     public function test_migrate_after_rollback_reruns_migration(): void
     {
-        $this->createMigrationFile(
-            '0001_create_users_table.php',
-            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
-            'DROP TABLE users',
-        );
+        $this->createMigrationFile('0001_create_users_table.php', 'users');
 
         $this->migrator->migrate();
         $this->migrator->rollback();
@@ -220,18 +234,10 @@ final class MigratorTest extends TestCase
      */
     public function test_rollback_all_reverts_all_batches(): void
     {
-        $this->createMigrationFile(
-            '0001_create_users_table.php',
-            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
-            'DROP TABLE users',
-        );
+        $this->createMigrationFile('0001_create_users_table.php', 'users');
         $this->migrator->migrate();
 
-        $this->createMigrationFile(
-            '0002_create_posts_table.php',
-            'CREATE TABLE posts (id INTEGER PRIMARY KEY, title TEXT)',
-            'DROP TABLE posts',
-        );
+        $this->createMigrationFile('0002_create_posts_table.php', 'posts');
         $this->migrator->migrate();
 
         $rolled = $this->migrator->rollbackAll();
@@ -260,25 +266,13 @@ final class MigratorTest extends TestCase
      */
     public function test_status_returns_pending_and_ran(): void
     {
-        $this->createMigrationFile(
-            '0001_create_users_table.php',
-            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
-            'DROP TABLE users',
-        );
-        $this->createMigrationFile(
-            '0002_create_posts_table.php',
-            'CREATE TABLE posts (id INTEGER PRIMARY KEY, title TEXT)',
-            'DROP TABLE posts',
-        );
+        $this->createMigrationFile('0001_create_users_table.php', 'users');
+        $this->createMigrationFile('0002_create_posts_table.php', 'posts');
 
         $this->migrator->migrate();
 
         // Add a third that hasn't run
-        $this->createMigrationFile(
-            '0003_create_tags_table.php',
-            'CREATE TABLE tags (id INTEGER PRIMARY KEY, name TEXT)',
-            'DROP TABLE tags',
-        );
+        $this->createMigrationFile('0003_create_tags_table.php', 'tags');
 
         $status = $this->migrator->status();
 
@@ -305,29 +299,21 @@ final class MigratorTest extends TestCase
 
     /**
      * @param string $filename
-     * @param string $upSql
+     * @param string $table
      *
      * @return void
      */
-    private function createMigrationFileWithFailingDown(string $filename, string $upSql): void
+    private function createMigrationFileWithFailingDown(string $filename, string $table): void
     {
-        file_put_contents($this->path . '/' . $filename, <<<'PHP'
+        file_put_contents($this->path . '/' . $filename, <<<PHP
             <?php
             return new class implements \EzPhp\Migration\MigrationInterface {
-                public function up(\PDO $pdo): void { $pdo->exec('CREATE_SQL'); }
-                public function down(\PDO $pdo): void {
+                public function up(\EzPhp\Contracts\Schema\SchemaInterface \$schema): void { \$schema->create('$table', fn (\$b) => null); }
+                public function down(\EzPhp\Contracts\Schema\SchemaInterface \$schema): void {
                     throw new \RuntimeException('down() failed intentionally');
                 }
             };
             PHP);
-
-        // Replace placeholder with actual SQL
-        $content = file_get_contents($this->path . '/' . $filename);
-        assert(is_string($content));
-        file_put_contents(
-            $this->path . '/' . $filename,
-            str_replace('CREATE_SQL', $upSql, $content),
-        );
     }
 
     /**
@@ -336,10 +322,7 @@ final class MigratorTest extends TestCase
      */
     public function test_rollback_throws_migration_exception_when_down_fails(): void
     {
-        $this->createMigrationFileWithFailingDown(
-            '0001_create_users_table.php',
-            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
-        );
+        $this->createMigrationFileWithFailingDown('0001_create_users_table.php', 'users');
 
         $this->migrator->migrate();
 
@@ -355,10 +338,7 @@ final class MigratorTest extends TestCase
      */
     public function test_rollback_leaves_migration_tracked_when_down_fails(): void
     {
-        $this->createMigrationFileWithFailingDown(
-            '0001_create_users_table.php',
-            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
-        );
+        $this->createMigrationFileWithFailingDown('0001_create_users_table.php', 'users');
 
         $this->migrator->migrate();
 
@@ -384,15 +364,8 @@ final class MigratorTest extends TestCase
      */
     public function test_rollback_is_atomic_when_second_down_fails(): void
     {
-        $this->createMigrationFile(
-            '0002_create_posts_table.php',
-            'CREATE TABLE posts (id INTEGER PRIMARY KEY, title TEXT)',
-            'DROP TABLE posts',
-        );
-        $this->createMigrationFileWithFailingDown(
-            '0001_create_users_table.php',
-            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
-        );
+        $this->createMigrationFile('0002_create_posts_table.php', 'posts');
+        $this->createMigrationFileWithFailingDown('0001_create_users_table.php', 'users');
 
         $this->migrator->migrate();
 
@@ -414,11 +387,7 @@ final class MigratorTest extends TestCase
      */
     public function test_drop_all_tables_removes_every_table(): void
     {
-        $this->createMigrationFile(
-            '0001_create_users_table.php',
-            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
-            'DROP TABLE users',
-        );
+        $this->createMigrationFile('0001_create_users_table.php', 'users');
         $this->migrator->migrate();
 
         $dropped = $this->migrator->dropAllTables();
@@ -446,11 +415,7 @@ final class MigratorTest extends TestCase
      */
     public function test_migration_file_can_be_loaded_repeatedly_without_error(): void
     {
-        $this->createMigrationFile(
-            '0001_create_users_table.php',
-            'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)',
-            'DROP TABLE users',
-        );
+        $this->createMigrationFile('0001_create_users_table.php', 'users');
 
         // Each cycle requires the same file for both migrate and rollback.
         // Without the load registry this could cause anonymous class redeclaration.
@@ -460,5 +425,19 @@ final class MigratorTest extends TestCase
         }
 
         $this->expectNotToPerformAssertions();
+    }
+
+    /**
+     * @return void
+     */
+    public function test_migrate_throws_when_no_schema_factory_configured(): void
+    {
+        $migrator = new Migrator($this->db, $this->path);
+        $this->createMigrationFile('0001_create_users_table.php', 'users');
+
+        $this->expectException(MigrationException::class);
+        $this->expectExceptionMessage('SchemaInterface');
+
+        $migrator->migrate();
     }
 }
