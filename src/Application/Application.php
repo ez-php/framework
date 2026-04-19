@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace EzPhp\Application;
 
 use EzPhp\Container\Container;
+use EzPhp\Contracts\CommandRegistryInterface;
 use EzPhp\Contracts\ContainerInterface;
 use EzPhp\Contracts\ExceptionHandlerInterface;
 use EzPhp\Exceptions\ApplicationException;
@@ -23,7 +24,7 @@ use Throwable;
  *
  * @package EzPhp\Application
  */
-final class Application implements ContainerInterface
+final class Application implements ContainerInterface, CommandRegistryInterface
 {
     private bool $booted = false;
 
@@ -120,7 +121,7 @@ final class Application implements ContainerInterface
      *
      * @return $this
      */
-    public function registerCommand(string $commandClass): self
+    public function registerCommand(string $commandClass): static
     {
         $this->userCommands[] = $commandClass;
 
