@@ -6,6 +6,7 @@ namespace EzPhp\Database;
 
 use EzPhp\Contracts\DatabaseInterface;
 use PDO;
+use Pdo\Mysql;
 use Throwable;
 
 /**
@@ -34,7 +35,7 @@ final class Database implements DatabaseInterface
         // Ensure utf8mb4 charset for MySQL connections to prevent encoding
         // mismatches and multi-byte character injection vectors.
         if (str_starts_with($dsn, 'mysql:')) {
-            $options[PDO::MYSQL_ATTR_INIT_COMMAND] = 'SET NAMES utf8mb4';
+            $options[Mysql::ATTR_INIT_COMMAND] = 'SET NAMES utf8mb4';
         }
 
         $this->pdo = new PDO($dsn, $username, $password, $options);
