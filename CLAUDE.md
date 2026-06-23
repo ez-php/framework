@@ -431,6 +431,7 @@ $router->post('/webhook/stripe', [WebhookController::class, 'handle'])->withoutC
 - **`Database` has no `table()` method** — A `table()` shortcut that returned an ORM `QueryBuilder` was considered but deliberately not implemented. Adding it would create a runtime dependency from the framework core on `ez-php/orm`, which violates module-boundary rules and is not declared in `composer.json`. Code that needs a `QueryBuilder` must resolve `ez-php/orm`'s `QueryBuilder` directly (e.g. via the container or a service provider). If a future bridge is needed, implement a `QueryBuilderFactoryInterface` in `ez-php/contracts` and bind it in `DatabaseServiceProvider`.
 - **Migrations use raw PDO** — `up(PDO)` / `down(PDO)` to keep migrations dependency-free; they must not rely on the ORM or Database class.
 - **`CorsMiddleware` is a concrete helper** — Provided as a convenience; not part of the routing or middleware infrastructure.
+- **`ez-php/i18n` and `ez-php/validation` are core dependencies** — They are declared in `composer.json` `require` and are not optional. `TranslatorServiceProvider` ships in `CoreServiceProviders::all()` so exception renderers can localise production error pages, and `Controller::validate()` is a first-class base-controller convenience built on `ez-php/validation`. The kernel cannot bootstrap without them. (i18n is consumed through `TranslatorInterface` from `ez-php/contracts`; validation is used via its static `Validator` facade.)
 
 ---
 
@@ -455,7 +456,5 @@ $router->post('/webhook/stripe', [WebhookController::class, 'handle'])->withoutC
 | Authentication (session / token) | `ez-php/auth` |
 | Caching (file, array, Redis) | `ez-php/cache` |
 | Event bus | `ez-php/events` |
-| Input validation | `ez-php/validation` |
 | HTTP client (cURL) | `ez-php/http-client` |
-| Translations / i18n | `ez-php/i18n` |
 | Application template / entry point | `ez-php/` |

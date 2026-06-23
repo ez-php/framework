@@ -107,12 +107,12 @@ final readonly class MakeJobCommand implements CommandInterface
 
                 public function handle(): void
                 {
-                    // TODO: implement job logic
+                    // Implement the job's work here.
                 }
 
                 public function fail(Throwable \$e): void
                 {
-                    // TODO: handle permanent failure
+                    // Handle permanent failure here (e.g. log or notify).
                 }
 
                 public function getAttempts(): int

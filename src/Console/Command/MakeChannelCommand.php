@@ -111,7 +111,7 @@ final readonly class MakeChannelCommand implements CommandInterface
                  */
                 public function send(object \$notifiable, NotificationInterface \$notification): void
                 {
-                    // TODO: implement channel delivery logic
+                    // Implement the channel delivery logic here.
                 }
             }
             PHP;
