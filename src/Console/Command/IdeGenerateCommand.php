@@ -152,9 +152,16 @@ final class IdeGenerateCommand implements CommandInterface
     private function generateBlock(string $class): ?string
     {
         $ref = new ReflectionClass($class);
+        // ReflectionClass::getMethods() ORs its filter bits together (matches
+        // "public OR static", not "public AND static"), so isPublic()/isStatic()
+        // are re-checked explicitly here to actually require both — otherwise a
+        // private static method or a public instance method would incorrectly
+        // leak into the generated @method static stubs.
         $methods = array_filter(
             $ref->getMethods(ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_STATIC),
-            static fn (ReflectionMethod $m): bool => !$m->isConstructor()
+            static fn (ReflectionMethod $m): bool => $m->isPublic()
+                && $m->isStatic()
+                && !$m->isConstructor()
                 && $m->getDeclaringClass()->getName() === $class,
         );
 

@@ -51,6 +51,24 @@ final class Application implements ContainerInterface, CommandRegistryInterface
     private array $loadedDeferredProviders = [];
 
     /**
+     * True while a deferred provider's own register()/boot() is running, so a
+     * nested activateDeferredProviderFor() call (triggered by that provider
+     * resolving another deferred binding) knows to queue rather than boot
+     * immediately. See $deferredBootQueue.
+     */
+    private bool $activatingDeferredProvider = false;
+
+    /**
+     * Deferred providers whose register() has run but whose boot() was
+     * queued because it was triggered while another deferred provider's
+     * own register()/boot() was still running (see activateDeferredProviderFor()).
+     * Drained, in order, right after the outer provider's boot() completes.
+     *
+     * @var list<\EzPhp\Contracts\ServiceProvider>
+     */
+    private array $deferredBootQueue = [];
+
+    /**
      * @var list<class-string<\EzPhp\Contracts\ServiceProvider>>
      */
     private array $userProviders = [];
@@ -261,7 +279,14 @@ final class Application implements ContainerInterface, CommandRegistryInterface
                 $route = $this->make(Router::class)->retrieveRoute($request);
                 return $handler->runRoute($route, $request);
             } catch (Throwable $e) {
-                return $this->make(ExceptionHandlerInterface::class)->render($e, $request);
+                $rendered = $this->make(ExceptionHandlerInterface::class)->render($e, $request);
+                // ExceptionHandlerInterface::render() is typed against ResponseInterface
+                // so ez-php/contracts has no dependency on the concrete Response class,
+                // but the framework's own handle()/dispatch() contract returns Response.
+                // The shipped ExceptionHandlerInterface implementations all return Response.
+                assert($rendered instanceof Response);
+
+                return $rendered;
             }
         });
 
@@ -409,6 +434,15 @@ final class Application implements ContainerInterface, CommandRegistryInterface
      * Activate the deferred provider responsible for the given binding class,
      * if one has been registered and has not yet been loaded.
      *
+     * register() always runs immediately, so the binding is available to the
+     * make() call that triggered activation. boot() normally runs right
+     * after it too — except when this activation was itself triggered from
+     * inside another deferred provider's register()/boot() (that provider's
+     * boot() resolved a class belonging to a second, not-yet-loaded deferred
+     * provider). In that nested case, boot() is queued and runs immediately
+     * after the outer provider's own boot() completes instead of interleaving
+     * mid-boot, preserving the register-before-boot ordering guarantee.
+     *
      * @param string $class
      *
      * @return void
@@ -429,7 +463,23 @@ final class Application implements ContainerInterface, CommandRegistryInterface
 
         $provider = new $providerClass($this);
         $provider->register();
-        $provider->boot();
+
+        if ($this->activatingDeferredProvider) {
+            $this->deferredBootQueue[] = $provider;
+            return;
+        }
+
+        $this->activatingDeferredProvider = true;
+
+        try {
+            $provider->boot();
+
+            while ($queued = array_shift($this->deferredBootQueue)) {
+                $queued->boot();
+            }
+        } finally {
+            $this->activatingDeferredProvider = false;
+        }
     }
 
     /**

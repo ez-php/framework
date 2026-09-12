@@ -40,6 +40,11 @@ final class ExceptionHandlerServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Note: if ez-php/logging is installed, LogServiceProvider::boot() re-wraps
+        // ExceptionHandlerInterface with a LoggingExceptionHandler decorator, so it
+        // must run after this provider's boot(). Core providers boot before user
+        // providers (see CoreServiceProviders::all()), so this ordering holds as
+        // long as logging is registered as a user provider, not a core one.
         /** @var Application $app */
         $app = $this->app;
 

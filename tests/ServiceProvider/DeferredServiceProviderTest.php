@@ -137,6 +137,138 @@ final class DeferredServiceProviderTest extends TestCase
         $this->assertFalse($provider->deferred());
         $this->assertSame([], $provider->provides());
     }
+
+    /**
+     * When one deferred provider's own boot() resolves a class belonging to a
+     * second, not-yet-loaded deferred provider, the nested provider's register()
+     * must still run immediately (so the binding is available), but its boot()
+     * must run only after the outer provider's own boot() has completed —
+     * not interleaved in the middle of it.
+     *
+     * @return void
+     */
+    public function test_nested_deferred_activation_boots_after_outer_provider(): void
+    {
+        NestedOuterProvider::reset();
+        NestedInnerProvider::reset();
+
+        $app = new Application();
+        $app->register(NestedOuterProvider::class);
+        $app->register(NestedInnerProvider::class);
+        $app->bootstrap();
+
+        $app->make(NestedOuterService::class);
+
+        $this->assertTrue(NestedOuterProvider::$booted);
+        $this->assertTrue(NestedInnerProvider::$registered);
+        $this->assertTrue(NestedInnerProvider::$booted);
+
+        // The inner provider's register() ran while the outer was still
+        // mid-boot (so the binding existed for the outer's own make() call),
+        // but its boot() only ran once the outer's boot() had fully returned.
+        $this->assertTrue(NestedOuterProvider::$innerRegisteredDuringOuterBoot);
+        $this->assertFalse(NestedOuterProvider::$innerBootedDuringOuterBoot);
+    }
+}
+
+/**
+ * @internal test helper
+ */
+final class NestedOuterService
+{
+}
+
+/**
+ * @internal test helper
+ */
+final class NestedInnerService
+{
+}
+
+/**
+ * Deferred provider whose boot() resolves a class belonging to another,
+ * not-yet-loaded deferred provider (NestedInnerProvider).
+ *
+ * @internal test helper
+ */
+final class NestedOuterProvider extends ServiceProvider
+{
+    public static bool $booted = false;
+
+    public static bool $innerRegisteredDuringOuterBoot = false;
+
+    public static bool $innerBootedDuringOuterBoot = false;
+
+    public static function reset(): void
+    {
+        self::$booted = false;
+        self::$innerRegisteredDuringOuterBoot = false;
+        self::$innerBootedDuringOuterBoot = false;
+    }
+
+    public function deferred(): bool
+    {
+        return true;
+    }
+
+    public function provides(): array
+    {
+        return [NestedOuterService::class];
+    }
+
+    public function register(): void
+    {
+        $this->app->bind(NestedOuterService::class, fn (): NestedOuterService => new NestedOuterService());
+    }
+
+    public function boot(): void
+    {
+        // Triggers activation of NestedInnerProvider from inside this
+        // provider's own boot() — the scenario under test.
+        $this->app->make(NestedInnerService::class);
+
+        self::$innerRegisteredDuringOuterBoot = NestedInnerProvider::$registered;
+        self::$innerBootedDuringOuterBoot = NestedInnerProvider::$booted;
+
+        self::$booted = true;
+    }
+}
+
+/**
+ * @internal test helper
+ */
+final class NestedInnerProvider extends ServiceProvider
+{
+    public static bool $registered = false;
+
+    public static bool $booted = false;
+
+    public static function reset(): void
+    {
+        self::$registered = false;
+        self::$booted = false;
+    }
+
+    public function deferred(): bool
+    {
+        return true;
+    }
+
+    public function provides(): array
+    {
+        return [NestedInnerService::class];
+    }
+
+    public function register(): void
+    {
+        self::$registered = true;
+        $this->app->bind(NestedInnerService::class, fn (): NestedInnerService => new NestedInnerService());
+    }
+
+    public function boot(): void
+    {
+        self::$booted = true;
+    }
 }
 
 /**

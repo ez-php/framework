@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace EzPhp\Migration;
 
 use Closure;
+use EzPhp\Contracts\DatabaseInterface;
 use EzPhp\Contracts\Schema\SchemaInterface;
-use EzPhp\Database\Database;
 use Throwable;
 
 /**
@@ -25,12 +25,12 @@ final class Migrator
     /**
      * Migrator Constructor
      *
-     * @param Database                        $db
+     * @param DatabaseInterface                 $db
      * @param string                          $path
      * @param (Closure(): SchemaInterface)|null $schemaFactory
      */
     public function __construct(
-        private readonly Database $db,
+        private readonly DatabaseInterface $db,
         private readonly string $path,
         /** @var (Closure(): SchemaInterface)|null */
         private readonly ?\Closure $schemaFactory = null,

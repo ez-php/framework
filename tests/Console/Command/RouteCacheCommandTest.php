@@ -232,4 +232,31 @@ final class RouteCacheCommandTest extends TestCase
 
         $this->assertSame(0, $code);
     }
+
+    /**
+     * unlink() fails when the "cache path" is actually a directory
+     * (file_exists() is true, but unlink() cannot remove a directory) — this
+     * exercises the handle() branch that returns 1 instead of 0. The error
+     * message itself goes to Output::error(), which writes to STDERR (not
+     * captured by ob_start()), so only the exit code and the fact that the
+     * path survives are asserted here.
+     *
+     * @return void
+     */
+    public function test_clear_returns_one_when_unlink_fails(): void
+    {
+        $dirAsCachePath = sys_get_temp_dir() . '/ez-php-route-cache-dir-' . uniqid();
+        mkdir($dirAsCachePath);
+
+        $command = new RouteClearCommand($dirAsCachePath);
+
+        ob_start();
+        $code = @$command->handle([]);
+        ob_end_clean();
+
+        $this->assertSame(1, $code);
+        $this->assertDirectoryExists($dirAsCachePath);
+
+        rmdir($dirAsCachePath);
+    }
 }

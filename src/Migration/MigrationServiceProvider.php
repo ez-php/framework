@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace EzPhp\Migration;
 
 use EzPhp\Application\Application;
+use EzPhp\Contracts\DatabaseInterface;
 use EzPhp\Contracts\Schema\SchemaInterface;
 use EzPhp\Database\Database;
 use EzPhp\ServiceProvider\ServiceProvider;
@@ -24,7 +25,7 @@ final class MigrationServiceProvider extends ServiceProvider
     {
         $this->app->bind(Migrator::class, function (Application $app): Migrator {
             return new Migrator(
-                $app->make(Database::class),
+                $app->make(DatabaseInterface::class),
                 $app->basePath('database/migrations'),
                 static fn (): SchemaInterface => $app->make(SchemaInterface::class),
             );

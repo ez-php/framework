@@ -261,7 +261,14 @@ final class MiddlewareHandler
             $class = $this->aliases[$stack[$index]] ?? $stack[$index];
             $middleware = $this->container->make($class);
             $this->resolved[] = $middleware;
-            return $middleware->handle($request, $this->buildPipeline($terminal, $stack, $index + 1));
+            $response = $middleware->handle($request, $this->buildPipeline($terminal, $stack, $index + 1));
+            // MiddlewareInterface::handle() is typed against ResponseInterface so
+            // ez-php/contracts has no dependency on the concrete Response class,
+            // but this pipeline's own contract returns Response. All shipped
+            // middleware return Response.
+            assert($response instanceof Response);
+
+            return $response;
         };
     }
 }

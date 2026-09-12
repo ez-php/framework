@@ -20,6 +20,13 @@ final class SeederRunner
     /**
      * SeederRunner Constructor
      *
+     * Kept as the concrete Database class, not DatabaseInterface, because
+     * $db is passed straight through to SeederInterface::run(Database $db)
+     * below — a public contract every application seeder implements.
+     * Widening that interface would break existing seeders (PHP's parameter
+     * contravariance rules forbid a narrower type in the implementer), so
+     * this class must keep the matching concrete type to satisfy it.
+     *
      * @param Database $db
      * @param string   $path  Path to the seeders directory (e.g. database/seeders).
      */
