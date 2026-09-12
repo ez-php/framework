@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Console\Command;
 
+use EzPhp\Console\Command\MakeCommandCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
 use EzPhp\Console\Command\MakeEventCommand;
 use EzPhp\Console\Command\MakeListenerCommand;
@@ -18,11 +19,12 @@ use Tests\TestCase;
 /**
  * Class MakeCommandsTest
  *
- * Covers make:controller, make:middleware, make:provider, make:model,
- * make:event, make:listener, make:request, and make:test commands.
+ * Covers make:command, make:controller, make:middleware, make:provider,
+ * make:model, make:event, make:listener, make:request, and make:test commands.
  *
  * @package Tests\Console\Command
  */
+#[CoversClass(MakeCommandCommand::class)]
 #[CoversClass(MakeControllerCommand::class)]
 #[CoversClass(MakeMiddlewareCommand::class)]
 #[CoversClass(MakeProviderCommand::class)]
@@ -864,5 +866,130 @@ final class MakeCommandsTest extends TestCase
     {
         $cmd = new MakeTestCommand($this->srcPath);
         $this->assertStringContainsString('make:test', $cmd->getHelp());
+    }
+
+    // ─── make:command ─────────────────────────────────────────────────────────
+
+    /**
+     * @return void
+     */
+    public function test_make_command_creates_file(): void
+    {
+        $cmd = new MakeCommandCommand($this->srcPath);
+
+        ob_start();
+        $code = $cmd->handle(['SyncUsersCommand']);
+        ob_get_clean();
+
+        $this->assertSame(0, $code);
+        $this->assertFileExists($this->srcPath . '/Console/SyncUsersCommand.php');
+    }
+
+    /**
+     * @return void
+     */
+    public function test_make_command_stub_implements_command_interface(): void
+    {
+        $cmd = new MakeCommandCommand($this->srcPath);
+
+        ob_start();
+        $cmd->handle(['SyncUsersCommand']);
+        ob_get_clean();
+
+        $content = file_get_contents($this->srcPath . '/Console/SyncUsersCommand.php');
+        $this->assertIsString($content);
+        $this->assertStringContainsString('namespace App\\Console;', $content);
+        $this->assertStringContainsString('implements CommandInterface', $content);
+        $this->assertStringContainsString('final class SyncUsersCommand', $content);
+        $this->assertStringContainsString('public function handle(array $args): int', $content);
+    }
+
+    /**
+     * The generated getName() should be a usable command name, not a placeholder.
+     *
+     * @return void
+     */
+    public function test_make_command_derives_a_kebab_case_command_name(): void
+    {
+        $cmd = new MakeCommandCommand($this->srcPath);
+
+        ob_start();
+        $cmd->handle(['SyncUsersCommand']);
+        ob_get_clean();
+
+        $content = file_get_contents($this->srcPath . '/Console/SyncUsersCommand.php');
+        $this->assertIsString($content);
+        $this->assertStringContainsString("return 'sync-users';", $content);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_make_command_stub_explains_registration(): void
+    {
+        $cmd = new MakeCommandCommand($this->srcPath);
+
+        ob_start();
+        $cmd->handle(['MyCommand']);
+        ob_get_clean();
+
+        $content = file_get_contents($this->srcPath . '/Console/MyCommand.php');
+        $this->assertIsString($content);
+        $this->assertStringContainsString('registerCommand', $content);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_make_command_returns_1_without_name(): void
+    {
+        $cmd = new MakeCommandCommand($this->srcPath);
+
+        ob_start();
+        $code = $cmd->handle([]);
+        ob_get_clean();
+
+        $this->assertSame(1, $code);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_make_command_returns_1_on_invalid_name(): void
+    {
+        $cmd = new MakeCommandCommand($this->srcPath);
+
+        ob_start();
+        $code = $cmd->handle(['not-a-class']);
+        ob_get_clean();
+
+        $this->assertSame(1, $code);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_make_command_returns_1_when_file_exists(): void
+    {
+        $cmd = new MakeCommandCommand($this->srcPath);
+
+        ob_start();
+        $cmd->handle(['DupCommand']);
+        $code = $cmd->handle(['DupCommand']);
+        ob_get_clean();
+
+        $this->assertSame(1, $code);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_make_command_metadata(): void
+    {
+        $cmd = new MakeCommandCommand($this->srcPath);
+
+        $this->assertSame('make:command', $cmd->getName());
+        $this->assertNotSame('', $cmd->getDescription());
+        $this->assertStringContainsString('make:command', $cmd->getHelp());
     }
 }

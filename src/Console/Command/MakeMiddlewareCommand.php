@@ -17,9 +17,12 @@ final readonly class MakeMiddlewareCommand implements CommandInterface
     /**
      * MakeMiddlewareCommand Constructor
      *
-     * @param string $srcPath
+     * @param string $appPath Application source root. `ConsoleServiceProvider` passes
+     *                        `basePath('app')`: the stub declares `namespace App\Middleware;`
+     *                        and the template autoloads `App\ => app/`, so anywhere else
+     *                        produces a class Composer never loads.
      */
-    public function __construct(private string $srcPath)
+    public function __construct(private string $appPath)
     {
     }
 
@@ -61,7 +64,7 @@ final readonly class MakeMiddlewareCommand implements CommandInterface
             return 1;
         }
 
-        $dir = $this->srcPath . DIRECTORY_SEPARATOR . 'Middleware';
+        $dir = $this->appPath . DIRECTORY_SEPARATOR . 'Middleware';
         $filename = "$name.php";
         $fullPath = $dir . DIRECTORY_SEPARATOR . $filename;
 
@@ -79,7 +82,7 @@ final readonly class MakeMiddlewareCommand implements CommandInterface
             return 1;
         }
 
-        echo "Created: src/Middleware/$filename\n";
+        echo "Created: app/Middleware/$filename\n";
 
         return 0;
     }

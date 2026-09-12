@@ -15,6 +15,7 @@ use EzPhp\Console\Command\EnvCheckCommand;
 use EzPhp\Console\Command\IdeGenerateCommand;
 use EzPhp\Console\Command\ListCommand;
 use EzPhp\Console\Command\MakeChannelCommand;
+use EzPhp\Console\Command\MakeCommandCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
 use EzPhp\Console\Command\MakeEventCommand;
 use EzPhp\Console\Command\MakeJobCommand;
@@ -114,15 +115,15 @@ final class ConsoleServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(MakeControllerCommand::class, function (Application $app): MakeControllerCommand {
-            return new MakeControllerCommand($app->basePath('src'));
+            return new MakeControllerCommand($app->basePath('app'));
         });
 
         $this->app->bind(MakeMiddlewareCommand::class, function (Application $app): MakeMiddlewareCommand {
-            return new MakeMiddlewareCommand($app->basePath('src'));
+            return new MakeMiddlewareCommand($app->basePath('app'));
         });
 
         $this->app->bind(MakeProviderCommand::class, function (Application $app): MakeProviderCommand {
-            return new MakeProviderCommand($app->basePath('src'));
+            return new MakeProviderCommand($app->basePath('app'));
         });
 
         $this->app->bind(MakeModelCommand::class, function (Application $app): MakeModelCommand {
@@ -143,6 +144,10 @@ final class ConsoleServiceProvider extends ServiceProvider
 
         $this->app->bind(MakeNotificationCommand::class, function (Application $app): MakeNotificationCommand {
             return new MakeNotificationCommand($app->basePath('app'));
+        });
+
+        $this->app->bind(MakeCommandCommand::class, function (Application $app): MakeCommandCommand {
+            return new MakeCommandCommand($app->basePath('app'));
         });
 
         $this->app->bind(MakeChannelCommand::class, function (Application $app): MakeChannelCommand {
@@ -224,6 +229,7 @@ final class ConsoleServiceProvider extends ServiceProvider
                 $app->make(MakeJobCommand::class),
                 $app->make(MakeNotificationCommand::class),
                 $app->make(MakeChannelCommand::class),
+                $app->make(MakeCommandCommand::class),
                 $app->make(MakeRequestCommand::class),
                 $app->make(MakeTestCommand::class),
                 $app->make(TinkerCommand::class),
