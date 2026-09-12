@@ -6,6 +6,7 @@ namespace EzPhp\Middleware;
 
 use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
+use EzPhp\Http\ResponseInterface;
 
 /**
  * Class DebugToolbarMiddleware
@@ -42,14 +43,19 @@ final class DebugToolbarMiddleware implements MiddlewareInterface
      * @param RequestInterface $request
      * @param callable         $next
      *
-     * @return Response
+     * @return ResponseInterface
      */
-    public function handle(RequestInterface $request, callable $next): Response
+    public function handle(RequestInterface $request, callable $next): ResponseInterface
     {
         $this->startTime = microtime(true);
 
-        /** @var Response $response */
+        /** @var ResponseInterface $response */
         $response = $next($request);
+
+        // Only string bodies can be rewritten. Streams are never buffered or touched.
+        if (!$response instanceof Response) {
+            return $response;
+        }
 
         $body = $response->body();
 

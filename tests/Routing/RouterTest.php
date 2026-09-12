@@ -108,6 +108,7 @@ final class RouterTest extends TestCase
         $route = $router->retrieveRoute($request);
         $response = $route->run($request);
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('Hi!', $response->body());
         $this->assertSame(200, $response->status());
     }
@@ -158,6 +159,7 @@ final class RouterTest extends TestCase
         $route = $router->retrieveRoute($request);
         $response = $route->run($request);
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('42', $response->body());
     }
 
@@ -180,6 +182,7 @@ final class RouterTest extends TestCase
         $route = $router->retrieveRoute($request);
         $response = $route->run($request);
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('5:99', $response->body());
     }
 
@@ -251,6 +254,7 @@ final class RouterTest extends TestCase
         $route = $router->retrieveRoute($request);
         $response = $route->run($request);
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('42', $response->body());
     }
 
@@ -267,6 +271,7 @@ final class RouterTest extends TestCase
         $route = $router->retrieveRoute($request);
         $response = $route->run($request);
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('none', $response->body());
     }
 
@@ -800,6 +805,7 @@ final class RouterTest extends TestCase
         $route = $router->retrieveRoute($request);
         $response = $route->run($request);
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('index', $response->body());
     }
 
@@ -816,6 +822,7 @@ final class RouterTest extends TestCase
         $route = $router->retrieveRoute($request);
         $response = $route->run($request);
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('show:99', $response->body());
     }
 
@@ -905,7 +912,9 @@ final class RouterTest extends TestCase
 
         $request = new Request('PATCH', '/users/1');
         $route = $router->retrieveRoute($request);
-        $this->assertSame('patched', $route->run($request)->body());
+        $routeResponse = $route->run($request);
+        self::assertInstanceOf(Response::class, $routeResponse);
+        $this->assertSame('patched', $routeResponse->body());
     }
 
     // --- Partial resource routes: only ---
@@ -978,6 +987,7 @@ final class RouterTest extends TestCase
         $route = $router->retrieveRoute($request);
         $response = $route->run($request);
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('items-index', $response->body());
     }
 
@@ -1007,6 +1017,7 @@ final class RouterTest extends TestCase
         $route = $router->retrieveRoute($request);
         $response = $route->run($request);
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('42', $response->body());
     }
 
@@ -1036,6 +1047,7 @@ final class RouterTest extends TestCase
         $route = $router->retrieveRoute($request);
         $response = $route->run($request);
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('my-post', $response->body());
     }
 
@@ -1064,6 +1076,7 @@ final class RouterTest extends TestCase
         $route = $router->retrieveRoute($request);
         $response = $route->run($request);
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('any-value', $response->body());
     }
 
@@ -1108,6 +1121,7 @@ final class RouterTest extends TestCase
         $route = $router->retrieveRoute($request);
         $response = $route->run($request);
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('fallback', $response->body());
     }
 
@@ -1123,7 +1137,9 @@ final class RouterTest extends TestCase
         foreach (['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] as $method) {
             $request = new Request($method, '/missing');
             $route = $router->retrieveRoute($request);
-            $this->assertSame('fallback', $route->run($request)->body());
+            $routeResponse = $route->run($request);
+            self::assertInstanceOf(Response::class, $routeResponse);
+            $this->assertSame('fallback', $routeResponse->body());
         }
     }
 
@@ -1141,6 +1157,7 @@ final class RouterTest extends TestCase
         $route = $router->retrieveRoute($request);
         $response = $route->run($request);
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('home', $response->body());
     }
 
@@ -1167,7 +1184,9 @@ final class RouterTest extends TestCase
         $router->fallback(fn () => 'second'); // Should not throw
 
         $route = $router->retrieveRoute(new Request('GET', '/any'));
-        $this->assertSame('second', $route->run(new Request('GET', '/any'))->body());
+        $routeResponse = $route->run(new Request('GET', '/any'));
+        self::assertInstanceOf(Response::class, $routeResponse);
+        $this->assertSame('second', $routeResponse->body());
     }
 
     // ── model bindings ────────────────────────────────────────────────────────

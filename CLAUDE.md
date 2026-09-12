@@ -286,7 +286,7 @@ src/
 │   ├── ContainerException.php        — DI resolution errors
 │   ├── DebugHtmlRenderer.php         — Renders a rich HTML error page in debug mode (stack trace, request info)
 │   ├── DefaultExceptionHandler.php   — Dispatches to debug or production renderer; JSON for API requests
-│   ├── ExceptionHandler.php          — Interface: render(Throwable, Request) → Response
+│   ├── ExceptionHandler.php          — Interface: report(Throwable, RequestInterface) → void, render(…) → ResponseInterface
 │   ├── ExceptionHandlerServiceProvider.php — Registers DefaultExceptionHandler with debug flag
 │   ├── EzPhpException.php            — Base exception for all framework exceptions
 │   ├── ForbiddenException.php        — 403 HTTP exception
@@ -302,9 +302,9 @@ src/
 │   ├── CsrfTokenStoreInterface.php   — Contract for CSRF token storage (session-backed by default)
 │   ├── DebugToolbarMiddleware.php    — Injects HTML debug toolbar into responses when APP_DEBUG=true
 │   ├── MiddlewareHandler.php         — Builds and executes global + route middleware pipelines
-│   ├── MiddlewareInterface.php       — Contract: handle(Request, callable) → Response
+│   ├── MiddlewareInterface.php       — Contract: handle(RequestInterface, callable) → ResponseInterface
 │   ├── SessionCsrfTokenStore.php     — Default CsrfTokenStoreInterface implementation using PHP sessions
-│   └── TerminableMiddleware.php      — Extension: terminate(Request, Response) → void
+│   └── TerminableMiddleware.php      — Extension: terminate(Request, ResponseInterface) → void; runs after the body is sent
 ├── Migration/
 │   ├── MigrationException.php        — Thrown on migration errors (up/down/status)
 │   ├── MigrationInterface.php        — Contract: up(PDO) and down(PDO)
@@ -325,6 +325,8 @@ tests/
 ├── DatabaseTestCase.php              — Swaps DB_DATABASE to testing DB for each test
 ├── TestTest.php                      — Smoke test
 ├── Application/ApplicationTest.php
+├── Application/ApplicationReportTest.php — handle() calls report() then render() on a route exception
+├── Application/ApplicationSendTest.php   — lifecycle: handle() is pure; send() emits then terminates, also after a stream failure or disconnect
 ├── Config/ConfigLoaderTest.php
 ├── Config/ConfigTest.php
 ├── Console/Command/MakeCommandsTest.php
@@ -341,11 +343,13 @@ tests/
 ├── Middleware/CorsMiddlewareTest.php
 ├── Middleware/DebugToolbarMiddlewareTest.php
 ├── Middleware/MiddlewareHandlerTest.php
+├── Middleware/StreamThroughMiddlewareTest.php — StreamedResponse through CORS/Throttle/DebugToolbar and Router::resource()
 ├── Middleware/TerminableMiddlewareTest.php
 ├── Migration/MigrationServiceProviderTest.php
 ├── Migration/MigratorTest.php
 ├── Routing/RouterServiceProviderTest.php
 ├── Routing/RouterTest.php
+├── Routing/RouteStreamedResponseTest.php — Route::run() and the pipeline pass a StreamedResponse through untouched
 ├── ServiceProvider/CoreServiceProvidersTest.php
 └── ServiceProvider/ServiceProviderTest.php
 ```
@@ -359,7 +363,9 @@ tests/
 Central runtime kernel. Orchestrates the entire request lifecycle.
 
 - `bootstrap()` — Idempotent; calls `foundation()`, then load/register/boot service providers
-- `handle(Request)` → `Response` — Dispatches through middleware pipeline; catches exceptions via `ExceptionHandler`
+- `handle(Request)` → `ResponseInterface` — Dispatches through middleware pipeline; on exception calls `ExceptionHandler::report()` then `render()`. Pure: no output, no `terminate()`
+- `send(Request, ResponseInterface)` — Emits the response via `ResponseEmitter` (stream failures after headers are sent go to `report()`), then always calls `terminate()`
+- `terminate(Request, ResponseInterface)` — Runs terminable middleware; called by `send()` and by `HttpTestCase`
 - `make(class)` — Delegates to Container; returns singleton instance
 - `bind(class, value)` — Delegates to Container; wraps callables transparently
 - `register(ServiceProvider::class)` — Queues a user provider (must be called before bootstrap)
@@ -399,7 +405,7 @@ Builds a recursive closure pipeline from class-strings. Resolves each middleware
 
 - `handle(Route, Request)` — Runs the full pipeline: global → route-level → handler
 - `dispatch(Request, callable)` — Runs global middleware only (used in tests / partial dispatch)
-- `terminate(Request, Response)` — Called after `ResponseEmitter::emit()`
+- `terminate(Request, ResponseInterface)` — Called by `Application::terminate()` after the body has been sent
 
 ---
 
@@ -445,11 +451,13 @@ Thin PDO wrapper. Not a DBAL. The ORM and query builder live in `ez-php/orm`.
 // 1. Create a middleware that starts the session
 final class SessionStartMiddleware implements MiddlewareInterface
 {
-    public function handle(Request $request, callable $next): Response
+    public function handle(RequestInterface $request, callable $next): ResponseInterface
     {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
+
+        /** @var ResponseInterface */
         return $next($request);
     }
 }
@@ -487,6 +495,8 @@ $router->post('/webhook/stripe', [WebhookController::class, 'handle'])->withoutC
 - **Idempotent bootstrap** — `Application::bootstrap()` guards via `$booted`. Safe to call in tests without leaking state.
 - **Service providers instantiated directly** — `new $class($this)`, not via the container, to avoid circular bootstrap dependency.
 - **`Application::bind()` wraps callables** — Ensures the Application is always injected into user bindings, decoupling the user from the Container API.
+- **`terminate()` runs after the body is sent** — `handle()` is pure and `send()` emits then terminates. In 1.x `handle()` terminated before `public/index.php` emitted, so terminable middleware ran before the client received a byte; with streamed responses that would let a middleware close resources (DB connection, session) the body generator still needs.
+- **The pipeline is typed against `ResponseInterface`** — `Route::run()`, `MiddlewareHandler` and `Application::handle()` never narrow to the concrete `Response`, so a `StreamedResponse` passes through untouched. 1.x narrowed with `assert()`, which is a no-op in production. Helpers that *create* string responses (`Controller`, `ApiController`, `Application::redirect()`) keep returning `Response`.
 - **Router does not execute middleware** — Separation of concerns: `Router::retrieveRoute()` only resolves; `MiddlewareHandler` executes.
 - **Database is intentionally minimal** — No query builder, no schema builder in this package. Those belong in `ez-php/orm`.
 - **`Database` has no `table()` method** — A `table()` shortcut that returned an ORM `QueryBuilder` was considered but deliberately not implemented. Adding it would create a runtime dependency from the framework core on `ez-php/orm`, which violates module-boundary rules and is not declared in `composer.json`. Code that needs a `QueryBuilder` must resolve `ez-php/orm`'s `QueryBuilder` directly (e.g. via the container or a service provider). If a future bridge is needed, implement a `QueryBuilderFactoryInterface` in `ez-php/contracts` and bind it in `DatabaseServiceProvider`.

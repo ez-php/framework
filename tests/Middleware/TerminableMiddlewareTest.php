@@ -8,6 +8,7 @@ use EzPhp\Container\Container;
 use EzPhp\Http\Request;
 use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
+use EzPhp\Http\ResponseInterface;
 use EzPhp\Middleware\MiddlewareHandler;
 use EzPhp\Middleware\MiddlewareInterface;
 use EzPhp\Middleware\TerminableMiddleware;
@@ -84,7 +85,9 @@ final class TerminableMiddlewareTest extends TestCase
         $handler->terminate($request, $response);
 
         $this->assertSame('/captured', CapturingTerminableMiddleware::$capturedRequest?->uri());
-        $this->assertSame('captured-body', CapturingTerminableMiddleware::$capturedResponse?->body());
+        $captured = CapturingTerminableMiddleware::$capturedResponse;
+        self::assertInstanceOf(Response::class, $captured);
+        $this->assertSame('captured-body', $captured->body());
     }
 
     /**
@@ -120,12 +123,12 @@ final class RecordingTerminableMiddleware implements TerminableMiddleware
     }
 
     /**
-     * @param Request  $request
-     * @param Response $response
+     * @param Request           $request
+     * @param ResponseInterface $response
      *
      * @return void
      */
-    public function terminate(Request $request, Response $response): void
+    public function terminate(Request $request, ResponseInterface $response): void
     {
         self::$terminated = true;
     }
@@ -158,7 +161,7 @@ final class CapturingTerminableMiddleware implements TerminableMiddleware
 {
     public static ?Request $capturedRequest = null;
 
-    public static ?Response $capturedResponse = null;
+    public static ?ResponseInterface $capturedResponse = null;
 
     /**
      * @param RequestInterface $request
@@ -173,12 +176,12 @@ final class CapturingTerminableMiddleware implements TerminableMiddleware
     }
 
     /**
-     * @param Request  $request
-     * @param Response $response
+     * @param Request           $request
+     * @param ResponseInterface $response
      *
      * @return void
      */
-    public function terminate(Request $request, Response $response): void
+    public function terminate(Request $request, ResponseInterface $response): void
     {
         self::$capturedRequest = $request;
         self::$capturedResponse = $response;

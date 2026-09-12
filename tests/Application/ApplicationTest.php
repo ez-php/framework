@@ -131,6 +131,7 @@ final class ApplicationTest extends TestCase
         $response = $app->handle(new Request('GET', '/does-not-exist'));
 
         $this->assertSame(404, $response->status());
+        self::assertInstanceOf(Response::class, $response);
         $this->assertStringContainsString('404', $response->body());
     }
 

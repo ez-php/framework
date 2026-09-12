@@ -39,8 +39,8 @@ $app = new \EzPhp\Application\Application(basePath: __DIR__);
 $app->register(AppServiceProvider::class);
 $app->bootstrap();
 
-$response = $app->handle(\EzPhp\Http\RequestFactory::fromGlobals());
-(new \EzPhp\Http\ResponseEmitter())->emit($response);
+$request = \EzPhp\Http\RequestFactory::createFromGlobals();
+$app->send($request, $app->handle($request));
 ```
 
 ## Routing

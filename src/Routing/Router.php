@@ -11,6 +11,7 @@ use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
 use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
+use EzPhp\Http\ResponseInterface;
 use EzPhp\Middleware\MiddlewareInterface;
 use InvalidArgumentException;
 
@@ -225,13 +226,13 @@ final class Router
 
         /** @var array<string, Closure(): Route> $actions */
         $actions = [
-            'index' => fn (): Route => $this->get($base, fn (Request $r): Response|string => $controller->index($r))->name("$resource.index"),
-            'create' => fn (): Route => $this->get($base . '/create', fn (Request $r): Response|string => $controller->create($r))->name("$resource.create"),
-            'store' => fn (): Route => $this->post($base, fn (Request $r): Response|string => $controller->store($r))->name("$resource.store"),
-            'show' => fn (): Route => $this->get($base . '/{id}', fn (Request $r): Response|string => $controller->show($r))->name("$resource.show"),
-            'edit' => fn (): Route => $this->get($base . '/{id}/edit', fn (Request $r): Response|string => $controller->edit($r))->name("$resource.edit"),
-            'update' => fn (): Route => $this->put($base . '/{id}', fn (Request $r): Response|string => $controller->update($r))->name("$resource.update"),
-            'destroy' => fn (): Route => $this->delete($base . '/{id}', fn (Request $r): Response|string => $controller->destroy($r))->name("$resource.destroy"),
+            'index' => fn (): Route => $this->get($base, fn (Request $r): ResponseInterface|string => $controller->index($r))->name("$resource.index"),
+            'create' => fn (): Route => $this->get($base . '/create', fn (Request $r): ResponseInterface|string => $controller->create($r))->name("$resource.create"),
+            'store' => fn (): Route => $this->post($base, fn (Request $r): ResponseInterface|string => $controller->store($r))->name("$resource.store"),
+            'show' => fn (): Route => $this->get($base . '/{id}', fn (Request $r): ResponseInterface|string => $controller->show($r))->name("$resource.show"),
+            'edit' => fn (): Route => $this->get($base . '/{id}/edit', fn (Request $r): ResponseInterface|string => $controller->edit($r))->name("$resource.edit"),
+            'update' => fn (): Route => $this->put($base . '/{id}', fn (Request $r): ResponseInterface|string => $controller->update($r))->name("$resource.update"),
+            'destroy' => fn (): Route => $this->delete($base . '/{id}', fn (Request $r): ResponseInterface|string => $controller->destroy($r))->name("$resource.destroy"),
         ];
 
         $toRegister = $only !== [] ? array_intersect_key($actions, array_flip($only)) : $actions;

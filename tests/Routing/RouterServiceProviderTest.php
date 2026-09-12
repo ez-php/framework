@@ -23,6 +23,7 @@ use EzPhp\Exceptions\ExceptionHandlerServiceProvider;
 use EzPhp\Exceptions\ProductionHtmlRenderer;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
+use EzPhp\Http\Response;
 use EzPhp\Middleware\MiddlewareHandler;
 use EzPhp\Migration\MigrationServiceProvider;
 use EzPhp\Migration\Migrator;
@@ -108,6 +109,7 @@ final class RouterServiceProviderTest extends TestCase
         $response = $app->handle(new Request('GET', '/'));
 
         $this->assertSame(200, $response->status());
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('Hello from ez-php!', $response->body());
     }
 

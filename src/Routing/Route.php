@@ -7,6 +7,7 @@ namespace EzPhp\Routing;
 use Closure;
 use EzPhp\Http\Request;
 use EzPhp\Http\Response;
+use EzPhp\Http\ResponseInterface;
 use EzPhp\Middleware\MiddlewareInterface;
 
 /**
@@ -363,15 +364,18 @@ final class Route
     /**
      * @internal Called by MiddlewareHandler; not part of the public route API.
      *
+     * A handler may return any ResponseInterface (e.g. a StreamedResponse);
+     * anything else is cast to string and wrapped in a Response.
+     *
      * @param Request $request
      *
-     * @return Response
+     * @return ResponseInterface
      */
-    public function run(Request $request): Response
+    public function run(Request $request): ResponseInterface
     {
         $result = ($this->handler)($request->withParams($this->params));
 
-        if ($result instanceof Response) {
+        if ($result instanceof ResponseInterface) {
             return $result;
         }
 

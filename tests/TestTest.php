@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use EzPhp\Application\Application;
 use EzPhp\Http\RequestFactory;
+use EzPhp\Http\Response;
 use EzPhp\Routing\Router;
 use Tests\TestCase;
 
@@ -41,6 +42,7 @@ final class TestTest extends TestCase
         $response = $app->handle($request);
 
         $this->assertSame(200, $response->status());
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('Hello World!', $response->body());
     }
 }

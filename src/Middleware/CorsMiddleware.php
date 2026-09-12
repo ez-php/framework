@@ -6,6 +6,7 @@ namespace EzPhp\Middleware;
 
 use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
+use EzPhp\Http\ResponseInterface;
 
 /**
  * Class CorsMiddleware
@@ -38,12 +39,12 @@ final readonly class CorsMiddleware implements MiddlewareInterface
      * @param RequestInterface $request
      * @param callable         $next
      *
-     * @return Response
+     * @return ResponseInterface
      */
-    public function handle(RequestInterface $request, callable $next): Response
+    public function handle(RequestInterface $request, callable $next): ResponseInterface
     {
         if (!$this->enabled) {
-            /** @var Response $response */
+            /** @var ResponseInterface $response */
             $response = $next($request);
 
             return $response;
@@ -53,18 +54,18 @@ final readonly class CorsMiddleware implements MiddlewareInterface
             return $this->addCorsHeaders(new Response('', 204));
         }
 
-        /** @var Response $response */
+        /** @var ResponseInterface $response */
         $response = $next($request);
 
         return $this->addCorsHeaders($response);
     }
 
     /**
-     * @param Response $response
+     * @param ResponseInterface $response
      *
-     * @return Response
+     * @return ResponseInterface
      */
-    private function addCorsHeaders(Response $response): Response
+    private function addCorsHeaders(ResponseInterface $response): ResponseInterface
     {
         return $response
             ->withHeader('Access-Control-Allow-Origin', $this->allowOrigin)

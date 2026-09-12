@@ -117,6 +117,7 @@ final class CorsMiddlewareTest extends TestCase
         );
 
         $this->assertSame(201, $response->status());
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('created', $response->body());
     }
 
@@ -132,6 +133,7 @@ final class CorsMiddlewareTest extends TestCase
             fn (): Response => new Response('ok'),
         );
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('ok', $response->body());
         $this->assertArrayNotHasKey('Access-Control-Allow-Origin', $response->headers());
     }

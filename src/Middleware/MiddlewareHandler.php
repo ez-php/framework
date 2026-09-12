@@ -6,7 +6,7 @@ namespace EzPhp\Middleware;
 
 use EzPhp\Container\Container;
 use EzPhp\Http\Request;
-use EzPhp\Http\Response;
+use EzPhp\Http\ResponseInterface;
 use EzPhp\Routing\Route;
 
 /**
@@ -111,9 +111,9 @@ final class MiddlewareHandler
      * @param Route   $route
      * @param Request $request
      *
-     * @return Response
+     * @return ResponseInterface
      */
-    public function handle(Route $route, Request $request): Response
+    public function handle(Route $route, Request $request): ResponseInterface
     {
         $stack = $this->sortByPriority(
             $this->expandGroups(array_merge($this->middleware, $route->getMiddleware()))
@@ -121,7 +121,7 @@ final class MiddlewareHandler
         $this->resolved = [];
 
         return $this->buildPipeline(
-            fn (Request $r): Response => $route->run($r),
+            fn (Request $r): ResponseInterface => $route->run($r),
             $stack,
             0,
         )($request);
@@ -133,11 +133,11 @@ final class MiddlewareHandler
      * requests (e.g. CORS preflight) before routing takes place.
      *
      * @param Request                   $request
-     * @param callable(Request):Response $terminal Called when all global middleware have passed.
+     * @param callable(Request):ResponseInterface $terminal Called when all global middleware have passed.
      *
-     * @return Response
+     * @return ResponseInterface
      */
-    public function dispatch(Request $request, callable $terminal): Response
+    public function dispatch(Request $request, callable $terminal): ResponseInterface
     {
         $this->resolved = [];
 
@@ -155,12 +155,12 @@ final class MiddlewareHandler
      * @param Route   $route
      * @param Request $request
      *
-     * @return Response
+     * @return ResponseInterface
      */
-    public function runRoute(Route $route, Request $request): Response
+    public function runRoute(Route $route, Request $request): ResponseInterface
     {
         return $this->buildPipeline(
-            fn (Request $r): Response => $route->run($r),
+            fn (Request $r): ResponseInterface => $route->run($r),
             $this->expandGroups($route->getMiddleware()),
             0,
         )($request);
@@ -171,11 +171,11 @@ final class MiddlewareHandler
      * Should be called after the response has been sent to the client.
      *
      * @param Request  $request
-     * @param Response $response
+     * @param ResponseInterface $response
      *
      * @return void
      */
-    public function terminate(Request $request, Response $response): void
+    public function terminate(Request $request, ResponseInterface $response): void
     {
         foreach ($this->resolved as $middleware) {
             if ($middleware instanceof TerminableMiddleware) {
@@ -245,11 +245,11 @@ final class MiddlewareHandler
     }
 
     /**
-     * @param callable(Request):Response              $terminal
+     * @param callable(Request):ResponseInterface              $terminal
      * @param array<int, class-string<MiddlewareInterface>> $stack
      * @param int                                          $index
      *
-     * @return callable(Request): Response
+     * @return callable(Request): ResponseInterface
      */
     private function buildPipeline(callable $terminal, array $stack, int $index): callable
     {
@@ -257,18 +257,12 @@ final class MiddlewareHandler
             return $terminal;
         }
 
-        return function (Request $request) use ($terminal, $stack, $index): Response {
+        return function (Request $request) use ($terminal, $stack, $index): ResponseInterface {
             $class = $this->aliases[$stack[$index]] ?? $stack[$index];
             $middleware = $this->container->make($class);
             $this->resolved[] = $middleware;
-            $response = $middleware->handle($request, $this->buildPipeline($terminal, $stack, $index + 1));
-            // MiddlewareInterface::handle() is typed against ResponseInterface so
-            // ez-php/contracts has no dependency on the concrete Response class,
-            // but this pipeline's own contract returns Response. All shipped
-            // middleware return Response.
-            assert($response instanceof Response);
 
-            return $response;
+            return $middleware->handle($request, $this->buildPipeline($terminal, $stack, $index + 1));
         };
     }
 }

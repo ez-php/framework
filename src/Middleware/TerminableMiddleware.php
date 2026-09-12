@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace EzPhp\Middleware;
 
 use EzPhp\Http\Request;
-use EzPhp\Http\Response;
+use EzPhp\Http\ResponseInterface;
 
 /**
  * Interface TerminableMiddleware
@@ -15,12 +15,14 @@ use EzPhp\Http\Response;
 interface TerminableMiddleware extends MiddlewareInterface
 {
     /**
-     * Called after the response has been sent to the client.
+     * Called after the response has been sent to the client — after the last
+     * chunk of a streamed response, and also after a stream failure or a client
+     * disconnect.
      *
-     * @param Request  $request
-     * @param Response $response
+     * @param Request           $request
+     * @param ResponseInterface $response
      *
      * @return void
      */
-    public function terminate(Request $request, Response $response): void;
+    public function terminate(Request $request, ResponseInterface $response): void;
 }

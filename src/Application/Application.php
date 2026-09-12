@@ -13,6 +13,8 @@ use EzPhp\Exceptions\ContainerException;
 use EzPhp\Http\Request;
 use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
+use EzPhp\Http\ResponseEmitter;
+use EzPhp\Http\ResponseInterface;
 use EzPhp\Middleware\MiddlewareHandler;
 use EzPhp\Middleware\MiddlewareInterface;
 use EzPhp\Routing\Router;
@@ -249,12 +251,17 @@ final class Application implements ContainerInterface, CommandRegistryInterface
     }
 
     /**
+     * Turn a request into a response.
+     *
+     * Pure: does not send output and does not call terminate() — use send()
+     * for that.
+     *
      * @param Request $request
      *
-     * @return Response
+     * @return ResponseInterface
      * @throws ReflectionException
      */
-    public function handle(Request $request): Response
+    public function handle(Request $request): ResponseInterface
     {
         if (!$this->booted) {
             $this->bootstrap();
@@ -274,25 +281,61 @@ final class Application implements ContainerInterface, CommandRegistryInterface
         // Global middleware runs before routing so that middleware like
         // CorsMiddleware can intercept requests (e.g. OPTIONS preflight)
         // before a route is resolved.
-        $response = $handler->dispatch($request, function (Request $request) use ($handler): Response {
+        return $handler->dispatch($request, function (Request $request) use ($handler): ResponseInterface {
             try {
                 $route = $this->make(Router::class)->retrieveRoute($request);
                 return $handler->runRoute($route, $request);
             } catch (Throwable $e) {
-                $rendered = $this->make(ExceptionHandlerInterface::class)->render($e, $request);
-                // ExceptionHandlerInterface::render() is typed against ResponseInterface
-                // so ez-php/contracts has no dependency on the concrete Response class,
-                // but the framework's own handle()/dispatch() contract returns Response.
-                // The shipped ExceptionHandlerInterface implementations all return Response.
-                assert($rendered instanceof Response);
+                $exceptionHandler = $this->make(ExceptionHandlerInterface::class);
+                $exceptionHandler->report($e, $request);
 
-                return $rendered;
+                return $exceptionHandler->render($e, $request);
             }
         });
+    }
 
-        $handler->terminate($request, $response);
+    /**
+     * Send the response to the client, then run terminable middleware.
+     *
+     * A failure while a streamed body is being written happens after headers
+     * were sent, so it is reported (not rendered). terminate() runs in every
+     * case — after the last chunk, after a stream failure and after a client
+     * disconnect.
+     *
+     * @param Request           $request
+     * @param ResponseInterface $response
+     * @param ResponseEmitter   $emitter
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function send(Request $request, ResponseInterface $response, ResponseEmitter $emitter = new ResponseEmitter()): void
+    {
+        try {
+            $emitter->emit($response, function (Throwable $e) use ($request): void {
+                try {
+                    $this->make(ExceptionHandlerInterface::class)->report($e, $request);
+                } catch (Throwable) {
+                    // Nothing else can catch this here, and terminate() must still run.
+                }
+            });
+        } finally {
+            $this->terminate($request, $response);
+        }
+    }
 
-        return $response;
+    /**
+     * Run terminate() on every terminable middleware resolved for this request.
+     *
+     * @param Request           $request
+     * @param ResponseInterface $response
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function terminate(Request $request, ResponseInterface $response): void
+    {
+        $this->make(MiddlewareHandler::class)->terminate($request, $response);
     }
 
     /**

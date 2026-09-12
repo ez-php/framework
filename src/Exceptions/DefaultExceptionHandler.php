@@ -108,6 +108,19 @@ class DefaultExceptionHandler implements ExceptionHandler
     }
 
     /**
+     * The default handler has no reporting backend; wrap it in
+     * ez-php/logging's LoggingExceptionHandler to record exceptions.
+     *
+     * @param Throwable        $e
+     * @param RequestInterface $request
+     *
+     * @return void
+     */
+    public function report(Throwable $e, RequestInterface $request): void
+    {
+    }
+
+    /**
      * @param Throwable        $e
      * @param RequestInterface $request
      *

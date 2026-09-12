@@ -102,14 +102,14 @@ final readonly class MakeMiddlewareCommand implements CommandInterface
             namespace App\\Middleware;
 
             use EzPhp\\Http\\RequestInterface;
-            use EzPhp\\Http\\Response;
+            use EzPhp\\Http\\ResponseInterface;
             use EzPhp\\Middleware\\MiddlewareInterface;
 
             final class $name implements MiddlewareInterface
             {
-                public function handle(RequestInterface \$request, callable \$next): Response
+                public function handle(RequestInterface \$request, callable \$next): ResponseInterface
                 {
-                    /** @var Response */
+                    /** @var ResponseInterface */
                     return \$next(\$request);
                 }
             }

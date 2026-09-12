@@ -6,6 +6,7 @@ namespace EzPhp\Middleware;
 
 use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
+use EzPhp\Http\ResponseInterface;
 use EzPhp\Routing\Router;
 
 /**
@@ -66,9 +67,9 @@ final class CsrfMiddleware implements MiddlewareInterface
      * @param RequestInterface $request
      * @param callable         $next
      *
-     * @return Response
+     * @return ResponseInterface
      */
-    public function handle(RequestInterface $request, callable $next): Response
+    public function handle(RequestInterface $request, callable $next): ResponseInterface
     {
         if (in_array($request->method(), self::SAFE_METHODS, true)) {
             return $next($request);

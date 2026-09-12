@@ -43,6 +43,7 @@ final class MiddlewareHandlerTest extends TestCase
         $handler = new MiddlewareHandler(new Container());
         $response = $handler->handle($this->makeRoute('direct'), new Request('GET', '/'));
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('direct', $response->body());
         $this->assertSame(200, $response->status());
     }
@@ -60,6 +61,7 @@ final class MiddlewareHandlerTest extends TestCase
 
         $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('handler+appended', $response->body());
     }
 
@@ -79,6 +81,7 @@ final class MiddlewareHandlerTest extends TestCase
         $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
 
         // A wraps B wraps handler → "A>B>handler"
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('A>B>handler', $response->body());
     }
 
@@ -100,6 +103,7 @@ final class MiddlewareHandlerTest extends TestCase
         $response = $handler->handle($route, new Request('GET', '/'));
 
         // global A wraps route B wraps handler → "A>B>handler"
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('A>B>handler', $response->body());
     }
 
@@ -118,6 +122,7 @@ final class MiddlewareHandlerTest extends TestCase
 
         $response = $handler->handle($route, new Request('GET', '/'));
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('A>handler', $response->body());
     }
 
@@ -134,6 +139,7 @@ final class MiddlewareHandlerTest extends TestCase
 
         $response = $handler->handle($this->makeRoute('should-not-reach'), new Request('GET', '/'));
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('short-circuit', $response->body());
         $this->assertSame(403, $response->status());
     }
@@ -159,6 +165,7 @@ final class MiddlewareHandlerTest extends TestCase
         $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
 
         // A wraps B wraps handler → "A>B>handler"
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('A>B>handler', $response->body());
     }
 
@@ -182,6 +189,7 @@ final class MiddlewareHandlerTest extends TestCase
         $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
 
         // B wraps A wraps (Append wraps handler) → "B>A>handler+appended"
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('B>A>handler+appended', $response->body());
     }
 
@@ -203,6 +211,7 @@ final class MiddlewareHandlerTest extends TestCase
         $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
 
         // Deterministic: A wraps B wraps handler
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('A>B>handler', $response->body());
     }
 
@@ -222,6 +231,7 @@ final class MiddlewareHandlerTest extends TestCase
 
         $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('A>B>handler', $response->body());
     }
 
@@ -249,6 +259,7 @@ final class MiddlewareHandlerTest extends TestCase
 
         $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('A>handler', $response->body());
     }
 
@@ -266,6 +277,7 @@ final class MiddlewareHandlerTest extends TestCase
 
         $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertSame('B>handler', $response->body());
     }
 }

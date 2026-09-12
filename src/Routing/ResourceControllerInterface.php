@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace EzPhp\Routing;
 
 use EzPhp\Http\Request;
-use EzPhp\Http\Response;
+use EzPhp\Http\ResponseInterface;
 
 /**
  * Interface ResourceControllerInterface
@@ -13,6 +13,9 @@ use EzPhp\Http\Response;
  * Contract for controllers registered via {@see Router::resource()}.
  * Implementing all seven methods ensures the router can wire up the full
  * RESTful route set without relying on dynamic dispatch.
+ *
+ * Return types are ResponseInterface so a resource action may stream;
+ * implementations may keep declaring the narrower Response.
  *
  * | Method | URI                      | Route name          |
  * |--------|--------------------------|---------------------|
@@ -33,61 +36,61 @@ interface ResourceControllerInterface
      *
      * @param Request $request
      *
-     * @return Response|string
+     * @return ResponseInterface|string
      */
-    public function index(Request $request): Response|string;
+    public function index(Request $request): ResponseInterface|string;
 
     /**
      * Show the form for creating a new resource. (GET /{resource}/create)
      *
      * @param Request $request
      *
-     * @return Response|string
+     * @return ResponseInterface|string
      */
-    public function create(Request $request): Response|string;
+    public function create(Request $request): ResponseInterface|string;
 
     /**
      * Store a newly created resource. (POST /{resource})
      *
      * @param Request $request
      *
-     * @return Response|string
+     * @return ResponseInterface|string
      */
-    public function store(Request $request): Response|string;
+    public function store(Request $request): ResponseInterface|string;
 
     /**
      * Display the specified resource. (GET /{resource}/{id})
      *
      * @param Request $request
      *
-     * @return Response|string
+     * @return ResponseInterface|string
      */
-    public function show(Request $request): Response|string;
+    public function show(Request $request): ResponseInterface|string;
 
     /**
      * Show the form for editing the specified resource. (GET /{resource}/{id}/edit)
      *
      * @param Request $request
      *
-     * @return Response|string
+     * @return ResponseInterface|string
      */
-    public function edit(Request $request): Response|string;
+    public function edit(Request $request): ResponseInterface|string;
 
     /**
      * Update the specified resource. (PUT /{resource}/{id})
      *
      * @param Request $request
      *
-     * @return Response|string
+     * @return ResponseInterface|string
      */
-    public function update(Request $request): Response|string;
+    public function update(Request $request): ResponseInterface|string;
 
     /**
      * Remove the specified resource. (DELETE /{resource}/{id})
      *
      * @param Request $request
      *
-     * @return Response|string
+     * @return ResponseInterface|string
      */
-    public function destroy(Request $request): Response|string;
+    public function destroy(Request $request): ResponseInterface|string;
 }

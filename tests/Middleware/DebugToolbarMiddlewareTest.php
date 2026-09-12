@@ -31,6 +31,7 @@ final class DebugToolbarMiddlewareTest extends TestCase
             fn (): Response => new Response('<html><body><p>Hello</p></body></html>'),
         );
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertStringContainsString('ez-debug-toolbar', $response->body());
         $this->assertStringContainsString('</body>', $response->body());
     }
@@ -48,6 +49,7 @@ final class DebugToolbarMiddlewareTest extends TestCase
             fn (): Response => new Response('<html><body></body></html>'),
         );
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertStringContainsString('POST', $response->body());
         $this->assertStringContainsString('/api/users', $response->body());
     }
@@ -65,6 +67,7 @@ final class DebugToolbarMiddlewareTest extends TestCase
             fn (): Response => new Response('<html><body></body></html>', 404),
         );
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertStringContainsString('404', $response->body());
     }
 
@@ -83,6 +86,7 @@ final class DebugToolbarMiddlewareTest extends TestCase
             fn (): Response => new Response($body),
         );
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertStringContainsString('ez-debug-toolbar', $response->body());
         $this->assertStringContainsString('</html>', $response->body());
         $this->assertStringNotContainsString('</body>', $response->body());
@@ -101,6 +105,7 @@ final class DebugToolbarMiddlewareTest extends TestCase
 
         $response = $middleware->handle($request, fn (): Response => $original);
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertStringNotContainsString('ez-debug-toolbar', $response->body());
     }
 
@@ -117,6 +122,7 @@ final class DebugToolbarMiddlewareTest extends TestCase
             fn (): Response => new Response('{"ok":true}'),
         );
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertStringNotContainsString('ez-debug-toolbar', $response->body());
         $this->assertSame('{"ok":true}', $response->body());
     }
@@ -134,6 +140,7 @@ final class DebugToolbarMiddlewareTest extends TestCase
             fn (): Response => new Response('<html><body></body></html>', 500),
         );
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertStringContainsString('#e74c3c', $response->body());
     }
 
@@ -150,6 +157,7 @@ final class DebugToolbarMiddlewareTest extends TestCase
             fn (): Response => new Response('<html><body></body></html>', 200),
         );
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertStringContainsString('#27ae60', $response->body());
     }
 
@@ -166,6 +174,7 @@ final class DebugToolbarMiddlewareTest extends TestCase
             fn (): Response => new Response('<html><body></body></html>'),
         );
 
+        self::assertInstanceOf(Response::class, $response);
         $this->assertStringNotContainsString('<script>', $response->body());
         $this->assertStringContainsString('&lt;script&gt;', $response->body());
     }
