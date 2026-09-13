@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace Tests\Middleware;
 
 use EzPhp\Container\Container;
+use EzPhp\Contracts\MiddlewareInterface as ContractsMiddlewareInterface;
 use EzPhp\Http\HeaderValidator;
 use EzPhp\Http\Request;
+use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
 use EzPhp\Http\ResponseInterface;
 use EzPhp\Http\StreamedResponse;
 use EzPhp\Middleware\CorsMiddleware;
 use EzPhp\Middleware\DebugToolbarMiddleware;
 use EzPhp\Middleware\MiddlewareHandler;
-use EzPhp\RateLimiter\ArrayDriver;
-use EzPhp\RateLimiter\Middleware\ThrottleMiddleware;
 use EzPhp\Routing\ResourceControllerInterface;
 use EzPhp\Routing\Route;
 use EzPhp\Routing\Router;
@@ -31,7 +31,6 @@ use Tests\TestCase;
  * @package Tests\Middleware
  */
 #[CoversClass(CorsMiddleware::class)]
-#[CoversClass(ThrottleMiddleware::class)]
 #[CoversClass(DebugToolbarMiddleware::class)]
 #[UsesClass(MiddlewareHandler::class)]
 #[UsesClass(Container::class)]
@@ -39,16 +38,19 @@ use Tests\TestCase;
 #[UsesClass(Router::class)]
 #[UsesClass(StreamedResponse::class)]
 #[UsesClass(HeaderValidator::class)]
-#[UsesClass(ArrayDriver::class)]
 final class StreamThroughMiddlewareTest extends TestCase
 {
     /**
-     * Module middleware (ThrottleMiddleware implements only the contracts
-     * interface) registered through the real MiddlewareHandler pipeline.
+     * Framework middleware plus a module-style middleware (implementing only
+     * the contracts interface, as ThrottleMiddleware or AuthMiddleware do),
+     * both registered through the real MiddlewareHandler pipeline. The
+     * module-style middleware is defined here rather than taken from
+     * ez-php/rate-limiter: the framework package does not depend on it, so its
+     * standalone CI cannot load module classes.
      *
      * @return void
      */
-    public function test_streamed_response_passes_cors_and_throttle_and_receives_their_headers(): void
+    public function test_streamed_response_passes_framework_and_module_middleware_and_receives_their_headers(): void
     {
         $produced = 0;
         $streamed = new StreamedResponse(function () use (&$produced): \Generator {
@@ -56,19 +58,16 @@ final class StreamThroughMiddlewareTest extends TestCase
             yield 'chunk';
         });
 
-        $container = new Container();
-        $container->bind(ThrottleMiddleware::class, fn (): ThrottleMiddleware => new ThrottleMiddleware(new ArrayDriver(), 60, 60));
-
-        $handler = new MiddlewareHandler($container);
+        $handler = new MiddlewareHandler(new Container());
         $handler->add(CorsMiddleware::class);
-        $handler->add(ThrottleMiddleware::class);
+        $handler->add(ModuleStyleHeaderMiddleware::class);
 
         $route = new Route('GET', '/stream', fn (Request $r): StreamedResponse => $streamed);
         $response = $handler->handle($route, new Request('GET', '/stream'));
 
         self::assertInstanceOf(StreamedResponse::class, $response);
         $this->assertArrayHasKey('Access-Control-Allow-Origin', $response->headers());
-        $this->assertArrayHasKey('X-RateLimit-Limit', $response->headers());
+        $this->assertArrayHasKey('X-Module-Style', $response->headers());
         $this->assertSame(0, $produced, 'Middleware must not consume the stream.');
     }
 
@@ -185,5 +184,25 @@ final class StreamingResourceController implements ResourceControllerInterface
     public function destroy(Request $request): ResponseInterface
     {
         return new Response('destroy');
+    }
+}
+
+/**
+ * Stands in for module middleware: implements only EzPhp\Contracts\MiddlewareInterface.
+ */
+final class ModuleStyleHeaderMiddleware implements ContractsMiddlewareInterface
+{
+    /**
+     * @param RequestInterface $request
+     * @param callable         $next
+     *
+     * @return ResponseInterface
+     */
+    public function handle(RequestInterface $request, callable $next): ResponseInterface
+    {
+        /** @var ResponseInterface $response */
+        $response = $next($request);
+
+        return $response->withHeader('X-Module-Style', 'yes');
     }
 }
