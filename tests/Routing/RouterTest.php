@@ -1477,6 +1477,16 @@ class ArrayDispatchTestContainer implements ContainerInterface
     }
 
     /**
+     * @param string $abstract
+     *
+     * @return bool
+     */
+    public function has(string $abstract): bool
+    {
+        return true;
+    }
+
+    /**
      * @template T of object
      * @param class-string<T> $abstract
      * @param T               $instance

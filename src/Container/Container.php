@@ -138,6 +138,19 @@ final class Container
     }
 
     /**
+     * Determine whether an explicit binding or cached instance exists for
+     * the given class, without attempting to resolve it.
+     *
+     * @param string $class
+     *
+     * @return bool
+     */
+    public function has(string $class): bool
+    {
+        return isset($this->instances[$class]) || isset($this->bindings[$class]);
+    }
+
+    /**
      * Resolve an instance of the given class from the container.
      *
      * When $overrides is non-empty, the singleton cache is bypassed and the

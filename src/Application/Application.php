@@ -357,6 +357,19 @@ final class Application implements ContainerInterface, CommandRegistryInterface
     }
 
     /**
+     * Determine whether an explicit binding or resolved instance exists for
+     * the given class, without attempting to resolve it.
+     *
+     * @param string $class
+     *
+     * @return bool
+     */
+    public function has(string $class): bool
+    {
+        return isset($this->container) && $this->container->has($class);
+    }
+
+    /**
      * Create a redirect response to the given URL.
      *
      * @param string $url    Absolute or relative URL to redirect to.

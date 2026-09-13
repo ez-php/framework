@@ -136,7 +136,7 @@ final readonly class MakeTestCommand implements CommandInterface
 
             final class $name extends TestCase
             {
-                public function test_example(): void
+                public function testExample(): void
                 {
                     \$this->assertTrue(true);
                 }
@@ -162,7 +162,7 @@ final readonly class MakeTestCommand implements CommandInterface
 
             final class $name extends ApplicationTestCase
             {
-                public function test_example(): void
+                public function testExample(): void
                 {
                     \$this->assertTrue(true);
                 }
@@ -188,7 +188,7 @@ final readonly class MakeTestCommand implements CommandInterface
 
             final class $name extends HttpTestCase
             {
-                public function test_example(): void
+                public function testExample(): void
                 {
                     \$response = \$this->get('/');
                     \$response->assertStatus(200);
