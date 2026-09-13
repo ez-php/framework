@@ -40,11 +40,18 @@ final class SeederRunner
      * Run all seeder files in alphabetical order.
      * When $file is given only that single file is run.
      *
-     * @param string|null $file  Basename of the seeder file (e.g. 'UserSeeder.php').
+     * $db:setup is not atomic across the whole seed step — there is no umbrella
+     * transaction, so a seeder that throws partway through leaves every prior
+     * seeder's writes committed. $onSeeded, when given, is invoked with each
+     * basename immediately after that seeder succeeds (not batched at the end),
+     * so a caller can report exactly which seeders completed before a failure.
+     *
+     * @param string|null              $file
+     * @param (callable(string): void)|null $onSeeded  Called after each seeder succeeds.
      *
      * @return list<string>  Basenames of the seeders that were executed.
      */
-    public function run(?string $file = null): array
+    public function run(?string $file = null, ?callable $onSeeded = null): array
     {
         $files = $this->getFiles();
 
@@ -62,6 +69,10 @@ final class SeederRunner
             $seeder = $this->load($basename);
             $seeder->run($this->db);
             $ran[] = $basename;
+
+            if ($onSeeded !== null) {
+                $onSeeded($basename);
+            }
         }
 
         return $ran;

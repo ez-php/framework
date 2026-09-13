@@ -109,6 +109,17 @@ final class MiddlewareHandler
     /**
      * Run the full pipeline (global + route middleware) then the route handler.
      *
+     * `Application::handle()` does NOT call this method — it calls dispatch()
+     * and runRoute() separately instead, because routing must happen *after*
+     * global middleware runs (so middleware like CorsMiddleware can intercept a
+     * request, e.g. an OPTIONS preflight, before any route is resolved), and the
+     * Route required by this method's combined global+route stack isn't known
+     * until inside that global-middleware pipeline. This method is kept as a
+     * lower-level, independently-testable primitive for callers that already
+     * have a Route in hand — see MiddlewareHandlerTest, TerminableMiddlewareTest,
+     * and StreamThroughMiddlewareTest, which exercise it without a full
+     * Application/Router round-trip.
+     *
      * @param Route   $route
      * @param Request $request
      *

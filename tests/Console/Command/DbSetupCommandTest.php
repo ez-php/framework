@@ -350,6 +350,47 @@ final class DbSetupCommandTest extends TestCase
     }
 
     /**
+     * A failing seeder must not silently discard progress: seeders that
+     * already succeeded are reported, the failure names how many completed,
+     * and the original exception propagates (matching handle()'s @throws).
+     *
+     * @return void
+     * @throws Throwable
+     */
+    public function test_reports_progress_and_rethrows_when_a_seeder_fails(): void
+    {
+        file_put_contents($this->seederPath . '/ASeeder.php', $this->seederStub('Alice'));
+        file_put_contents($this->seederPath . '/BSeeder.php', <<<'PHP'
+            <?php
+            use EzPhp\Database\Database;
+            use EzPhp\Migration\SeederInterface;
+            return new class implements SeederInterface {
+                public function run(Database $db): void {
+                    throw new \RuntimeException('seeder failed');
+                }
+            };
+            PHP);
+
+        $command = new DbSetupCommand($this->migrator, $this->runner);
+
+        ob_start();
+        try {
+            $command->handle([]);
+            $this->fail('Expected the failing seeder to propagate.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('seeder failed', $e->getMessage());
+        } finally {
+            $output = (string) ob_get_clean();
+        }
+
+        $this->assertStringContainsString('Seeded: ASeeder.php', $output);
+
+        $rows = $this->db->query('SELECT name FROM items');
+        $this->assertCount(1, $rows);
+        $this->assertSame('Alice', $rows[0]['name']);
+    }
+
+    /**
      * Build a Prompt backed by a fixed list of answer lines.
      *
      * @param list<string> $lines

@@ -68,7 +68,13 @@ final readonly class DbSetupCommand implements CommandInterface
      */
     public function getHelp(): string
     {
-        return 'Usage: ez db:setup [--refresh] [--refresh-hard] [--force]';
+        return 'Usage: ez db:setup [--refresh] [--refresh-hard] [--force]'
+            . "\n\nNot atomic: migrate and seed are two independently-recoverable steps with no "
+            . 'umbrella transaction. If a seeder throws partway through, the schema is already '
+            . 'migrated and every seeder that ran before the failure is already committed — the '
+            . 'output reports exactly which ones. Re-running after fixing the failing seeder is '
+            . 'safe only if seeders already run are idempotent; otherwise inspect the database '
+            . 'manually first.';
     }
 
     /**
@@ -104,14 +110,27 @@ final readonly class DbSetupCommand implements CommandInterface
             return 1;
         }
 
-        $seeded = $this->seederRunner->run();
+        $seededCount = 0;
+
+        try {
+            $seeded = $this->seederRunner->run(onSeeded: function (string $basename) use (&$seededCount): void {
+                echo "Seeded: $basename\n";
+                $seededCount++;
+            });
+        } catch (Throwable $e) {
+            fwrite(
+                STDERR,
+                "Seeding failed after $seededCount seeder(s) completed: {$e->getMessage()}\n"
+                . 'db:setup is not atomic — the schema is already migrated and the seeders reported above '
+                . 'are already committed. Fix the failing seeder and re-run; a seeder that is not '
+                . "idempotent may need manual cleanup first.\n",
+            );
+
+            throw $e;
+        }
 
         if ($seeded === []) {
             echo "No seeders found.\n";
-        } else {
-            foreach ($seeded as $basename) {
-                echo "Seeded: $basename\n";
-            }
         }
 
         return 0;

@@ -7,6 +7,7 @@ namespace EzPhp\Database;
 use EzPhp\Contracts\DatabaseInterface;
 use PDO;
 use Pdo\Mysql;
+use PDOStatement;
 use Throwable;
 
 /**
@@ -58,20 +59,7 @@ final class Database implements DatabaseInterface
     public function query(string $sql, array $bindings = []): array
     {
         $stmt = $this->pdo->prepare($sql);
-
-        foreach (array_values($bindings) as $i => $value) {
-            if ($value === null) {
-                $stmt->bindValue($i + 1, $value, PDO::PARAM_NULL);
-            } elseif (is_bool($value)) {
-                $stmt->bindValue($i + 1, $value, PDO::PARAM_BOOL);
-            } elseif (is_int($value)) {
-                $stmt->bindValue($i + 1, $value, PDO::PARAM_INT);
-            } else {
-                /** @var string|float $value */
-                $stmt->bindValue($i + 1, (string) $value, PDO::PARAM_STR);
-            }
-        }
-
+        $this->bindValues($stmt, $bindings);
         $stmt->execute();
 
         /** @var list<array<string, mixed>> $result */
@@ -89,23 +77,45 @@ final class Database implements DatabaseInterface
     public function execute(string $sql, array $bindings = []): int
     {
         $stmt = $this->pdo->prepare($sql);
-
-        foreach (array_values($bindings) as $i => $value) {
-            if ($value === null) {
-                $stmt->bindValue($i + 1, $value, PDO::PARAM_NULL);
-            } elseif (is_bool($value)) {
-                $stmt->bindValue($i + 1, $value, PDO::PARAM_BOOL);
-            } elseif (is_int($value)) {
-                $stmt->bindValue($i + 1, $value, PDO::PARAM_INT);
-            } else {
-                /** @var string|float $value */
-                $stmt->bindValue($i + 1, (string) $value, PDO::PARAM_STR);
-            }
-        }
-
+        $this->bindValues($stmt, $bindings);
         $stmt->execute();
 
         return $stmt->rowCount();
+    }
+
+    /**
+     * Bind positional or named values to a prepared statement, detecting the PDO
+     * param type per value.
+     *
+     * A bindings array with only sequential integer keys (a list) is bound
+     * positionally, in order, to `?` placeholders. A bindings array with any
+     * string key is bound by name to `:name` placeholders — the leading `:` is
+     * optional in the array key. Mixing the two styles in one call is not
+     * supported, matching PDO's own restriction on a single prepared statement.
+     *
+     * @param PDOStatement            $stmt
+     * @param array<int|string, mixed> $bindings
+     *
+     * @return void
+     */
+    private function bindValues(PDOStatement $stmt, array $bindings): void
+    {
+        $named = !array_is_list($bindings);
+
+        foreach ($bindings as $key => $value) {
+            $param = $named ? (is_string($key) && str_starts_with($key, ':') ? $key : ':' . $key) : (int) $key + 1;
+
+            if ($value === null) {
+                $stmt->bindValue($param, $value, PDO::PARAM_NULL);
+            } elseif (is_bool($value)) {
+                $stmt->bindValue($param, $value, PDO::PARAM_BOOL);
+            } elseif (is_int($value)) {
+                $stmt->bindValue($param, $value, PDO::PARAM_INT);
+            } else {
+                /** @var string|float $value */
+                $stmt->bindValue($param, (string) $value, PDO::PARAM_STR);
+            }
+        }
     }
 
     /**

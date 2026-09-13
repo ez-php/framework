@@ -21,10 +21,9 @@ final readonly class MakeCommandCommand implements CommandInterface
      *
      * @param string $appPath Application source root. `ConsoleServiceProvider` passes
      *                        `basePath('app')` — the template autoloads `App\ => app/`
-     *                        and ships no `src/` directory. (`make:controller`,
-     *                        `make:middleware` and `make:provider` are bound to
-     *                        `basePath('src')`; that is a known bug, not a pattern
-     *                        to follow — see TODO.md.)
+     *                        and ships no `src/` directory. Every other `make:*`
+     *                        generator that emits an `App\…` class is bound the
+     *                        same way.
      */
     public function __construct(private string $appPath)
     {

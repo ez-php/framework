@@ -139,7 +139,7 @@ final class Migrator
         $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
 
         foreach ($tables as $table) {
-            $pdo->exec('DROP TABLE `' . str_replace('`', '``', $table) . '`');
+            $pdo->exec('DROP TABLE ' . $this->quoteTableIdentifier($table, '`'));
         }
 
         $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
@@ -170,10 +170,39 @@ final class Migrator
         ));
 
         foreach ($tables as $table) {
-            $pdo->exec('DROP TABLE IF EXISTS "' . str_replace('"', '""', $table) . '"');
+            $pdo->exec('DROP TABLE IF EXISTS ' . $this->quoteTableIdentifier($table, '"'));
         }
 
         return $tables;
+    }
+
+    /**
+     * Quote a table identifier read back from `SHOW TABLES` / `sqlite_master` before
+     * interpolating it into a DROP TABLE statement.
+     *
+     * Table names here come from a trusted source (the schema itself, not
+     * user/request input), so this is not exploitable today — but it is the one
+     * shared place both drop-all-tables paths route through, instead of each
+     * re-deriving its own escaping via manual quote-doubling, so a future caller
+     * that ever feeds an external table name through this path inherits the
+     * same allow-list guard rather than a second ad-hoc implementation.
+     *
+     * @param string $table
+     * @param string $quoteChar Driver-native identifier quote character: `` ` `` for MySQL, `"` for SQLite.
+     *
+     * @return string
+     * @throws \InvalidArgumentException When $table contains anything other than
+     *                                    alphanumerics/underscores.
+     */
+    private function quoteTableIdentifier(string $table, string $quoteChar): string
+    {
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+            throw new \InvalidArgumentException(
+                "Invalid SQL table identifier: '$table'. Only alphanumeric characters and underscores are allowed."
+            );
+        }
+
+        return $quoteChar . $table . $quoteChar;
     }
 
     /**

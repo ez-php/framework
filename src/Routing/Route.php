@@ -74,9 +74,25 @@ final class Route
      */
     public function where(string $param, string $pattern): self
     {
-        if (@preg_match('#' . $pattern . '#', '') === false) {
+        $warning = null;
+
+        set_error_handler(static function (int $errno, string $errstr) use (&$warning): bool {
+            $warning = $errstr;
+
+            return true;
+        }, E_WARNING);
+
+        try {
+            $isValid = preg_match('#' . $pattern . '#', '') !== false;
+        } finally {
+            restore_error_handler();
+        }
+
+        if (!$isValid) {
+            $detail = $warning !== null ? " ($warning)" : '';
+
             throw new \InvalidArgumentException(
-                "Invalid regex pattern for route parameter '$param': $pattern"
+                "Invalid regex pattern for route parameter '$param': $pattern$detail"
             );
         }
 

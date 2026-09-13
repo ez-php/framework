@@ -128,6 +128,54 @@ final class SeederRunnerTest extends TestCase
     /**
      * @return void
      */
+    public function test_run_invokes_on_seeded_callback_after_each_seeder(): void
+    {
+        file_put_contents($this->path . '/ASeeder.php', $this->seederStub('Alice'));
+        file_put_contents($this->path . '/BSeeder.php', $this->seederStub('Bob'));
+
+        $calls = [];
+        $this->runner->run(onSeeded: function (string $basename) use (&$calls): void {
+            $calls[] = $basename;
+        });
+
+        $this->assertSame(['ASeeder.php', 'BSeeder.php'], $calls);
+    }
+
+    /**
+     * Regression test: a seeder that throws partway through must not silently
+     * discard progress made by seeders that already ran — the callback fires
+     * for each one before the failure, so a caller can report exactly which
+     * seeders completed.
+     *
+     * @return void
+     */
+    public function test_run_reports_progress_via_callback_before_a_failing_seeder_throws(): void
+    {
+        file_put_contents($this->path . '/ASeeder.php', $this->seederStub('Alice'));
+        file_put_contents($this->path . '/BSeeder.php', $this->failingSeederStub());
+        file_put_contents($this->path . '/CSeeder.php', $this->seederStub('Charlie'));
+
+        $calls = [];
+
+        try {
+            $this->runner->run(onSeeded: function (string $basename) use (&$calls): void {
+                $calls[] = $basename;
+            });
+            $this->fail('Expected the failing seeder to throw.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('seeder failed', $e->getMessage());
+        }
+
+        $this->assertSame(['ASeeder.php'], $calls);
+
+        $rows = $this->db->query('SELECT name FROM items');
+        $this->assertCount(1, $rows);
+        $this->assertSame('Alice', $rows[0]['name']);
+    }
+
+    /**
+     * @return void
+     */
     public function test_get_files_returns_sorted_basenames(): void
     {
         file_put_contents($this->path . '/BSeeder.php', '<?php return null;');
@@ -150,6 +198,23 @@ final class SeederRunnerTest extends TestCase
             return new class implements SeederInterface {
                 public function run(Database \$db): void {
                     \$db->execute('INSERT INTO items (name) VALUES (?)', ['{$name}']);
+                }
+            };
+            PHP;
+    }
+
+    /**
+     * @return string
+     */
+    private function failingSeederStub(): string
+    {
+        return <<<'PHP'
+            <?php
+            use EzPhp\Database\Database;
+            use EzPhp\Migration\SeederInterface;
+            return new class implements SeederInterface {
+                public function run(Database $db): void {
+                    throw new \RuntimeException('seeder failed');
                 }
             };
             PHP;

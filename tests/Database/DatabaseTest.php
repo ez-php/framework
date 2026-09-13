@@ -76,6 +76,62 @@ final class DatabaseTest extends TestCase
     }
 
     /**
+     * Regression test: named bindings must bind by name, not by array-iteration
+     * order. Supplying the bindings out of the order the placeholders appear in
+     * the SQL must still match the correct placeholder.
+     *
+     * @return void
+     */
+    public function test_query_supports_named_bindings_regardless_of_array_order(): void
+    {
+        $this->db->query('INSERT INTO users (id, name) VALUES (1, ?)', ['Alice']);
+
+        // Bindings supplied name-then-id, while the SQL declares id-then-name.
+        $rows = $this->db->query(
+            'SELECT name FROM users WHERE id = :id AND name = :name',
+            ['name' => 'Alice', 'id' => 1]
+        );
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('Alice', $rows[0]['name']);
+    }
+
+    /**
+     * Regression test: same as above, but for execute().
+     *
+     * @return void
+     */
+    public function test_execute_supports_named_bindings_regardless_of_array_order(): void
+    {
+        $this->db->query('INSERT INTO users (id, name) VALUES (1, ?)', ['Alice']);
+
+        $affected = $this->db->execute(
+            'UPDATE users SET name = :newName WHERE id = :id',
+            ['newName' => 'Alicia', 'id' => 1]
+        );
+
+        $this->assertSame(1, $affected);
+        $rows = $this->db->query('SELECT name FROM users WHERE id = 1');
+        $this->assertSame('Alicia', $rows[0]['name']);
+    }
+
+    /**
+     * Named bindings without a leading colon in the array key must also work.
+     *
+     * @return void
+     */
+    public function test_query_supports_named_bindings_without_leading_colon(): void
+    {
+        $rows = $this->db->query(
+            'SELECT :flag as literal',
+            ['flag' => 1]
+        );
+
+        $this->assertCount(1, $rows);
+        $this->assertSame(1, $rows[0]['literal']);
+    }
+
+    /**
      * @return void
      * @throws Throwable
      */

@@ -582,6 +582,11 @@ final class Router
         /** @var class-string $class */
         $container = $this->container;
 
+        // mixed is unavoidable here, not a shortcut: a controller action may return
+        // ResponseInterface or any (string) -castable value — Route::run() accepts
+        // either and casts non-ResponseInterface results to a plain-text Response.
+        // A narrower union would still have to be mixed in practice, since PHP has
+        // no supertype for "castable to string" short of Stringable|scalar|null.
         return static function (Request $r) use ($container, $class, $action): mixed {
             $controller = $container->make($class);
             /** @var callable(Request): mixed $callable */

@@ -54,6 +54,7 @@ composer test-classes:check  # duplicate test class names only
 - One responsibility per class — keep classes small and focused
 - Constructor injection — no service locator pattern
 - No global state unless intentional and documented
+- Concrete classes are `final` — extend behavior through composition, not inheritance. Exception-hierarchy base classes (e.g. `EzPhpException`, `HttpException`, `CacheException`) are the one carve-out, since they exist specifically to be extended.
 
 **Naming:**
 
@@ -190,20 +191,22 @@ After scaffolding:
 
 **Allocated host ports:**
 
-| Package | `DB_HOST_PORT` (MySQL) | `REDIS_PORT` | `MEILISEARCH_PORT` |
+| Package | `DB_HOST_PORT` (MySQL) | Redis host port | `MEILISEARCH_PORT` |
 |---|---|---|---|
-| root (`ez-php-project`) | 3306 | 6379 | 7700 |
+| root (`ez-php-project`) | 3306 | 6379 (`REDIS_PORT`) | 7700 |
 | `ez-php/framework` | 3307 | — | — |
 | `ez-php/orm` | 3309 | — | — |
-| `ez-php/cache` | — | 6380 | — |
-| `ez-php/queue` | 3310 | 6381 | — |
-| `ez-php/rate-limiter` | — | 6382 | — |
+| `ez-php/cache` | — | 6380 (`REDIS_HOST_PORT`) | — |
+| `ez-php/queue` | 3310 | 6381 (`REDIS_HOST_PORT`) | — |
+| `ez-php/rate-limiter` | — | 6382 (`REDIS_HOST_PORT`) | — |
 | `ez-php/search` | — | — | 7701 |
 | **next free** | **3311** | **6383** | **7702** |
 
 Only set a port for services the module actually uses. Modules without external services need no port config.
 
 > The `MEILISEARCH_PORT` column is the **host** port. Inside a Compose network the service is always reachable at `http://meilisearch:7700` regardless of the host mapping — only publish-side ports need to be unique.
+
+> The "Redis host port" column is likewise the **host**-published port. `ez-php/cache`, `ez-php/queue`, and `ez-php/rate-limiter` map it through a separate `REDIS_HOST_PORT` env var in `docker-compose.yml`, keeping `REDIS_PORT` fixed at `6379` for in-container connections (the app container always reaches Redis at `redis:6379` over the Compose network, regardless of the host mapping) — the root project is the one exception, since it has no host/container split and uses `REDIS_PORT` for both.
 
 ### 5 — Monorepo scripts
 
@@ -225,8 +228,7 @@ The framework core — runtime kernel, dependency injection, routing, middleware
 src/
 ├── Application/
 │   ├── Application.php               — Runtime kernel; bootstrap, request handling, DI façade
-│   ├── CoreServiceProviders.php      — Ordered list of built-in service providers
-│   └── StaticFacade.php              — Abstract base for static façades with setInstance/resetInstance pattern
+│   └── CoreServiceProviders.php      — Ordered list of built-in service providers
 ├── Config/
 │   ├── Config.php                    — Immutable dot-notation config store
 │   ├── ConfigLoader.php              — Scans config/*.php and returns keyed array
@@ -238,7 +240,7 @@ src/
 │   │   ├── ConfigCacheCommand.php    — config:cache — serialises config to a cache file for faster boot
 │   │   ├── ConfigClearCommand.php    — config:clear — deletes the cached config file
 │   │   ├── DbSeedCommand.php         — db:seed — runs seeders registered via SeederRunner
-│   │   ├── DbSetupCommand.php        — db:setup — runs migrations + seeders in one step
+│   │   ├── DbSetupCommand.php        — db:setup — runs migrations + seeders in one step; not atomic, see Design Decisions
 │   │   ├── DoctorCommand.php         — doctor — checks environment, extensions, and config for common issues
 │   │   ├── EnvCheckCommand.php       — env:check — verifies all required .env keys are present
 │   │   ├── IdeGenerateCommand.php    — ide:generate — generates _ide_helpers.php PHPDoc stubs for installed static façades
@@ -413,7 +415,7 @@ Builds a recursive closure pipeline from class-strings. Resolves each middleware
 
 Thin PDO wrapper. Not a DBAL. The ORM and query builder live in `ez-php/orm`.
 
-- `query(sql, bindings)` — Positional bindings with type detection (null/bool/int/string)
+- `query(sql, bindings)` / `execute(sql, bindings)` — Positional (list) or named (string-keyed) bindings, with type detection (null/bool/int/string); the two styles are not mixed within a single call, matching PDO's own restriction
 - `transaction(callable)` — Auto-rollback on exception; returns callable's return value
 
 ---
@@ -498,9 +500,11 @@ $router->post('/webhook/stripe', [WebhookController::class, 'handle'])->withoutC
 - **`terminate()` runs after the body is sent** — `handle()` is pure and `send()` emits then terminates. In 1.x `handle()` terminated before `public/index.php` emitted, so terminable middleware ran before the client received a byte; with streamed responses that would let a middleware close resources (DB connection, session) the body generator still needs.
 - **The pipeline is typed against `ResponseInterface`** — `Route::run()`, `MiddlewareHandler` and `Application::handle()` never narrow to the concrete `Response`, so a `StreamedResponse` passes through untouched. 1.x narrowed with `assert()`, which is a no-op in production. Helpers that *create* string responses (`Controller`, `ApiController`, `Application::redirect()`) keep returning `Response`.
 - **Router does not execute middleware** — Separation of concerns: `Router::retrieveRoute()` only resolves; `MiddlewareHandler` executes.
+- **`MiddlewareHandler::handle(Route, Request)` is unused in production, intentionally** — `Application::handle()` calls `dispatch()` (global middleware) and `runRoute()` (route middleware) separately instead, because routing must happen *after* global middleware runs (so `CorsMiddleware` can intercept an OPTIONS preflight before any route is resolved), and `handle()`'s combined global+route stack needs a `Route` that isn't known until inside that pipeline. `handle()` is kept as a lower-level, independently-testable primitive for callers that already have a `Route` — see `MiddlewareHandlerTest`, `TerminableMiddlewareTest`, `StreamThroughMiddlewareTest`.
 - **Database is intentionally minimal** — No query builder, no schema builder in this package. Those belong in `ez-php/orm`.
 - **`Database` has no `table()` method** — A `table()` shortcut that returned an ORM `QueryBuilder` was considered but deliberately not implemented. Adding it would create a runtime dependency from the framework core on `ez-php/orm`, which violates module-boundary rules and is not declared in `composer.json`. Code that needs a `QueryBuilder` must resolve `ez-php/orm`'s `QueryBuilder` directly (e.g. via the container or a service provider). If a future bridge is needed, implement a `QueryBuilderFactoryInterface` in `ez-php/contracts` and bind it in `DatabaseServiceProvider`.
 - **Migrations use raw PDO** — `up(PDO)` / `down(PDO)` to keep migrations dependency-free; they must not rely on the ORM or Database class.
+- **`db:setup` is not atomic** — `migrate()` and the seed step are two independently-recoverable steps with no umbrella transaction. If a seeder throws partway through, the schema is already migrated and every seeder that ran before the failure is already committed; `DbSetupCommand` reports each seeder as it succeeds (via `SeederRunner::run()`'s `$onSeeded` callback) so a failure names exactly which ones. Re-running is safe only if the seeders already run are idempotent — no automatic rollback or resumption is attempted, by design, to keep the seed step dependency-free of a transaction-aware `Database` abstraction that migrations also can't rely on (implicit-commit DDL in the migration step above already rules that out).
 - **`CorsMiddleware` is a concrete helper** — Provided as a convenience; not part of the routing or middleware infrastructure.
 - **`ez-php/i18n` and `ez-php/validation` are core dependencies** — They are declared in `composer.json` `require` and are not optional. `TranslatorServiceProvider` ships in `CoreServiceProviders::all()` so exception renderers can localise production error pages, and `Controller::validate()` is a first-class base-controller convenience built on `ez-php/validation`. The kernel cannot bootstrap without them. (i18n is consumed through `TranslatorInterface` from `ez-php/contracts`; validation is used via its static `Validator` facade.)
 
