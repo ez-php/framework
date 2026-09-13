@@ -11,7 +11,7 @@ use Throwable;
  *
  * @package EzPhp\Exceptions
  */
-class RouteException extends EzPhpException
+final class RouteException extends EzPhpException
 {
     /**
      * Construct the exception. Note: The message is NOT binary safe.

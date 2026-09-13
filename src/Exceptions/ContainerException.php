@@ -9,6 +9,6 @@ namespace EzPhp\Exceptions;
  *
  * @package EzPhp\Exceptions
  */
-class ContainerException extends EzPhpException
+final class ContainerException extends EzPhpException
 {
 }

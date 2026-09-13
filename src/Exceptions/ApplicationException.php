@@ -9,6 +9,6 @@ namespace EzPhp\Exceptions;
  *
  * @package EzPhp\Exceptions
  */
-class ApplicationException extends EzPhpException
+final class ApplicationException extends EzPhpException
 {
 }

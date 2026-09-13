@@ -9,6 +9,6 @@ namespace EzPhp\Exceptions;
  *
  * @package EzPhp\Exceptions
  */
-class ConfigException extends EzPhpException
+final class ConfigException extends EzPhpException
 {
 }

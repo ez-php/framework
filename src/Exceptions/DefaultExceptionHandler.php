@@ -19,7 +19,7 @@ use Throwable;
  *
  * @package EzPhp\Exceptions
  */
-class DefaultExceptionHandler implements ExceptionHandler
+final class DefaultExceptionHandler implements ExceptionHandler
 {
     /**
      * @var list<array{0: class-string, 1: callable(Throwable, RequestInterface): Response}>

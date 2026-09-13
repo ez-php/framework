@@ -21,6 +21,28 @@ use Tests\TestCase;
 final class ContainerTest extends TestCase
 {
     /**
+     * Returns $value typed as `class-string` for negative-path tests that need
+     * to pass a deliberately invalid class name to `Container::make()`.
+     *
+     * `make()`'s PHPDoc declares `@param class-string<T> $class`, so passing a
+     * literal string (e.g. '' or a nonexistent class name) directly at the call
+     * site fails PHPStan's argument-type check even though the runtime
+     * signature only requires `string`. Routing the value through this one
+     * documented, trusted-cast boundary keeps the "invalid input triggers a
+     * runtime exception" intent verifiable without a blanket line suppression
+     * scattered across every call site.
+     *
+     * @return class-string
+     */
+    private function invalidClassName(string $value): string
+    {
+        /** @var class-string $classString */
+        $classString = $value;
+
+        return $classString;
+    }
+
+    /**
      * @return void
      * @throws ReflectionException
      */
@@ -85,7 +107,7 @@ final class ContainerTest extends TestCase
     {
         $container = new Container();
         $this->expectException(ContainerException::class);
-        $container->make('NonExistentClass\That\DoesNotExist'); // @phpstan-ignore-line
+        $container->make($this->invalidClassName('NonExistentClass\That\DoesNotExist'));
     }
 
     /**
@@ -97,7 +119,7 @@ final class ContainerTest extends TestCase
         $container = new Container();
         $this->expectException(ContainerException::class);
         $this->expectExceptionMessage('Class name must not be empty.');
-        $container->make(''); // @phpstan-ignore-line
+        $container->make($this->invalidClassName(''));
     }
 
     /**
@@ -109,7 +131,7 @@ final class ContainerTest extends TestCase
         $container = new Container();
         $this->expectException(ContainerException::class);
         $this->expectExceptionMessage('Class name must not be empty.');
-        $container->make('', ['param' => 'value']); // @phpstan-ignore-line
+        $container->make($this->invalidClassName(''), ['param' => 'value']);
     }
 
     /**
