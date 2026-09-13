@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Routing;
 
 use EzPhp\Container\Container;
-use EzPhp\Http\HeaderValidator;
 use EzPhp\Http\Request;
 use EzPhp\Http\StreamedResponse;
 use EzPhp\Middleware\MiddlewareHandler;
@@ -25,8 +24,6 @@ use Tests\TestCase;
 #[CoversClass(Route::class)]
 #[CoversClass(MiddlewareHandler::class)]
 #[UsesClass(Container::class)]
-#[UsesClass(StreamedResponse::class)]
-#[UsesClass(HeaderValidator::class)]
 final class RouteStreamedResponseTest extends TestCase
 {
     /**

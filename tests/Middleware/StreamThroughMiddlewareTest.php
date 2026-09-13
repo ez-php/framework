@@ -6,7 +6,6 @@ namespace Tests\Middleware;
 
 use EzPhp\Container\Container;
 use EzPhp\Contracts\MiddlewareInterface as ContractsMiddlewareInterface;
-use EzPhp\Http\HeaderValidator;
 use EzPhp\Http\Request;
 use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
@@ -36,8 +35,6 @@ use Tests\TestCase;
 #[UsesClass(Container::class)]
 #[UsesClass(Route::class)]
 #[UsesClass(Router::class)]
-#[UsesClass(StreamedResponse::class)]
-#[UsesClass(HeaderValidator::class)]
 final class StreamThroughMiddlewareTest extends TestCase
 {
     /**
