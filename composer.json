@@ -19,16 +19,16 @@
   "require": {
     "php": "^8.5",
     "ext-pdo": "*",
-    "ez-php/contracts": "^1.0",
-    "ez-php/dotenv": "^1.0",
-    "ez-php/http": "^1.0",
-    "ez-php/console": "^1.0",
-    "ez-php/i18n": "^1.0",
-    "ez-php/validation": "^1.0"
+    "ez-php/contracts": "^2.0",
+    "ez-php/dotenv": "^2.0",
+    "ez-php/http": "^2.0",
+    "ez-php/console": "^2.0",
+    "ez-php/i18n": "^2.0",
+    "ez-php/validation": "^2.0"
   },
   "require-dev": {
-    "ez-php/docker": "^1.0",
-    "ez-php/testing-application": "^1.0",
+    "ez-php/docker": "^2.0",
+    "ez-php/testing-application": "^2.0",
     "phpunit/phpunit": "^13.0",
     "phpstan/phpstan": "^2.1",
     "friendsofphp/php-cs-fixer": "^3.94",
