@@ -62,7 +62,7 @@ final class RouterServiceProvider extends ServiceProvider
      */
     private function loadFromCache(Router $router, string $cachePath): void
     {
-        /** @var list<array{method: string, path: string, name: string|null, handler: array{0: class-string, 1: string}, middleware: array<int, class-string<\EzPhp\Middleware\MiddlewareInterface>>, constraints: array<string, string>, csrfExempt: bool}> $data */
+        /** @var list<array{method: string, path: string, name: string|null, handler: array{0: class-string, 1: string}, middleware: array<int, class-string<\EzPhp\Contracts\MiddlewareInterface>>, constraints: array<string, string>, csrfExempt: bool}> $data */
         $data = require $cachePath;
 
         foreach ($data as $entry) {

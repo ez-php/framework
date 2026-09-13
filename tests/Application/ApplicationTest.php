@@ -23,6 +23,7 @@ use EzPhp\Console\Command\TinkerCommand;
 use EzPhp\Console\CommandInterface;
 use EzPhp\Console\ConsoleServiceProvider;
 use EzPhp\Container\Container;
+use EzPhp\Contracts\MiddlewareInterface as ContractsMiddlewareInterface;
 use EzPhp\Database\Database;
 use EzPhp\Database\DatabaseServiceProvider;
 use EzPhp\Exceptions\ApplicationException;
@@ -33,7 +34,9 @@ use EzPhp\Exceptions\ExceptionHandlerServiceProvider;
 use EzPhp\Exceptions\ProductionHtmlRenderer;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
+use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
+use EzPhp\Http\ResponseInterface;
 use EzPhp\Middleware\CorsMiddleware;
 use EzPhp\Middleware\MiddlewareHandler;
 use EzPhp\Migration\MigrationServiceProvider;
@@ -403,5 +406,50 @@ final class ApplicationTest extends TestCase
 
         $this->expectException(RouteException::class);
         $app->route('does.not.exist');
+    }
+
+    /**
+     * Module middleware (ThrottleMiddleware, AuthMiddleware, …) implements the
+     * contracts interface, not the framework's own. Registering it must pass
+     * PHPStan — composer full analyses this file — and it must run.
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_middleware_implementing_only_the_contracts_interface_can_be_registered(): void
+    {
+        $app = new Application();
+        $app->middleware(ContractsOnlyMiddleware::class);
+        $app->middlewareAlias('contracts-only', ContractsOnlyMiddleware::class);
+        $app->middlewareGroup('contracts', [ContractsOnlyMiddleware::class]);
+        $app->bootstrap();
+
+        $app->make(Router::class)->get('/contracts-only', fn (Request $r): Response => new Response('ok'));
+
+        $response = $app->handle(new Request('GET', '/contracts-only'));
+
+        $this->assertSame('yes', $response->headers()['X-Contracts-Only'] ?? null);
+        $this->assertSame(ContractsOnlyMiddleware::class, $app->getMiddlewareAliases()['contracts-only']);
+        $this->assertSame([ContractsOnlyMiddleware::class], $app->getMiddlewareGroups()['contracts']);
+    }
+}
+
+/**
+ * Middleware implementing only EzPhp\Contracts\MiddlewareInterface, like module middleware.
+ */
+final class ContractsOnlyMiddleware implements ContractsMiddlewareInterface
+{
+    /**
+     * @param RequestInterface $request
+     * @param callable         $next
+     *
+     * @return ResponseInterface
+     */
+    public function handle(RequestInterface $request, callable $next): ResponseInterface
+    {
+        /** @var ResponseInterface $response */
+        $response = $next($request);
+
+        return $response->withHeader('X-Contracts-Only', 'yes');
     }
 }

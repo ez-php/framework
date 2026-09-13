@@ -8,6 +8,7 @@ use EzPhp\Container\Container;
 use EzPhp\Contracts\CommandRegistryInterface;
 use EzPhp\Contracts\ContainerInterface;
 use EzPhp\Contracts\ExceptionHandlerInterface;
+use EzPhp\Contracts\MiddlewareInterface;
 use EzPhp\Exceptions\ApplicationException;
 use EzPhp\Exceptions\ContainerException;
 use EzPhp\Http\Request;
@@ -16,7 +17,6 @@ use EzPhp\Http\Response;
 use EzPhp\Http\ResponseEmitter;
 use EzPhp\Http\ResponseInterface;
 use EzPhp\Middleware\MiddlewareHandler;
-use EzPhp\Middleware\MiddlewareInterface;
 use EzPhp\Routing\Router;
 use ReflectionException;
 use Throwable;
@@ -86,7 +86,7 @@ final class Application implements ContainerInterface, CommandRegistryInterface
     private array $middlewareAliases = [];
 
     /**
-     * @var array<string, list<class-string<\EzPhp\Middleware\MiddlewareInterface>>>
+     * @var array<string, list<class-string<MiddlewareInterface>>>
      */
     private array $middlewareGroups = [];
 
@@ -190,7 +190,7 @@ final class Application implements ContainerInterface, CommandRegistryInterface
      * Example: $app->middlewareGroup('api', [AuthMiddleware::class, ThrottleMiddleware::class])
      *
      * @param string       $name    Short group name (e.g. 'api', 'web').
-     * @param list<class-string<\EzPhp\Middleware\MiddlewareInterface>> $classes Middleware class-strings in the group.
+     * @param list<class-string<MiddlewareInterface>> $classes Middleware class-strings in the group.
      *
      * @return $this
      */
@@ -204,7 +204,7 @@ final class Application implements ContainerInterface, CommandRegistryInterface
     /**
      * Return all registered middleware groups.
      *
-     * @return array<string, list<class-string<\EzPhp\Middleware\MiddlewareInterface>>>
+     * @return array<string, list<class-string<MiddlewareInterface>>>
      */
     public function getMiddlewareGroups(): array
     {

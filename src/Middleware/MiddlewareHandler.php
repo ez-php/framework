@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace EzPhp\Middleware;
 
 use EzPhp\Container\Container;
+use EzPhp\Contracts\MiddlewareInterface as ContractsMiddlewareInterface;
 use EzPhp\Http\Request;
 use EzPhp\Http\ResponseInterface;
 use EzPhp\Routing\Route;
@@ -18,12 +19,12 @@ use EzPhp\Routing\Route;
 final class MiddlewareHandler
 {
     /**
-     * @var array<int, class-string<MiddlewareInterface>>
+     * @var array<int, class-string<ContractsMiddlewareInterface>>
      */
     private array $middleware = [];
 
     /**
-     * @var list<MiddlewareInterface>
+     * @var list<ContractsMiddlewareInterface>
      */
     private array $resolved = [];
 
@@ -33,12 +34,12 @@ final class MiddlewareHandler
     private array $priority = [];
 
     /**
-     * @var array<string, class-string<MiddlewareInterface>>
+     * @var array<string, class-string<ContractsMiddlewareInterface>>
      */
     private array $aliases = [];
 
     /**
-     * @var array<string, list<class-string<MiddlewareInterface>>>
+     * @var array<string, list<class-string<ContractsMiddlewareInterface>>>
      */
     private array $groups = [];
 
@@ -53,7 +54,7 @@ final class MiddlewareHandler
     }
 
     /**
-     * @param class-string<MiddlewareInterface> $middleware
+     * @param class-string<ContractsMiddlewareInterface> $middleware
      *
      * @return void
      */
@@ -67,7 +68,7 @@ final class MiddlewareHandler
      * that maps to a fully-qualified middleware class. Aliases are resolved in
      * buildPipeline() before the class is made from the container.
      *
-     * @param array<string, class-string<MiddlewareInterface>> $aliases
+     * @param array<string, class-string<ContractsMiddlewareInterface>> $aliases
      *
      * @return void
      */
@@ -81,7 +82,7 @@ final class MiddlewareHandler
      * list of middleware class-strings or aliases. Groups are expanded before the
      * pipeline is built so that route middleware can reference group names.
      *
-     * @param array<string, list<class-string<MiddlewareInterface>>> $groups
+     * @param array<string, list<class-string<ContractsMiddlewareInterface>>> $groups
      *
      * @return void
      */
@@ -188,9 +189,9 @@ final class MiddlewareHandler
      * Expand group names in a middleware stack to their constituent entries.
      * Entries that are not registered group names are passed through unchanged.
      *
-     * @param array<int, class-string<MiddlewareInterface>> $stack
+     * @param array<int, class-string<ContractsMiddlewareInterface>> $stack
      *
-     * @return array<int, class-string<MiddlewareInterface>>
+     * @return array<int, class-string<ContractsMiddlewareInterface>>
      */
     private function expandGroups(array $stack): array
     {
@@ -214,9 +215,9 @@ final class MiddlewareHandler
      * Middleware in the priority list comes first (in priority list order).
      * Unprioritized middleware follows in its original order.
      *
-     * @param array<int, class-string<MiddlewareInterface>> $stack
+     * @param array<int, class-string<ContractsMiddlewareInterface>> $stack
      *
-     * @return array<int, class-string<MiddlewareInterface>>
+     * @return array<int, class-string<ContractsMiddlewareInterface>>
      */
     private function sortByPriority(array $stack): array
     {
@@ -246,7 +247,7 @@ final class MiddlewareHandler
 
     /**
      * @param callable(Request):ResponseInterface              $terminal
-     * @param array<int, class-string<MiddlewareInterface>> $stack
+     * @param array<int, class-string<ContractsMiddlewareInterface>> $stack
      * @param int                                          $index
      *
      * @return callable(Request): ResponseInterface

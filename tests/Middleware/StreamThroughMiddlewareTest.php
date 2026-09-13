@@ -7,7 +7,6 @@ namespace Tests\Middleware;
 use EzPhp\Container\Container;
 use EzPhp\Http\HeaderValidator;
 use EzPhp\Http\Request;
-use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
 use EzPhp\Http\ResponseInterface;
 use EzPhp\Http\StreamedResponse;
@@ -44,11 +43,8 @@ use Tests\TestCase;
 final class StreamThroughMiddlewareTest extends TestCase
 {
     /**
-     * The middleware are chained directly rather than through
-     * MiddlewareHandler::add(): add() is typed for the framework's own
-     * MiddlewareInterface, which module middleware such as ThrottleMiddleware
-     * does not implement (a pre-existing typing gap tracked in TODO.md). The
-     * handler itself is covered by RouteStreamedResponseTest.
+     * Module middleware (ThrottleMiddleware implements only the contracts
+     * interface) registered through the real MiddlewareHandler pipeline.
      *
      * @return void
      */
@@ -60,17 +56,15 @@ final class StreamThroughMiddlewareTest extends TestCase
             yield 'chunk';
         });
 
-        $cors = new CorsMiddleware();
-        $throttle = new ThrottleMiddleware(new ArrayDriver(), 60, 60);
-        $request = new Request('GET', '/stream');
+        $container = new Container();
+        $container->bind(ThrottleMiddleware::class, fn (): ThrottleMiddleware => new ThrottleMiddleware(new ArrayDriver(), 60, 60));
 
-        $response = $cors->handle(
-            $request,
-            fn (RequestInterface $r): ResponseInterface => $throttle->handle(
-                $r,
-                fn (RequestInterface $inner): ResponseInterface => $streamed,
-            ),
-        );
+        $handler = new MiddlewareHandler($container);
+        $handler->add(CorsMiddleware::class);
+        $handler->add(ThrottleMiddleware::class);
+
+        $route = new Route('GET', '/stream', fn (Request $r): StreamedResponse => $streamed);
+        $response = $handler->handle($route, new Request('GET', '/stream'));
 
         self::assertInstanceOf(StreamedResponse::class, $response);
         $this->assertArrayHasKey('Access-Control-Allow-Origin', $response->headers());

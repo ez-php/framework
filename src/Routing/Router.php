@@ -6,13 +6,13 @@ namespace EzPhp\Routing;
 
 use Closure;
 use EzPhp\Contracts\ContainerInterface;
+use EzPhp\Contracts\MiddlewareInterface;
 use EzPhp\Exceptions\NotFoundException;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
 use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
 use EzPhp\Http\ResponseInterface;
-use EzPhp\Middleware\MiddlewareInterface;
 use InvalidArgumentException;
 
 /**
@@ -413,7 +413,7 @@ final class Router
      * skipped. The returned data can be written to a PHP file with var_export()
      * and later loaded by RouterServiceProvider to bypass routes/web.php.
      *
-     * @return list<array{method: string, path: string, name: string|null, handler: array{0: class-string, 1: string}, middleware: array<int, class-string<\EzPhp\Middleware\MiddlewareInterface>>, constraints: array<string, string>, csrfExempt: bool}>
+     * @return list<array{method: string, path: string, name: string|null, handler: array{0: class-string, 1: string}, middleware: array<int, class-string<MiddlewareInterface>>, constraints: array<string, string>, csrfExempt: bool}>
      */
     public function toCache(): array
     {

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace EzPhp\Routing;
 
 use Closure;
+use EzPhp\Contracts\MiddlewareInterface;
 use EzPhp\Http\Request;
 use EzPhp\Http\Response;
 use EzPhp\Http\ResponseInterface;
-use EzPhp\Middleware\MiddlewareInterface;
 
 /**
  * Class Route
