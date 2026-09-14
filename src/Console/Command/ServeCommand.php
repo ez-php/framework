@@ -68,7 +68,7 @@ final readonly class ServeCommand implements CommandInterface
         $address = "$host:$port";
 
         if (!$input->hasFlag('watch')) {
-            echo "Starting server at http://$address\n";
+            $this->announce($address, false);
             echo "Press Ctrl+C to stop.\n";
             passthru('php -S ' . escapeshellarg($address) . ' -t ' . escapeshellarg($this->publicPath), $exitCode);
             return (int) $exitCode;
@@ -93,7 +93,7 @@ final readonly class ServeCommand implements CommandInterface
             static fn (string $dir): bool => is_dir($dir),
         ));
 
-        echo "Starting server at http://$address (--watch)\n";
+        $this->announce($address, true);
         echo 'Watching: ' . implode(', ', array_map(
             static fn (string $d): string => basename($d) . '/',
             $watchDirs,
@@ -120,6 +120,19 @@ final readonly class ServeCommand implements CommandInterface
         proc_close($process);
 
         return 0;
+    }
+
+    /**
+     * Print the "Starting server at ..." banner line.
+     *
+     * @param string $address host:port being bound to.
+     * @param bool   $watch   Whether --watch mode is active.
+     *
+     * @return void
+     */
+    private function announce(string $address, bool $watch): void
+    {
+        echo "Starting server at http://$address" . ($watch ? ' (--watch)' : '') . "\n";
     }
 
     /**
