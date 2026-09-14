@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace EzPhp\Exceptions;
 
+use EzPhp\Contracts\TranslatorInterface;
 use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
-use EzPhp\I18n\Translator;
 use Throwable;
 
 /**
@@ -37,12 +37,12 @@ final class DefaultExceptionHandler implements ExceptionHandler
      * @param bool            $debug        Show full exception details in HTML responses.
      * @param string          $templatePath Directory for custom production error templates (e.g. resources/errors).
      *                                      Templates are loaded as {templatePath}/{status}.php.
-     * @param Translator|null $translator   Optional translator for localised production error strings.
+     * @param TranslatorInterface|null $translator   Optional translator for localised production error strings.
      */
     public function __construct(
         private readonly bool $debug = false,
         private readonly string $templatePath = '',
-        private readonly ?Translator $translator = null,
+        private readonly ?TranslatorInterface $translator = null,
     ) {
         if ($this->debug && $this->isProductionEnvironment()) {
             error_log(

@@ -7,7 +7,7 @@ namespace EzPhp\Exceptions;
 use EzPhp\Application\Application;
 use EzPhp\Config\Config;
 use EzPhp\Contracts\ExceptionHandlerInterface;
-use EzPhp\I18n\Translator;
+use EzPhp\Contracts\TranslatorInterface;
 use EzPhp\Middleware\DebugToolbarMiddleware;
 use EzPhp\ServiceProvider\ServiceProvider;
 
@@ -27,7 +27,7 @@ final class ExceptionHandlerServiceProvider extends ServiceProvider
         $this->app->bind(ExceptionHandlerInterface::class, function (Application $app): DefaultExceptionHandler {
             $debug = (bool) $app->make(Config::class)->get('app.debug', false);
             $templatePath = $app->basePath('resources/errors');
-            $translator = $app->make(Translator::class);
+            $translator = $app->make(TranslatorInterface::class);
 
             return new DefaultExceptionHandler($debug, $templatePath, $translator);
         });

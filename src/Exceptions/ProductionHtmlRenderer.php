@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace EzPhp\Exceptions;
 
-use EzPhp\I18n\Translator;
+use EzPhp\Contracts\TranslatorInterface;
 
 /**
  * Class ProductionHtmlRenderer
@@ -26,11 +26,11 @@ final readonly class ProductionHtmlRenderer
 {
     /**
      * @param string          $templatePath Directory for custom error templates (e.g. resources/errors).
-     * @param Translator|null $translator   Optional translator for localised error strings.
+     * @param TranslatorInterface|null $translator   Optional translator for localised error strings.
      */
     public function __construct(
         private string $templatePath = '',
-        private ?Translator $translator = null,
+        private ?TranslatorInterface $translator = null,
     ) {
     }
 
