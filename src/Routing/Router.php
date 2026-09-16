@@ -336,6 +336,33 @@ final class Router
     }
 
     /**
+     * Return every registered route, in registration order.
+     *
+     * Unlike toCache(), this includes closure-handler routes — they simply
+     * cannot be re-dispatched from a cache file, but they can still be listed.
+     * Intended for CLI introspection (route:list) and similar tooling.
+     *
+     * @return list<array{method: string, path: string, name: string|null, middleware: array<int, class-string<MiddlewareInterface>>}>
+     */
+    public function all(): array
+    {
+        $data = [];
+
+        foreach ($this->routes as $methodRoutes) {
+            foreach ($methodRoutes as $route) {
+                $data[] = [
+                    'method' => $route->getMethod(),
+                    'path' => $route->getPath(),
+                    'name' => $route->getName(),
+                    'middleware' => $route->getMiddleware(),
+                ];
+            }
+        }
+
+        return $data;
+    }
+
+    /**
      * Return the full name → path mapping for all named routes.
      *
      * Useful for introspection, link generation in views, and IDE helpers.

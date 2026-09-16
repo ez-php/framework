@@ -267,6 +267,7 @@ src/
 │   ├── Command/
 │   │   ├── ConfigCacheCommand.php    — config:cache — serialises config to a cache file for faster boot
 │   │   ├── ConfigClearCommand.php    — config:clear — deletes the cached config file
+│   │   ├── ConfigShowCommand.php     — config:show — prints the resolved value of a single dot-notation config key
 │   │   ├── DbSeedCommand.php         — db:seed — runs seeders registered via SeederRunner
 │   │   ├── DbSetupCommand.php        — db:setup — runs migrations + seeders in one step; not atomic, see Design Decisions
 │   │   ├── DoctorCommand.php         — doctor — checks environment, extensions, and config for common issues
@@ -293,6 +294,7 @@ src/
 │   │   ├── MigrateStatusCommand.php  — migrate:status — shows pending / ran status for all migrations
 │   │   ├── RouteCacheCommand.php     — route:cache — serialises the route list to a cache file
 │   │   ├── RouteClearCommand.php     — route:clear — deletes the cached route file
+│   │   ├── RouteListCommand.php      — route:list — prints every registered route (method, path, name, middleware) as a table, including closure-handler routes
 │   │   ├── ScheduleListCommand.php   — schedule:list — lists all registered scheduled commands and their next run time
 │   │   ├── ScheduleRunCommand.php    — schedule:run — runs all due scheduled commands (trigger with system cron)
 │   │   ├── ServeCommand.php          — serve — starts the built-in PHP web server; --watch auto-restarts on PHP file changes

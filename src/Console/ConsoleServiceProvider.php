@@ -8,6 +8,7 @@ use EzPhp\Application\Application;
 use EzPhp\Config\ConfigLoader;
 use EzPhp\Console\Command\ConfigCacheCommand;
 use EzPhp\Console\Command\ConfigClearCommand;
+use EzPhp\Console\Command\ConfigShowCommand;
 use EzPhp\Console\Command\DbSeedCommand;
 use EzPhp\Console\Command\DbSetupCommand;
 use EzPhp\Console\Command\DoctorCommand;
@@ -34,11 +35,13 @@ use EzPhp\Console\Command\MigrateRollbackCommand;
 use EzPhp\Console\Command\MigrateStatusCommand;
 use EzPhp\Console\Command\RouteCacheCommand;
 use EzPhp\Console\Command\RouteClearCommand;
+use EzPhp\Console\Command\RouteListCommand;
 use EzPhp\Console\Command\ScheduleListCommand;
 use EzPhp\Console\Command\ScheduleRunCommand;
 use EzPhp\Console\Command\ServeCommand;
 use EzPhp\Console\Command\TinkerCommand;
 use EzPhp\Console\Schedule\Scheduler;
+use EzPhp\Contracts\ConfigInterface;
 use EzPhp\Migration\Migrator;
 use EzPhp\Migration\SeederRunner;
 use EzPhp\Routing\Router;
@@ -189,6 +192,10 @@ final class ConsoleServiceProvider extends ServiceProvider
             return new ConfigClearCommand($app->basePath('bootstrap/cache/config.php'));
         });
 
+        $this->app->bind(ConfigShowCommand::class, function (Application $app): ConfigShowCommand {
+            return new ConfigShowCommand($app->make(ConfigInterface::class));
+        });
+
         $this->app->bind(RouteCacheCommand::class, function (Application $app): RouteCacheCommand {
             return new RouteCacheCommand(
                 $app->make(Router::class),
@@ -200,6 +207,10 @@ final class ConsoleServiceProvider extends ServiceProvider
             return new RouteClearCommand($app->basePath('bootstrap/cache/routes.php'));
         });
 
+        $this->app->bind(RouteListCommand::class, function (Application $app): RouteListCommand {
+            return new RouteListCommand($app->make(Router::class));
+        });
+
         $this->app->bind(IdeGenerateCommand::class, function (Application $app): IdeGenerateCommand {
             return new IdeGenerateCommand($app->basePath());
         });
@@ -209,8 +220,10 @@ final class ConsoleServiceProvider extends ServiceProvider
             $commands = [
                 $app->make(ConfigCacheCommand::class),
                 $app->make(ConfigClearCommand::class),
+                $app->make(ConfigShowCommand::class),
                 $app->make(RouteCacheCommand::class),
                 $app->make(RouteClearCommand::class),
+                $app->make(RouteListCommand::class),
                 $app->make(ServeCommand::class),
                 $app->make(MigrateCommand::class),
                 $app->make(MigrateRollbackCommand::class),

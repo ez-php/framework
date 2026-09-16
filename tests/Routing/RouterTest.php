@@ -449,6 +449,44 @@ final class RouterTest extends TestCase
     /**
      * @return void
      */
+    public function test_all_returns_empty_array_for_router_with_no_routes(): void
+    {
+        $router = new Router();
+
+        $this->assertSame([], $router->all());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_all_returns_every_registered_route_including_closures(): void
+    {
+        /** @var class-string<MiddlewareInterface> $mw */
+        $mw = MiddlewareInterface::class;
+
+        $router = new Router();
+        $router->get('/users', fn () => 'users')->name('users.index');
+        $router->post('/users', fn () => 'create')->middleware($mw);
+
+        $this->assertSame([
+            [
+                'method' => 'GET',
+                'path' => '/users',
+                'name' => 'users.index',
+                'middleware' => [],
+            ],
+            [
+                'method' => 'POST',
+                'path' => '/users',
+                'name' => null,
+                'middleware' => [$mw],
+            ],
+        ], $router->all());
+    }
+
+    /**
+     * @return void
+     */
     public function test_route_name_is_retrievable(): void
     {
         $router = new Router();
