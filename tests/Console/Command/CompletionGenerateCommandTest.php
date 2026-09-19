@@ -7,7 +7,6 @@ namespace Tests\Console\Command;
 use EzPhp\Console\Command\CompletionGenerateCommand;
 use EzPhp\Console\CommandInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
 
 /**
@@ -16,7 +15,6 @@ use Tests\TestCase;
  * @package Tests\Console\Command
  */
 #[CoversClass(CompletionGenerateCommand::class)]
-#[UsesClass(\EzPhp\Console\CompletionGenerator::class)]
 final class CompletionGenerateCommandTest extends TestCase
 {
     /**
