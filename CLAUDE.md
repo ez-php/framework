@@ -268,6 +268,7 @@ src/
 │   │   ├── ConfigCacheCommand.php    — config:cache — serialises config to a cache file for faster boot
 │   │   ├── ConfigClearCommand.php    — config:clear — deletes the cached config file
 │   │   ├── ConfigShowCommand.php     — config:show — prints the resolved value of a single dot-notation config key
+│   │   ├── CompletionGenerateCommand.php — completion:generate — prints a bash/zsh shell-completion script generated via ez-php/console's CompletionGenerator, from the same command list ListCommand uses
 │   │   ├── DbSeedCommand.php         — db:seed — runs seeders registered via SeederRunner
 │   │   ├── DbSetupCommand.php        — db:setup — runs migrations + seeders in one step; not atomic, see Design Decisions
 │   │   ├── DoctorCommand.php         — doctor — checks environment, extensions, and config for common issues

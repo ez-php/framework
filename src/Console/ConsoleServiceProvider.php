@@ -6,6 +6,7 @@ namespace EzPhp\Console;
 
 use EzPhp\Application\Application;
 use EzPhp\Config\ConfigLoader;
+use EzPhp\Console\Command\CompletionGenerateCommand;
 use EzPhp\Console\Command\ConfigCacheCommand;
 use EzPhp\Console\Command\ConfigClearCommand;
 use EzPhp\Console\Command\ConfigShowCommand;
@@ -261,8 +262,9 @@ final class ConsoleServiceProvider extends ServiceProvider
             $commands[] = new ScheduleListCommand($app->make(Scheduler::class));
 
             $listCommand = new ListCommand($commands);
+            $completionCommand = new CompletionGenerateCommand($commands);
 
-            return new Console([$listCommand, ...$commands]);
+            return new Console([$listCommand, $completionCommand, ...$commands]);
         });
     }
 }
