@@ -64,6 +64,23 @@ $router->group('/admin', function (Router $r): void {
 }, middleware: [AuthMiddleware::class]);
 ```
 
+### Route middleware, aliases and parameters
+
+Middleware is registered by name — a class, an alias or a group — and resolved from the
+container when the request runs. Append `:param1,param2` to pass per-route values to a
+middleware implementing `EzPhp\Contracts\ParameterizedMiddlewareInterface`:
+
+```php
+$app->middlewareAlias('can', \EzPhp\Authorization\CanMiddleware::class); // before bootstrap
+
+$router->post('/posts', [PostController::class, 'store'])
+    ->middleware(AuthMiddleware::class)
+    ->middleware('can:create,App\Entities\Post'); // handle($request, $next, 'create', 'App\Entities\Post')
+```
+
+Registrations stay plain strings, so `route:cache` and `route:list` keep them as written.
+Parameters sent to a middleware that does not implement the interface are an error.
+
 ### Named routes and URL generation
 
 ```php

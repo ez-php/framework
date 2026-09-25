@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Tests\Middleware;
 
 use EzPhp\Container\Container;
+use EzPhp\Contracts\ParameterizedMiddlewareInterface;
+use EzPhp\Exceptions\ApplicationException;
 use EzPhp\Http\Request;
 use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
+use EzPhp\Http\ResponseInterface;
 use EzPhp\Middleware\MiddlewareHandler;
 use EzPhp\Middleware\MiddlewareInterface;
 use EzPhp\Routing\Route;
@@ -23,6 +26,7 @@ use Tests\TestCase;
 #[CoversClass(MiddlewareHandler::class)]
 #[UsesClass(Container::class)]
 #[UsesClass(Route::class)]
+#[UsesClass(ApplicationException::class)]
 final class MiddlewareHandlerTest extends TestCase
 {
     /**
@@ -280,6 +284,129 @@ final class MiddlewareHandlerTest extends TestCase
         self::assertInstanceOf(Response::class, $response);
         $this->assertSame('B>handler', $response->body());
     }
+
+    /**
+     * @return void
+     */
+    public function test_parameters_after_colon_are_passed_to_parameterized_middleware(): void
+    {
+        $handler = new MiddlewareHandler(new Container());
+        $route = $this->makeRoute('handler')->middleware(EchoParametersMiddleware::class . ':update,App\\Post');
+
+        $response = $handler->handle($route, new Request('GET', '/'));
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame('[update|App\\Post]handler', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_alias_with_parameters_is_resolved_and_receives_them(): void
+    {
+        $handler = new MiddlewareHandler(new Container());
+        $handler->setAliases(['echo' => EchoParametersMiddleware::class]);
+        $route = $this->makeRoute('handler')->middleware('echo:5,60');
+
+        $response = $handler->runRoute($route, new Request('GET', '/'));
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame('[5|60]handler', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_parameterized_middleware_without_parameters_gets_an_empty_list(): void
+    {
+        $handler = new MiddlewareHandler(new Container());
+        $handler->add(EchoParametersMiddleware::class);
+
+        $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame('[]handler', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_trailing_colon_means_no_parameters(): void
+    {
+        $handler = new MiddlewareHandler(new Container());
+        $handler->add(EchoParametersMiddleware::class . ':');
+
+        $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame('[]handler', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_same_class_twice_with_different_parameters_keeps_each_set(): void
+    {
+        $handler = new MiddlewareHandler(new Container());
+        $route = $this->makeRoute('handler')
+            ->middleware(EchoParametersMiddleware::class . ':outer')
+            ->middleware(EchoParametersMiddleware::class . ':inner');
+
+        $response = $handler->handle($route, new Request('GET', '/'));
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame('[outer][inner]handler', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_priority_matches_parameterized_entries_by_class_name(): void
+    {
+        $container = new Container();
+        $container->bind(PrefixAMiddleware::class);
+
+        $handler = new MiddlewareHandler($container);
+        $handler->setPriority([EchoParametersMiddleware::class, PrefixAMiddleware::class]);
+        $handler->add(PrefixAMiddleware::class);
+        $handler->add(EchoParametersMiddleware::class . ':first');
+
+        $response = $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame('[first]A>handler', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_unknown_middleware_name_throws_a_clear_error(): void
+    {
+        $handler = new MiddlewareHandler(new Container());
+        $handler->add('no-such-alias:1');
+
+        $this->expectException(ApplicationException::class);
+        $this->expectExceptionMessage("Unknown middleware 'no-such-alias:1'");
+
+        $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_parameters_for_a_non_parameterized_middleware_throw(): void
+    {
+        $container = new Container();
+        $container->bind(PrefixAMiddleware::class);
+
+        $handler = new MiddlewareHandler($container);
+        $handler->add(PrefixAMiddleware::class . ':unexpected');
+
+        $this->expectException(ApplicationException::class);
+        $this->expectExceptionMessage('ParameterizedMiddlewareInterface');
+
+        $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
+    }
 }
 
 /**
@@ -353,5 +480,26 @@ final class ShortCircuitMiddleware implements MiddlewareInterface
     public function handle(RequestInterface $request, callable $next): Response
     {
         return new Response('short-circuit', 403);
+    }
+}
+
+/**
+ * Prefixes the inner body with its registration parameters, e.g. "[a|b]".
+ */
+final class EchoParametersMiddleware implements ParameterizedMiddlewareInterface
+{
+    /**
+     * @param RequestInterface $request
+     * @param callable         $next
+     * @param string           ...$parameters
+     *
+     * @return ResponseInterface
+     */
+    public function handle(RequestInterface $request, callable $next, string ...$parameters): ResponseInterface
+    {
+        /** @var Response $response */
+        $response = $next($request);
+
+        return new Response('[' . implode('|', $parameters) . ']' . $response->body(), $response->status());
     }
 }

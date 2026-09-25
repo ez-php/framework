@@ -77,7 +77,7 @@ final class Application implements ContainerInterface, CommandRegistryInterface
     private array $userProviders = [];
 
     /**
-     * @var list<class-string<MiddlewareInterface>>
+     * @var list<non-empty-string>
      */
     private array $globalMiddleware = [];
 
@@ -87,7 +87,7 @@ final class Application implements ContainerInterface, CommandRegistryInterface
     private array $middlewareAliases = [];
 
     /**
-     * @var array<string, list<class-string<MiddlewareInterface>>>
+     * @var array<string, list<non-empty-string>>
      */
     private array $middlewareGroups = [];
 
@@ -124,12 +124,24 @@ final class Application implements ContainerInterface, CommandRegistryInterface
     }
 
     /**
+     * Queue a user service provider. Must be called before bootstrap().
+     *
      * @param class-string<\EzPhp\Contracts\ServiceProvider> $class
      *
      * @return $this
+     *
+     * @throws ApplicationException When the application is already bootstrapped — the
+     *                              provider would otherwise never be registered or booted.
      */
     public function register(string $class): self
     {
+        if ($this->booted) {
+            throw new ApplicationException(sprintf(
+                'Cannot register %s: the application is already bootstrapped. Register providers before calling bootstrap() (or handle()).',
+                $class,
+            ));
+        }
+
         $this->userProviders[] = $class;
 
         return $this;
@@ -191,7 +203,7 @@ final class Application implements ContainerInterface, CommandRegistryInterface
      * Example: $app->middlewareGroup('api', [AuthMiddleware::class, ThrottleMiddleware::class])
      *
      * @param string       $name    Short group name (e.g. 'api', 'web').
-     * @param list<class-string<MiddlewareInterface>> $classes Middleware class-strings in the group.
+     * @param list<non-empty-string> $classes Middleware entries in the group (class, alias, optionally `:params`).
      *
      * @return $this
      */
@@ -205,7 +217,7 @@ final class Application implements ContainerInterface, CommandRegistryInterface
     /**
      * Return all registered middleware groups.
      *
-     * @return array<string, list<class-string<MiddlewareInterface>>>
+     * @return array<string, list<non-empty-string>>
      */
     public function getMiddlewareGroups(): array
     {
@@ -215,7 +227,10 @@ final class Application implements ContainerInterface, CommandRegistryInterface
     /**
      * Register one or more global middleware classes.
      *
-     * @param class-string<MiddlewareInterface> ...$classes
+     * Entries are middleware class names or aliases, optionally followed by
+     * `:param1,param2` for a ParameterizedMiddlewareInterface (e.g. `'throttle:60,1'`).
+     *
+     * @param non-empty-string ...$classes
      *
      * @return $this
      */

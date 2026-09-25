@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace EzPhp\Routing;
 
 use Closure;
-use EzPhp\Contracts\MiddlewareInterface;
 use EzPhp\Http\Request;
 use EzPhp\Http\Response;
 use EzPhp\Http\ResponseInterface;
@@ -18,7 +17,7 @@ use EzPhp\Http\ResponseInterface;
 final class Route
 {
     /**
-     * @var array<int, class-string<MiddlewareInterface>>
+     * @var array<int, non-empty-string>
      */
     private array $middleware = [];
 
@@ -101,7 +100,9 @@ final class Route
     }
 
     /**
-     * @param class-string<MiddlewareInterface> $middleware
+     * @param non-empty-string $middleware Middleware class, alias or group name, optionally with
+     *                                   `:param1,param2` for a ParameterizedMiddlewareInterface
+     *                                   (e.g. `'can:update,App\\Post'`).
      *
      * @return $this
      */
@@ -114,7 +115,7 @@ final class Route
     /**
      * @internal Called by MiddlewareHandler; not part of the public route API.
      *
-     * @return array<int, class-string<MiddlewareInterface>>
+     * @return array<int, non-empty-string>
      */
     public function getMiddleware(): array
     {

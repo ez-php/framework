@@ -225,6 +225,21 @@ final class ApplicationTest extends TestCase
 
     /**
      * @return void
+     * @throws ReflectionException
+     */
+    public function test_register_after_bootstrap_throws_instead_of_silently_ignoring_the_provider(): void
+    {
+        $app = new Application();
+        $app->bootstrap();
+
+        $this->expectException(ApplicationException::class);
+        $this->expectExceptionMessage(RouterServiceProvider::class);
+
+        $app->register(RouterServiceProvider::class);
+    }
+
+    /**
+     * @return void
      */
     public function test_register_returns_self_for_chaining(): void
     {

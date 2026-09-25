@@ -6,6 +6,8 @@ namespace EzPhp\Middleware;
 
 use EzPhp\Container\Container;
 use EzPhp\Contracts\MiddlewareInterface as ContractsMiddlewareInterface;
+use EzPhp\Contracts\ParameterizedMiddlewareInterface;
+use EzPhp\Exceptions\ApplicationException;
 use EzPhp\Http\Request;
 use EzPhp\Http\ResponseInterface;
 use EzPhp\Routing\Route;
@@ -13,13 +15,20 @@ use EzPhp\Routing\Route;
 /**
  * Class MiddlewareHandler
  *
+ * Middleware entries are strings: a class name, an alias, or a group name,
+ * optionally followed by `:` and comma-separated parameters
+ * (`'can:update,App\Post'`). Parameters are passed to the middleware's
+ * handle() as extra string arguments; the middleware must implement
+ * ParameterizedMiddlewareInterface to receive them. Entries stay plain strings,
+ * so route:cache and route:list keep working unchanged.
+ *
  * @internal
  * @package EzPhp\Middleware
  */
 final class MiddlewareHandler
 {
     /**
-     * @var array<int, class-string<ContractsMiddlewareInterface>>
+     * @var array<int, non-empty-string>
      */
     private array $middleware = [];
 
@@ -39,7 +48,7 @@ final class MiddlewareHandler
     private array $aliases = [];
 
     /**
-     * @var array<string, list<class-string<ContractsMiddlewareInterface>>>
+     * @var array<string, list<non-empty-string>>
      */
     private array $groups = [];
 
@@ -54,7 +63,7 @@ final class MiddlewareHandler
     }
 
     /**
-     * @param class-string<ContractsMiddlewareInterface> $middleware
+     * @param non-empty-string $middleware Class, alias or group name, optionally with `:param1,param2`.
      *
      * @return void
      */
@@ -82,7 +91,7 @@ final class MiddlewareHandler
      * list of middleware class-strings or aliases. Groups are expanded before the
      * pipeline is built so that route middleware can reference group names.
      *
-     * @param array<string, list<class-string<ContractsMiddlewareInterface>>> $groups
+     * @param array<string, list<non-empty-string>> $groups
      *
      * @return void
      */
@@ -200,9 +209,9 @@ final class MiddlewareHandler
      * Expand group names in a middleware stack to their constituent entries.
      * Entries that are not registered group names are passed through unchanged.
      *
-     * @param array<int, class-string<ContractsMiddlewareInterface>> $stack
+     * @param array<int, non-empty-string> $stack
      *
-     * @return array<int, class-string<ContractsMiddlewareInterface>>
+     * @return array<int, non-empty-string>
      */
     private function expandGroups(array $stack): array
     {
@@ -226,9 +235,12 @@ final class MiddlewareHandler
      * Middleware in the priority list comes first (in priority list order).
      * Unprioritized middleware follows in its original order.
      *
-     * @param array<int, class-string<ContractsMiddlewareInterface>> $stack
+     * Entries are matched by their name without parameters, so
+     * `'Foo:a,b'` sorts like `Foo`.
      *
-     * @return array<int, class-string<ContractsMiddlewareInterface>>
+     * @param array<int, non-empty-string> $stack
+     *
+     * @return array<int, non-empty-string>
      */
     private function sortByPriority(array $stack): array
     {
@@ -239,17 +251,17 @@ final class MiddlewareHandler
         $prioritized = [];
         $rest = [];
 
-        foreach ($stack as $class) {
-            if (in_array($class, $this->priority, true)) {
-                $prioritized[] = $class;
+        foreach ($stack as $entry) {
+            if (in_array(self::parse($entry)[0], $this->priority, true)) {
+                $prioritized[] = $entry;
             } else {
-                $rest[] = $class;
+                $rest[] = $entry;
             }
         }
 
         usort($prioritized, function (string $a, string $b): int {
-            $posA = array_search($a, $this->priority, true);
-            $posB = array_search($b, $this->priority, true);
+            $posA = array_search(self::parse($a)[0], $this->priority, true);
+            $posB = array_search(self::parse($b)[0], $this->priority, true);
             return ($posA === false ? PHP_INT_MAX : $posA) <=> ($posB === false ? PHP_INT_MAX : $posB);
         });
 
@@ -257,9 +269,9 @@ final class MiddlewareHandler
     }
 
     /**
-     * @param callable(Request):ResponseInterface              $terminal
-     * @param array<int, class-string<ContractsMiddlewareInterface>> $stack
-     * @param int                                          $index
+     * @param callable(Request):ResponseInterface $terminal
+     * @param array<int, non-empty-string>        $stack
+     * @param int                                 $index
      *
      * @return callable(Request): ResponseInterface
      */
@@ -270,11 +282,60 @@ final class MiddlewareHandler
         }
 
         return function (Request $request) use ($terminal, $stack, $index): ResponseInterface {
-            $class = $this->aliases[$stack[$index]] ?? $stack[$index];
+            [$name, $parameters] = self::parse($stack[$index]);
+            $class = $this->aliases[$name] ?? $name;
+
+            if (!class_exists($class) && !interface_exists($class)) {
+                throw new ApplicationException(sprintf(
+                    "Unknown middleware '%s': not a class, a registered alias or a middleware group.",
+                    $stack[$index],
+                ));
+            }
+
+            /** @var ContractsMiddlewareInterface $middleware */
             $middleware = $this->container->make($class);
             $this->resolved[] = $middleware;
+            $next = $this->buildPipeline($terminal, $stack, $index + 1);
 
-            return $middleware->handle($request, $this->buildPipeline($terminal, $stack, $index + 1));
+            if ($parameters === []) {
+                return $middleware->handle($request, $next);
+            }
+
+            if (!$middleware instanceof ParameterizedMiddlewareInterface) {
+                throw new ApplicationException(sprintf(
+                    "Middleware '%s' was given parameters ('%s') but %s does not implement %s.",
+                    $name,
+                    $stack[$index],
+                    $middleware::class,
+                    ParameterizedMiddlewareInterface::class,
+                ));
+            }
+
+            return $middleware->handle($request, $next, ...$parameters);
         };
+    }
+
+    /**
+     * Split a middleware entry into its name and parameters.
+     *
+     * `'can:update,App\Post'` → `['can', ['update', 'App\Post']]`; an entry without
+     * a colon, or with nothing after it, has no parameters. Class names and
+     * aliases never contain `:`, so the first colon is always the separator.
+     *
+     * @param non-empty-string $entry
+     *
+     * @return array{0: string, 1: list<string>}
+     */
+    private static function parse(string $entry): array
+    {
+        $colon = strpos($entry, ':');
+
+        if ($colon === false) {
+            return [$entry, []];
+        }
+
+        $arguments = substr($entry, $colon + 1);
+
+        return [substr($entry, 0, $colon), $arguments === '' ? [] : explode(',', $arguments)];
     }
 }

@@ -6,7 +6,6 @@ namespace EzPhp\Routing;
 
 use Closure;
 use EzPhp\Contracts\ContainerInterface;
-use EzPhp\Contracts\MiddlewareInterface;
 use EzPhp\Exceptions\NotFoundException;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
@@ -41,7 +40,7 @@ final class Router
     private array $modelBindings = [];
 
     /**
-     * @var list<class-string<MiddlewareInterface>>
+     * @var list<non-empty-string>
      */
     private array $groupMiddleware = [];
 
@@ -168,7 +167,7 @@ final class Router
     /**
      * @param string                                      $prefix
      * @param callable                                    $callback
-     * @param list<class-string<MiddlewareInterface>>     $middleware
+     * @param list<non-empty-string>                     $middleware
      *
      * @return void
      */
@@ -342,7 +341,7 @@ final class Router
      * cannot be re-dispatched from a cache file, but they can still be listed.
      * Intended for CLI introspection (route:list) and similar tooling.
      *
-     * @return list<array{method: string, path: string, name: string|null, middleware: array<int, class-string<MiddlewareInterface>>}>
+     * @return list<array{method: string, path: string, name: string|null, middleware: array<int, non-empty-string>}>
      */
     public function all(): array
     {
@@ -440,7 +439,7 @@ final class Router
      * skipped. The returned data can be written to a PHP file with var_export()
      * and later loaded by RouterServiceProvider to bypass routes/web.php.
      *
-     * @return list<array{method: string, path: string, name: string|null, handler: array{0: class-string, 1: string}, middleware: array<int, class-string<MiddlewareInterface>>, constraints: array<string, string>, csrfExempt: bool}>
+     * @return list<array{method: string, path: string, name: string|null, handler: array{0: class-string, 1: string}, middleware: array<int, non-empty-string>, constraints: array<string, string>, csrfExempt: bool}>
      */
     public function toCache(): array
     {
