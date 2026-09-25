@@ -9,7 +9,6 @@ use EzPhp\Console\Command\MakeControllerCommand;
 use EzPhp\Console\Command\MakeEventCommand;
 use EzPhp\Console\Command\MakeListenerCommand;
 use EzPhp\Console\Command\MakeMiddlewareCommand;
-use EzPhp\Console\Command\MakeModelCommand;
 use EzPhp\Console\Command\MakeProviderCommand;
 use EzPhp\Console\Command\MakeRequestCommand;
 use EzPhp\Console\Command\MakeTestCommand;
@@ -20,7 +19,7 @@ use Tests\TestCase;
  * Class MakeCommandsTest
  *
  * Covers make:command, make:controller, make:middleware, make:provider,
- * make:model, make:event, make:listener, make:request, and make:test commands.
+ * make:event, make:listener, make:request, and make:test commands.
  *
  * @package Tests\Console\Command
  */
@@ -28,7 +27,6 @@ use Tests\TestCase;
 #[CoversClass(MakeControllerCommand::class)]
 #[CoversClass(MakeMiddlewareCommand::class)]
 #[CoversClass(MakeProviderCommand::class)]
-#[CoversClass(MakeModelCommand::class)]
 #[CoversClass(MakeEventCommand::class)]
 #[CoversClass(MakeListenerCommand::class)]
 #[CoversClass(MakeRequestCommand::class)]
@@ -351,113 +349,6 @@ final class MakeCommandsTest extends TestCase
     {
         $cmd = new MakeProviderCommand($this->srcPath);
         $this->assertStringContainsString('make:provider', $cmd->getHelp());
-    }
-
-    // ─── make:model ──────────────────────────────────────────────────────────
-
-    /**
-     * @return void
-     */
-    public function test_make_model_creates_file(): void
-    {
-        $cmd = new MakeModelCommand($this->srcPath);
-
-        ob_start();
-        $code = $cmd->handle(['Post']);
-        ob_get_clean();
-
-        $this->assertSame(0, $code);
-        $this->assertFileExists($this->srcPath . '/Models/Post.php');
-    }
-
-    /**
-     * @return void
-     */
-    public function test_make_model_stub_extends_model(): void
-    {
-        $cmd = new MakeModelCommand($this->srcPath);
-
-        ob_start();
-        $cmd->handle(['User']);
-        ob_get_clean();
-
-        $content = file_get_contents($this->srcPath . '/Models/User.php');
-        $this->assertIsString($content);
-        $this->assertStringContainsString('User', $content);
-        $this->assertStringContainsString('extends Model', $content);
-        $this->assertStringContainsString('EzPhp\\Orm\\Model', $content);
-    }
-
-    /**
-     * @return void
-     */
-    public function test_make_model_stub_has_table_property(): void
-    {
-        $cmd = new MakeModelCommand($this->srcPath);
-
-        ob_start();
-        $cmd->handle(['BlogPost']);
-        ob_get_clean();
-
-        $content = file_get_contents($this->srcPath . '/Models/BlogPost.php');
-        $this->assertIsString($content);
-        $this->assertStringContainsString('$table', $content);
-    }
-
-    /**
-     * @return void
-     */
-    public function test_make_model_returns_1_without_name(): void
-    {
-        $cmd = new MakeModelCommand($this->srcPath);
-
-        ob_start();
-        $code = $cmd->handle([]);
-        ob_get_clean();
-
-        $this->assertSame(1, $code);
-    }
-
-    /**
-     * @return void
-     */
-    public function test_make_model_returns_1_if_already_exists(): void
-    {
-        $cmd = new MakeModelCommand($this->srcPath);
-
-        ob_start();
-        $cmd->handle(['Post']);
-        $code = $cmd->handle(['Post']);
-        ob_get_clean();
-
-        $this->assertSame(1, $code);
-    }
-
-    /**
-     * @return void
-     */
-    public function test_make_model_get_name(): void
-    {
-        $cmd = new MakeModelCommand($this->srcPath);
-        $this->assertSame('make:model', $cmd->getName());
-    }
-
-    /**
-     * @return void
-     */
-    public function test_make_model_get_description(): void
-    {
-        $cmd = new MakeModelCommand($this->srcPath);
-        $this->assertNotEmpty($cmd->getDescription());
-    }
-
-    /**
-     * @return void
-     */
-    public function test_make_model_get_help(): void
-    {
-        $cmd = new MakeModelCommand($this->srcPath);
-        $this->assertStringContainsString('make:model', $cmd->getHelp());
     }
 
     // ─── make:event ──────────────────────────────────────────────────────────

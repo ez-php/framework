@@ -148,9 +148,11 @@ php make_module.php <name> --description="..." --services=mysql,redis
 ```
 
 `<name>` is the kebab-case package name; the namespace is derived as
-`EzPhp\<PascalCase>` unless `--namespace=` overrides it (`bignum` → `BigNum`,
-`opcache` → `OPCache`, and `dotenv` → `Env` are existing exceptions the guess
-gets wrong; `websocket-client` → `WebsocketClient`, `websocket-tls` → `WebsocketTls`,
+`EzPhp\<PascalCase>` (each `-`-separated word upper-cased) unless `--namespace=`
+overrides it. Existing exceptions the guess gets wrong: `bignum` → `BigNum`,
+`dataloader` → `DataLoader`, `dotenv` → `Env`, `graphql` → `GraphQL`, `oauth` → `OAuth`,
+`opcache` → `OPCache`, `swagger-ui` → `SwaggerUI`, `webauthn` → `WebAuthn` and
+`websocket` → `WebSocket`; `websocket-client` → `WebsocketClient`, `websocket-tls` → `WebsocketTls`,
 `webauthn-metadata` → `WebauthnMetadata` and `metrics-statsd` → `MetricsStatsd` are
 intentional lower-case-word namespaces, and `testing-application` shares `EzPhp\Testing\`
 with `testing`).
@@ -170,17 +172,21 @@ stub is written only if the submodule doesn't already ship one, so
 `composer guidelines:sync` has a `# Package:` heading to anchor part 1 against.
 
 It writes `modules/<name>/` and registers the module in the four places the monorepo
-needs it — root `composer.json` (`autoload.psr-4`), `phpstan.neon`, `phpunit.xml`
-(test suite **and** coverage source), and `packages.sh` (alphabetical position).
+needs it — root `composer.json` (`autoload.psr-4` **and** the shared
+`autoload-dev` `Tests\` directory list), `phpstan.neon`, `phpunit.xml` (test suite
+**and** coverage source), and `packages.sh` (alphabetical position) — in both
+generated and `--repo` mode.
 
 Two things stay manual on purpose:
 
 - **`CLAUDE.md` part 1** — only the `# Package:` section is generated. Run
   `composer guidelines:sync` afterwards; baking a guidelines copy into the generator
   would recreate the drift the sync script exists to prevent.
-- **The host-port table below** (`--services` only) — editing it marks every
-  `CLAUDE.md` copy as drifted at once, so the next `composer full` would fail for
-  a brand-new module. The generator prints which ports to claim instead.
+- **The host-port table below** (`--services` only) — claim the "next free" row by
+  editing the table in `CODING_GUIDELINES.md` (never in a `CLAUDE.md` copy) and run
+  `composer guidelines:sync` in the same change. Editing it drifts every `CLAUDE.md`
+  until the sync runs, which is why the generator only reminds you instead of doing
+  it. Skipping the edit leaves "next free" stale, so the next module collides.
 
 ### 4 — Docker scaffold
 
@@ -286,7 +292,6 @@ src/
 │   │   ├── MakeListenerCommand.php   — make:listener — scaffolds an event listener in app/Listeners/
 │   │   ├── MakeMiddlewareCommand.php — make:middleware — scaffolds a middleware class in app/Middleware/
 │   │   ├── MakeMigrationCommand.php  — make:migration — creates a timestamped migration stub; detects create_/add_/drop_ name patterns and generates pre-filled stubs
-│   │   ├── MakeModelCommand.php      — make:model — scaffolds an Entity + Repository pair in app/Entities/ and app/Repositories/
 │   │   ├── MakeNotificationCommand.php — make:notification — scaffolds a notification class in app/Notifications/
 │   │   ├── MakeProviderCommand.php   — make:provider — scaffolds a service provider in app/Providers/
 │   │   ├── MakeRequestCommand.php    — make:request — scaffolds a FormRequest class in app/Requests/
@@ -307,7 +312,7 @@ src/
 │       ├── Scheduler.php             — Registry of ScheduledCommands; command() adds entries; dueCommands() filters by time
 │       └── ScheduledCommand.php      — A command + frequency predicate; everyMinute/hourly/daily/weekly/monthly
 ├── Container/
-│   ├── Container.php                 — DI container with singleton cache and autowiring
+│   ├── Container.php                 — DI container with singleton cache and autowiring; implements TaggedContainerInterface (tag/tagged)
 │   └── ContextualBindingBuilder.php  — Fluent builder for contextual bindings: when(A)->needs(B)->give(C)
 ├── Controller/
 │   ├── Controller.php                — Abstract base controller; provides helper methods for request access
@@ -481,29 +486,21 @@ Thin PDO wrapper. Not a DBAL. The ORM and query builder live in `ez-php/orm`.
 
 `CsrfMiddleware` depends on `CsrfTokenStoreInterface`. The built-in implementation `SessionCsrfTokenStore` reads and writes the token from PHP's native session (`$_SESSION`). The session **must be active** before `CsrfMiddleware` runs.
 
-**Step-by-step setup in a service provider:**
+**Step-by-step setup in a service provider** (session handling comes from `ez-php/session`, whose `StartSessionMiddleware` also applies hardened cookie settings and strict mode):
 
 ```php
-// 1. Create a middleware that starts the session
-final class SessionStartMiddleware implements MiddlewareInterface
-{
-    public function handle(RequestInterface $request, callable $next): ResponseInterface
-    {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+use EzPhp\Session\StartSessionMiddleware;
 
-        /** @var ResponseInterface */
-        return $next($request);
-    }
-}
+// 1. Register EzPhp\Session\SessionServiceProvider (provider/modules.php)
 
 // 2. In a service provider register() method, bind the token store
 $this->app->bind(CsrfTokenStoreInterface::class, SessionCsrfTokenStore::class);
 
 // 3. Register both middleware globally — session start must come first
-$app->middleware(SessionStartMiddleware::class, CsrfMiddleware::class);
+$app->middleware(StartSessionMiddleware::class, CsrfMiddleware::class);
 ```
+
+Without `ez-php/session`, any middleware that calls `session_start()` before `CsrfMiddleware` works — but then cookie flags and `session.use_strict_mode` are your responsibility (see `docs/SECURITY.md` § Cookies).
 
 **In HTML forms**, include the hidden token field:
 

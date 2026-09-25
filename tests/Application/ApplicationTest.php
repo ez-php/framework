@@ -24,6 +24,7 @@ use EzPhp\Console\CommandInterface;
 use EzPhp\Console\ConsoleServiceProvider;
 use EzPhp\Container\Container;
 use EzPhp\Contracts\MiddlewareInterface as ContractsMiddlewareInterface;
+use EzPhp\Contracts\TaggedContainerInterface;
 use EzPhp\Database\Database;
 use EzPhp\Database\DatabaseServiceProvider;
 use EzPhp\Exceptions\ApplicationException;
@@ -173,6 +174,20 @@ final class ApplicationTest extends TestCase
         $router = $app->make(Router::class);
 
         $this->assertInstanceOf(Router::class, $router);
+    }
+
+    /**
+     * Modules consume tagging through the contract, not the concrete Container.
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_tagged_container_interface_resolves_to_the_container(): void
+    {
+        $app = new Application();
+        $app->bootstrap();
+
+        $this->assertSame($app->make(Container::class), $app->make(TaggedContainerInterface::class));
     }
 
     /**

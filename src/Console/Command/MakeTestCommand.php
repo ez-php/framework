@@ -158,7 +158,7 @@ final readonly class MakeTestCommand implements CommandInterface
 
             namespace Tests;
 
-            use EzPhp\\Testing\\Application\\ApplicationTestCase;
+            use EzPhp\\Testing\\ApplicationTestCase;
 
             final class $name extends ApplicationTestCase
             {
@@ -184,7 +184,7 @@ final readonly class MakeTestCommand implements CommandInterface
 
             namespace Tests;
 
-            use EzPhp\\Testing\\Application\\HttpTestCase;
+            use EzPhp\\Testing\\HttpTestCase;
 
             final class $name extends HttpTestCase
             {

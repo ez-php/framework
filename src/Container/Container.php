@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace EzPhp\Container;
 
+use EzPhp\Contracts\TaggedContainerInterface;
 use EzPhp\Exceptions\ContainerException;
 use ReflectionClass;
 use ReflectionException;
@@ -14,7 +15,7 @@ use ReflectionNamedType;
  *
  * @package EzPhp\Container
  */
-final class Container
+final class Container implements TaggedContainerInterface
 {
     /**
      * @var array<string, object>

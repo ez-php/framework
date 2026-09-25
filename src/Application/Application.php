@@ -9,6 +9,7 @@ use EzPhp\Contracts\CommandRegistryInterface;
 use EzPhp\Contracts\ContainerInterface;
 use EzPhp\Contracts\ExceptionHandlerInterface;
 use EzPhp\Contracts\MiddlewareInterface;
+use EzPhp\Contracts\TaggedContainerInterface;
 use EzPhp\Exceptions\ApplicationException;
 use EzPhp\Exceptions\ContainerException;
 use EzPhp\Http\Request;
@@ -464,6 +465,7 @@ final class Application implements ContainerInterface, CommandRegistryInterface
         $this->container->bind(Application::class, fn () => $this);
         $this->container->bind(ContainerInterface::class, fn () => $this);
         $this->container->bind(Container::class, fn () => $this->container);
+        $this->container->bind(TaggedContainerInterface::class, fn () => $this->container);
     }
 
     /**

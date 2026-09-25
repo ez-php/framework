@@ -24,7 +24,6 @@ use EzPhp\Console\Command\MakeJobCommand;
 use EzPhp\Console\Command\MakeListenerCommand;
 use EzPhp\Console\Command\MakeMiddlewareCommand;
 use EzPhp\Console\Command\MakeMigrationCommand;
-use EzPhp\Console\Command\MakeModelCommand;
 use EzPhp\Console\Command\MakeNotificationCommand;
 use EzPhp\Console\Command\MakeProviderCommand;
 use EzPhp\Console\Command\MakeRequestCommand;
@@ -130,10 +129,6 @@ final class ConsoleServiceProvider extends ServiceProvider
             return new MakeProviderCommand($app->basePath('app'));
         });
 
-        $this->app->bind(MakeModelCommand::class, function (Application $app): MakeModelCommand {
-            return new MakeModelCommand($app->basePath('app'));
-        });
-
         $this->app->bind(MakeEventCommand::class, function (Application $app): MakeEventCommand {
             return new MakeEventCommand($app->basePath('app'));
         });
@@ -237,7 +232,6 @@ final class ConsoleServiceProvider extends ServiceProvider
                 $app->make(MakeControllerCommand::class),
                 $app->make(MakeMiddlewareCommand::class),
                 $app->make(MakeProviderCommand::class),
-                $app->make(MakeModelCommand::class),
                 $app->make(MakeEventCommand::class),
                 $app->make(MakeListenerCommand::class),
                 $app->make(MakeJobCommand::class),
