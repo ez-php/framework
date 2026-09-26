@@ -70,7 +70,7 @@ final readonly class ServeCommand implements CommandInterface
         if (!$input->hasFlag('watch')) {
             $this->announce($address, false);
             echo "Press Ctrl+C to stop.\n";
-            passthru('php -S ' . escapeshellarg($address) . ' -t ' . escapeshellarg($this->publicPath), $exitCode);
+            passthru($this->serverCommand($address), $exitCode);
             return (int) $exitCode;
         }
 
@@ -83,7 +83,7 @@ final readonly class ServeCommand implements CommandInterface
      *
      * @param string $address  host:port to bind to.
      *
-     * @return int Always 0 (exits via Ctrl+C).
+     * @return int 0 when the server stops, 1 when it cannot be (re)started.
      */
     private function serveWithWatch(string $address): int
     {
@@ -103,6 +103,10 @@ final readonly class ServeCommand implements CommandInterface
         $mtimes = $this->collectMtimes($watchDirs);
         $process = $this->spawnServer($address);
 
+        if ($process === null) {
+            return 1;
+        }
+
         while (proc_get_status($process)['running']) {
             sleep(1);
 
@@ -114,6 +118,10 @@ final readonly class ServeCommand implements CommandInterface
                 proc_terminate($process);
                 proc_close($process);
                 $process = $this->spawnServer($address);
+
+                if ($process === null) {
+                    return 1;
+                }
             }
         }
 
@@ -136,15 +144,30 @@ final readonly class ServeCommand implements CommandInterface
     }
 
     /**
+     * Build the shell command that starts PHP's built-in server.
+     *
+     * Uses the interpreter running this command (PHP_BINARY), not whatever `php`
+     * is first on PATH — on hosts with several PHP versions that could be another one.
+     *
+     * @param string $address host:port to bind to.
+     *
+     * @return string
+     */
+    public function serverCommand(string $address): string
+    {
+        return escapeshellarg(PHP_BINARY) . ' -S ' . escapeshellarg($address) . ' -t ' . escapeshellarg($this->publicPath);
+    }
+
+    /**
      * Spawn a PHP built-in server subprocess and return the process handle.
      *
      * @param string $address
      *
-     * @return resource
+     * @return resource|null Null when the process could not be started (reported on STDERR).
      */
     private function spawnServer(string $address): mixed
     {
-        $cmd = 'php -S ' . escapeshellarg($address) . ' -t ' . escapeshellarg($this->publicPath);
+        $cmd = $this->serverCommand($address);
         $descriptors = [
             0 => ['pipe', 'r'],
             1 => STDOUT,
@@ -155,7 +178,8 @@ final readonly class ServeCommand implements CommandInterface
 
         if ($process === false) {
             fwrite(STDERR, "Failed to start PHP server.\n");
-            exit(1);
+
+            return null;
         }
 
         return $process;

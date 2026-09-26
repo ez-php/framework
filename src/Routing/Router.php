@@ -6,6 +6,7 @@ namespace EzPhp\Routing;
 
 use Closure;
 use EzPhp\Contracts\ContainerInterface;
+use EzPhp\Contracts\RouterInterface;
 use EzPhp\Exceptions\NotFoundException;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
@@ -19,7 +20,7 @@ use InvalidArgumentException;
  *
  * @package EzPhp\Routing
  */
-final class Router
+final class Router implements RouterInterface
 {
     /**
      * Routes partitioned by HTTP method for O(1) method lookup.

@@ -27,4 +27,30 @@ final class ServeCommandTest extends TestCase
         $this->assertNotEmpty($command->getDescription());
         $this->assertStringContainsString('ez serve', $command->getHelp());
     }
+
+    /**
+     * @return void
+     */
+    public function test_server_command_uses_the_running_php_binary(): void
+    {
+        $command = new ServeCommand('/var/www/public');
+
+        $this->assertSame(
+            escapeshellarg(PHP_BINARY) . " -S 'localhost:8000' -t '/var/www/public'",
+            $command->serverCommand('localhost:8000'),
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function test_server_command_escapes_the_address_and_path(): void
+    {
+        $command = new ServeCommand("/srv/my app's/public");
+
+        $this->assertStringEndsWith(
+            ' -S ' . escapeshellarg('0.0.0.0:80; rm -rf /') . ' -t ' . escapeshellarg("/srv/my app's/public"),
+            $command->serverCommand('0.0.0.0:80; rm -rf /'),
+        );
+    }
 }

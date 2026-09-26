@@ -38,35 +38,22 @@ final class DefaultExceptionHandler implements ExceptionHandler
      * @param string          $templatePath Directory for custom production error templates (e.g. resources/errors).
      *                                      Templates are loaded as {templatePath}/{status}.php.
      * @param TranslatorInterface|null $translator   Optional translator for localised production error strings.
+     * @param string          $environment  Application environment (APP_ENV). When it is `production`
+     *                                      and $debug is on, a warning is logged. Empty = unknown, no check.
      */
     public function __construct(
         private readonly bool $debug = false,
         private readonly string $templatePath = '',
         private readonly ?TranslatorInterface $translator = null,
+        private readonly string $environment = '',
     ) {
-        if ($this->debug && $this->isProductionEnvironment()) {
+        if ($this->debug && strtolower($this->environment) === 'production') {
             error_log(
                 '[ez-php] WARNING: APP_DEBUG is enabled in a production environment. '
                 . 'Full stack traces and query details will be exposed in error responses. '
                 . 'Set APP_DEBUG=false for production deployments.'
             );
         }
-    }
-
-    /**
-     * Return true when the application environment appears to be production.
-     *
-     * Reads APP_ENV from $_SERVER first (populated by the web server), then
-     * $_ENV (populated by putenv / dotenv), with a safe default of false.
-     *
-     * @return bool
-     */
-    private function isProductionEnvironment(): bool
-    {
-        $raw = $_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? '';
-        $env = is_string($raw) ? $raw : '';
-
-        return strtolower($env) === 'production';
     }
 
     /**

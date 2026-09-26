@@ -112,6 +112,23 @@ final class DebugToolbarMiddlewareTest extends TestCase
     /**
      * @return void
      */
+    public function test_skips_non_html_response_with_lowercase_content_type_header(): void
+    {
+        $middleware = new DebugToolbarMiddleware();
+        $request = new Request('GET', '/api');
+
+        $original = (new Response('{"html":"<html><body></body></html>"}'))
+            ->withHeader('content-type', 'application/json');
+
+        $response = $middleware->handle($request, fn (): Response => $original);
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertStringNotContainsString('ez-debug-toolbar', $response->body());
+    }
+
+    /**
+     * @return void
+     */
     public function test_skips_response_without_html_tags(): void
     {
         $middleware = new DebugToolbarMiddleware();

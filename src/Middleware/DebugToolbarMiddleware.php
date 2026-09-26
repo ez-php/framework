@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace EzPhp\Middleware;
 
+use EzPhp\Http\Headers;
 use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
 use EzPhp\Http\ResponseInterface;
@@ -65,7 +66,7 @@ final class DebugToolbarMiddleware implements MiddlewareInterface
         }
 
         // Skip if the Content-Type header signals a non-HTML format
-        $contentType = $response->headers()['Content-Type'] ?? '';
+        $contentType = Headers::get($response->headers(), 'Content-Type') ?? '';
         if ($contentType !== '' && !str_contains($contentType, 'text/html')) {
             return $response;
         }

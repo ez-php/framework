@@ -16,6 +16,7 @@ use EzPhp\Console\Command\RouteCacheCommand;
 use EzPhp\Console\Command\RouteClearCommand;
 use EzPhp\Console\ConsoleServiceProvider;
 use EzPhp\Container\Container;
+use EzPhp\Contracts\RouterInterface;
 use EzPhp\Database\Database;
 use EzPhp\Database\DatabaseServiceProvider;
 use EzPhp\Exceptions\DefaultExceptionHandler;
@@ -80,6 +81,18 @@ final class RouterServiceProviderTest extends TestCase
         $router = $app->make(Router::class);
 
         $this->assertInstanceOf(Router::class, $router);
+    }
+
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_router_interface_resolves_to_the_same_router_instance(): void
+    {
+        $app = new Application();
+        $app->bootstrap();
+
+        $this->assertSame($app->make(Router::class), $app->make(RouterInterface::class));
     }
 
     /**

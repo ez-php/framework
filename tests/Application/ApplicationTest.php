@@ -349,7 +349,10 @@ final class ApplicationTest extends TestCase
         $app->middleware(CorsMiddleware::class);
         $app->bootstrap();
 
-        $response = $app->handle(new Request('OPTIONS', '/api/test'));
+        $response = $app->handle(new Request('OPTIONS', '/api/test', [], [], [
+            'Origin' => 'https://app.example.com',
+            'Access-Control-Request-Method' => 'POST',
+        ]));
 
         $this->assertSame(204, $response->status());
         $this->assertArrayHasKey('Access-Control-Allow-Origin', $response->headers());

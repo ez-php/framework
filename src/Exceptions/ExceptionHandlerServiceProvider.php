@@ -28,8 +28,10 @@ final class ExceptionHandlerServiceProvider extends ServiceProvider
             $debug = (bool) $app->make(Config::class)->get('app.debug', false);
             $templatePath = $app->basePath('resources/errors');
             $translator = $app->make(TranslatorInterface::class);
+            // Same source as ConsoleServiceProvider: the process environment (dotenv populates it).
+            $environment = (string) getenv('APP_ENV');
 
-            return new DefaultExceptionHandler($debug, $templatePath, $translator);
+            return new DefaultExceptionHandler($debug, $templatePath, $translator, $environment);
         });
 
         $this->app->bind(ExceptionHandler::class, fn () => $this->app->make(ExceptionHandlerInterface::class));

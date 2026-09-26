@@ -31,6 +31,73 @@ use Throwable;
 final class DefaultExceptionHandlerTest extends TestCase
 {
     /**
+     * Construct a handler and return everything it wrote through error_log().
+     *
+     * @param bool   $debug
+     * @param string $environment
+     *
+     * @return string
+     */
+    private function constructionLog(bool $debug, string $environment): string
+    {
+        $logFile = (string) tempnam(sys_get_temp_dir(), 'ez-handler-log-');
+        $previous = ini_set('error_log', $logFile);
+
+        try {
+            new DefaultExceptionHandler($debug, '', null, $environment);
+
+            return (string) file_get_contents($logFile);
+        } finally {
+            ini_set('error_log', $previous === false ? '' : $previous);
+            @unlink($logFile);
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function test_warns_when_debug_is_enabled_in_production(): void
+    {
+        $this->assertStringContainsString('APP_DEBUG is enabled in a production environment', $this->constructionLog(true, 'production'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_environment_match_is_case_insensitive(): void
+    {
+        $this->assertStringContainsString('APP_DEBUG is enabled', $this->constructionLog(true, 'Production'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_does_not_warn_outside_production_or_without_debug(): void
+    {
+        $this->assertSame('', $this->constructionLog(true, 'local'));
+        $this->assertSame('', $this->constructionLog(false, 'production'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_environment_comes_from_the_constructor_not_superglobals(): void
+    {
+        $previous = $_SERVER['APP_ENV'] ?? null;
+        $_SERVER['APP_ENV'] = 'production';
+
+        try {
+            $this->assertSame('', $this->constructionLog(true, ''));
+        } finally {
+            if ($previous === null) {
+                unset($_SERVER['APP_ENV']);
+            } else {
+                $_SERVER['APP_ENV'] = $previous;
+            }
+        }
+    }
+
+    /**
      * @return void
      */
     public function test_render_returns_404_for_route_exception(): void
