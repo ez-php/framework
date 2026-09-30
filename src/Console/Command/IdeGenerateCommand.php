@@ -33,16 +33,31 @@ final class IdeGenerateCommand implements CommandInterface
     /**
      * Well-known static façade class names. Only those present in the
      * autoloader (class_exists) will appear in the generated file.
+     * IdeGenerateCommandTest fails in the monorepo when a module ships a
+     * façade that is missing here.
      *
      * @var list<string>
      */
     private const array KNOWN_FACADES = [
+        'EzPhp\Ai\Ai',
+        'EzPhp\AiMedia\AiMedia',
         'EzPhp\Auth\Auth',
         'EzPhp\Broadcast\Broadcast',
+        'EzPhp\Cache\Cache',
         'EzPhp\Events\Event',
+        'EzPhp\FeatureFlags\Flag',
+        'EzPhp\GraphQL\GraphQL',
+        'EzPhp\Health\Health',
         'EzPhp\HttpClient\Http',
+        'EzPhp\Logging\Log',
         'EzPhp\Mail\Mail',
+        'EzPhp\Media\Media',
+        'EzPhp\Metrics\Metrics',
+        'EzPhp\Notification\Notification',
+        'EzPhp\Otel\Otel',
+        'EzPhp\Push\Push',
         'EzPhp\RateLimiter\RateLimiter',
+        'EzPhp\Storage\Storage',
         'EzPhp\View\View',
     ];
 

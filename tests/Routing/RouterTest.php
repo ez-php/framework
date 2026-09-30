@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Routing;
 
 use EzPhp\Contracts\ContainerInterface;
+use EzPhp\Exceptions\MethodNotAllowedException;
 use EzPhp\Exceptions\NotFoundException;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
@@ -26,6 +27,7 @@ use Tests\TestCase;
 #[CoversClass(Router::class)]
 #[CoversClass(Route::class)]
 #[CoversClass(RouteException::class)]
+#[CoversClass(MethodNotAllowedException::class)]
 #[UsesClass(NotFoundException::class)]
 final class RouterTest extends TestCase
 {
@@ -87,11 +89,11 @@ final class RouterTest extends TestCase
      * @return void
      * @throws RouteException
      */
-    public function test_retrieve_route_throws_for_wrong_method(): void
+    public function test_retrieve_route_throws_405_for_wrong_method(): void
     {
         $router = new Router();
         $router->get('/hello', fn () => 'hello');
-        $this->expectException(RouteException::class);
+        $this->expectException(MethodNotAllowedException::class);
         $router->retrieveRoute(new Request('POST', '/hello'));
     }
 
@@ -161,6 +163,171 @@ final class RouterTest extends TestCase
 
         self::assertInstanceOf(Response::class, $response);
         $this->assertSame('42', $response->body());
+    }
+
+    /**
+     * REQUEST_URI carries the query string; matching must ignore it.
+     *
+     * @return void
+     * @throws RouteException
+     */
+    public function test_static_route_matches_when_uri_has_query_string(): void
+    {
+        $router = new Router();
+        $router->get('/users', fn () => 'list');
+
+        $request = new Request('GET', '/users?page=2');
+        $response = $router->retrieveRoute($request)->run($request);
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame('list', $response->body());
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_trailing_slash_before_query_string_still_matches(): void
+    {
+        $router = new Router();
+        $router->get('/users', fn () => 'list');
+
+        $request = new Request('GET', '/users/?page=2');
+        $response = $router->retrieveRoute($request)->run($request);
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame('list', $response->body());
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_param_does_not_include_query_string(): void
+    {
+        $router = new Router();
+        $router->get('/users/{name}', fn (Request $r) => $r->param('name'));
+
+        $request = new Request('GET', '/users/john?page=2');
+        $response = $router->retrieveRoute($request)->run($request);
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame('john', $response->body());
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_optional_param_absent_with_query_string(): void
+    {
+        $router = new Router();
+        $router->get('/users/{id?}', fn (Request $r) => $r->param('id') ?? 'none');
+
+        $request = new Request('GET', '/users?page=2');
+        $response = $router->retrieveRoute($request)->run($request);
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame('none', $response->body());
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_param_is_percent_decoded(): void
+    {
+        $router = new Router();
+        $router->get('/users/{name}', fn (Request $r) => $r->param('name'));
+
+        $request = new Request('GET', '/users/john%20doe');
+        $response = $router->retrieveRoute($request)->run($request);
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame('john doe', $response->body());
+    }
+
+    /**
+     * An encoded slash stays inside its segment (matching runs on the raw path)
+     * and only becomes '/' in the decoded param value.
+     *
+     * @return void
+     * @throws RouteException
+     */
+    public function test_encoded_slash_stays_in_one_param(): void
+    {
+        $router = new Router();
+        $router->get('/files/{name}', fn (Request $r) => $r->param('name'));
+
+        $request = new Request('GET', '/files/a%2Fb');
+        $response = $router->retrieveRoute($request)->run($request);
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame('a/b', $response->body());
+    }
+
+    /**
+     * '+' is a literal in a path (only form encoding treats it as a space).
+     *
+     * @return void
+     * @throws RouteException
+     */
+    public function test_plus_in_param_is_kept_literal(): void
+    {
+        $router = new Router();
+        $router->get('/tags/{tag}', fn (Request $r) => $r->param('tag'));
+
+        $request = new Request('GET', '/tags/c++');
+        $response = $router->retrieveRoute($request)->run($request);
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame('c++', $response->body());
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_head_request_falls_back_to_get_route(): void
+    {
+        $router = new Router();
+        $router->get('/users/{id}', fn (Request $r) => $r->method());
+
+        $request = new Request('HEAD', '/users/7');
+        $response = $router->retrieveRoute($request)->run($request);
+
+        self::assertInstanceOf(Response::class, $response);
+        // The handler still sees the real method.
+        $this->assertSame('HEAD', $response->body());
+    }
+
+    /**
+     * @return void
+     * @throws RouteException
+     */
+    public function test_explicit_head_route_wins_over_get_fallback(): void
+    {
+        $router = new Router();
+        $router->get('/ping', fn () => 'get');
+        $router->add('HEAD', '/ping', fn () => 'head');
+
+        $request = new Request('HEAD', '/ping');
+        $response = $router->retrieveRoute($request)->run($request);
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame('head', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_head_request_does_not_match_post_route(): void
+    {
+        $router = new Router();
+        $router->post('/submit', fn () => 'ok');
+
+        $this->expectException(MethodNotAllowedException::class);
+        $router->retrieveRoute(new Request('HEAD', '/submit'));
     }
 
     /**
@@ -978,7 +1145,7 @@ final class RouterTest extends TestCase
         $router = new Router();
         $router->resource('posts', new ResourceTestController(), only: ['index']);
 
-        $this->expectException(RouteException::class);
+        $this->expectException(MethodNotAllowedException::class);
         $router->retrieveRoute(new Request('POST', '/posts'));
     }
 
@@ -1005,7 +1172,7 @@ final class RouterTest extends TestCase
         $router = new Router();
         $router->resource('posts', new ResourceTestController(), except: ['destroy']);
 
-        $this->expectException(RouteException::class);
+        $this->expectException(MethodNotAllowedException::class);
         $router->retrieveRoute(new Request('DELETE', '/posts/1'));
     }
 
@@ -1141,6 +1308,68 @@ final class RouterTest extends TestCase
 
         $router = new Router();
         $router->get('/posts/{slug?}', fn () => 'ok')->where('slug', '(unclosed');
+    }
+
+    // --- 405 Method Not Allowed ---
+
+    /**
+     * @return void
+     */
+    public function test_path_matching_another_method_throws_405_with_allowed_methods(): void
+    {
+        $router = new Router();
+        $router->get('/users', fn () => 'list');
+        $router->put('/users', fn () => 'replace');
+        $router->get('/other', fn () => 'other');
+
+        try {
+            $router->retrieveRoute(new Request('POST', '/users'));
+            self::fail('Expected MethodNotAllowedException.');
+        } catch (MethodNotAllowedException $e) {
+            $this->assertSame(405, $e->getStatusCode());
+            // GET implies HEAD.
+            $this->assertSame(['GET', 'HEAD', 'PUT'], $e->getAllowedMethods());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function test_405_takes_precedence_over_the_fallback_route(): void
+    {
+        $router = new Router();
+        $router->get('/users', fn () => 'list');
+        $router->fallback(fn () => 'fallback');
+
+        $this->expectException(MethodNotAllowedException::class);
+        $router->retrieveRoute(new Request('DELETE', '/users'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_unknown_path_still_throws_route_exception(): void
+    {
+        $router = new Router();
+        $router->get('/users', fn () => 'list');
+
+        $this->expectException(RouteException::class);
+        $router->retrieveRoute(new Request('POST', '/nope'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_method_override_is_considered_before_405(): void
+    {
+        $router = new Router();
+        $router->put('/users/{id}', fn () => 'updated');
+
+        $request = new Request('POST', '/users/1', body: ['_method' => 'PUT']);
+        $response = $router->retrieveRoute($request)->run($request);
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame('updated', $response->body());
     }
 
     // --- Fallback Route (item 29) ---

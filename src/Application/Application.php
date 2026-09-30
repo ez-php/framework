@@ -316,7 +316,7 @@ final class Application implements ContainerInterface, CommandRegistryInterface
      * A failure while a streamed body is being written happens after headers
      * were sent, so it is reported (not rendered). terminate() runs in every
      * case — after the last chunk, after a stream failure and after a client
-     * disconnect.
+     * disconnect. A HEAD request gets status and headers only.
      *
      * @param Request           $request
      * @param ResponseInterface $response
@@ -334,7 +334,7 @@ final class Application implements ContainerInterface, CommandRegistryInterface
                 } catch (Throwable) {
                     // Nothing else can catch this here, and terminate() must still run.
                 }
-            });
+            }, withBody: $request->method() !== 'HEAD');
         } finally {
             $this->terminate($request, $response);
         }

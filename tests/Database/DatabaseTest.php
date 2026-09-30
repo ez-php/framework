@@ -216,6 +216,116 @@ final class DatabaseTest extends TestCase
         });
     }
 
+    /**
+     * @return void
+     * @throws Throwable
+     */
+    public function test_nested_transaction_commits_with_outer(): void
+    {
+        $this->db->transaction(function (): void {
+            $this->db->query('INSERT INTO users (name) VALUES (?)', ['Outer']);
+            $this->db->transaction(function (): void {
+                $this->db->query('INSERT INTO users (name) VALUES (?)', ['Inner']);
+            });
+        });
+
+        $this->assertSame([['name' => 'Outer'], ['name' => 'Inner']], $this->db->query('SELECT name FROM users ORDER BY id'));
+        $this->assertFalse($this->db->getPdo()->inTransaction());
+    }
+
+    /**
+     * A failing inner transaction rolls back to its savepoint only; the outer
+     * transaction stays open and can still commit its own work.
+     *
+     * @return void
+     * @throws Throwable
+     */
+    public function test_failed_nested_transaction_rolls_back_to_savepoint_only(): void
+    {
+        $this->db->transaction(function (): void {
+            $this->db->query('INSERT INTO users (name) VALUES (?)', ['Outer']);
+
+            try {
+                $this->db->transaction(function (): void {
+                    $this->db->query('INSERT INTO users (name) VALUES (?)', ['Inner']);
+                    throw new RuntimeException('inner');
+                });
+            } catch (RuntimeException) {
+                // handled by the outer transaction
+            }
+
+            $this->assertTrue($this->db->getPdo()->inTransaction());
+        });
+
+        $this->assertSame([['name' => 'Outer']], $this->db->query('SELECT name FROM users'));
+    }
+
+    /**
+     * @return void
+     * @throws Throwable
+     */
+    public function test_failing_outer_transaction_discards_committed_inner_work(): void
+    {
+        try {
+            $this->db->transaction(function (): void {
+                $this->db->transaction(function (): void {
+                    $this->db->query('INSERT INTO users (name) VALUES (?)', ['Inner']);
+                });
+                throw new RuntimeException('outer');
+            });
+        } catch (RuntimeException) {
+            // expected
+        }
+
+        $this->assertSame([], $this->db->query('SELECT * FROM users'));
+    }
+
+    /**
+     * A transaction opened directly on the PDO (as DatabaseTestCase does) is
+     * joined through a savepoint and left open for its owner.
+     *
+     * @return void
+     * @throws Throwable
+     */
+    public function test_transaction_inside_externally_opened_pdo_transaction(): void
+    {
+        $pdo = $this->db->getPdo();
+        $pdo->beginTransaction();
+
+        $this->db->transaction(function (): void {
+            $this->db->query('INSERT INTO users (name) VALUES (?)', ['Kept']);
+        });
+
+        $this->assertTrue($pdo->inTransaction());
+        $pdo->rollBack();
+
+        $this->assertSame([], $this->db->query('SELECT * FROM users'));
+    }
+
+    /**
+     * @return void
+     * @throws Throwable
+     */
+    public function test_three_levels_roll_back_only_the_innermost(): void
+    {
+        $this->db->transaction(function (): void {
+            $this->db->transaction(function (): void {
+                $this->db->query('INSERT INTO users (name) VALUES (?)', ['Middle']);
+
+                try {
+                    $this->db->transaction(function (): void {
+                        $this->db->query('INSERT INTO users (name) VALUES (?)', ['Innermost']);
+                        throw new RuntimeException('innermost');
+                    });
+                } catch (RuntimeException) {
+                    // handled one level up
+                }
+            });
+        });
+
+        $this->assertSame([['name' => 'Middle']], $this->db->query('SELECT name FROM users'));
+    }
+
     // ── type binding ──────────────────────────────────────────────────────────
 
     /**

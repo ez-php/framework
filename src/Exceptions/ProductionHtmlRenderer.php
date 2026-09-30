@@ -127,6 +127,7 @@ final readonly class ProductionHtmlRenderer
     {
         $fallback = match ($status) {
             404 => 'Not Found',
+            405 => 'Method Not Allowed',
             500 => 'Internal Server Error',
             403 => 'Forbidden',
             401 => 'Unauthorized',
@@ -152,6 +153,7 @@ final readonly class ProductionHtmlRenderer
     {
         $fallback = match ($status) {
             404 => 'The page you are looking for could not be found.',
+            405 => 'This address does not accept this kind of request.',
             500 => 'Something went wrong. Please try again later.',
             403 => 'You do not have permission to access this resource.',
             401 => 'Authentication is required to access this resource.',

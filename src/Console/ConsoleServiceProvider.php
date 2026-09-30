@@ -13,6 +13,7 @@ use EzPhp\Console\Command\ConfigShowCommand;
 use EzPhp\Console\Command\DbSeedCommand;
 use EzPhp\Console\Command\DbSetupCommand;
 use EzPhp\Console\Command\DoctorCommand;
+use EzPhp\Console\Command\DownCommand;
 use EzPhp\Console\Command\EnvCheckCommand;
 use EzPhp\Console\Command\IdeGenerateCommand;
 use EzPhp\Console\Command\ListCommand;
@@ -40,8 +41,10 @@ use EzPhp\Console\Command\ScheduleListCommand;
 use EzPhp\Console\Command\ScheduleRunCommand;
 use EzPhp\Console\Command\ServeCommand;
 use EzPhp\Console\Command\TinkerCommand;
+use EzPhp\Console\Command\UpCommand;
 use EzPhp\Console\Schedule\Scheduler;
 use EzPhp\Contracts\ConfigInterface;
+use EzPhp\Maintenance\MaintenanceMode;
 use EzPhp\Migration\Migrator;
 use EzPhp\Migration\SeederRunner;
 use EzPhp\Routing\Router;
@@ -207,6 +210,12 @@ final class ConsoleServiceProvider extends ServiceProvider
             return new RouteListCommand($app->make(Router::class));
         });
 
+        // Shared by `ez down` / `ez up` and MaintenanceModeMiddleware (HTTP), so the
+        // marker path is defined in one place.
+        $this->app->bind(MaintenanceMode::class, function (Application $app): MaintenanceMode {
+            return new MaintenanceMode($app->basePath('storage/framework/down'));
+        });
+
         $this->app->bind(IdeGenerateCommand::class, function (Application $app): IdeGenerateCommand {
             return new IdeGenerateCommand($app->basePath());
         });
@@ -244,6 +253,8 @@ final class ConsoleServiceProvider extends ServiceProvider
                 $app->make(EnvCheckCommand::class),
                 $app->make(DoctorCommand::class),
                 $app->make(IdeGenerateCommand::class),
+                new DownCommand($app->make(MaintenanceMode::class)),
+                new UpCommand($app->make(MaintenanceMode::class)),
             ];
 
             foreach ($app->getCommands() as $class) {

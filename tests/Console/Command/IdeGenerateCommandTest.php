@@ -173,6 +173,64 @@ final class IdeGenerateCommandTest extends TestCase
         $this->assertStringContainsString('publicHelper', $content);
         $this->assertStringNotContainsString('privateHelper', $content);
     }
+
+    /**
+     * Every static façade shipped in a module (modules/<name>/src) is on KNOWN_FACADES.
+     *
+     * A façade here is a final class with static state whose public methods are
+     * all static. Runs only inside the monorepo (standalone framework CI has no
+     * modules/ directory).
+     *
+     * @return void
+     */
+    public function test_known_facades_cover_every_module_facade(): void
+    {
+        $modules = dirname(__DIR__, 4) . '/modules';
+
+        if (!is_dir($modules)) {
+            self::markTestSkipped('modules/ not available (standalone framework checkout).');
+        }
+
+        // Static registries that are not façades over a container-bound service.
+        $notFacades = ['EzPhp\Money\CurrencyRegistry'];
+        $known = (new \ReflectionClassConstant(IdeGenerateCommand::class, 'KNOWN_FACADES'))->getValue();
+        self::assertIsArray($known);
+
+        $missing = [];
+
+        foreach (glob($modules . '/*/src/*.php') ?: [] as $file) {
+            $source = (string) file_get_contents($file);
+
+            if (preg_match('/^namespace ([^;]+);/m', $source, $m) !== 1) {
+                continue;
+            }
+
+            $class = $m[1] . '\\' . basename($file, '.php');
+
+            if (in_array($class, $notFacades, true) || !class_exists($class)) {
+                continue;
+            }
+
+            $reflection = new \ReflectionClass($class);
+            $public = $reflection->getMethods(\ReflectionMethod::IS_PUBLIC);
+
+            if (!$reflection->isFinal() || $reflection->getStaticProperties() === [] || $public === []) {
+                continue;
+            }
+
+            foreach ($public as $method) {
+                if (!$method->isStatic()) {
+                    continue 2;
+                }
+            }
+
+            if (!in_array($class, $known, true)) {
+                $missing[] = $class;
+            }
+        }
+
+        self::assertSame([], $missing, 'Add these façades to IdeGenerateCommand::KNOWN_FACADES.');
+    }
 }
 
 /**

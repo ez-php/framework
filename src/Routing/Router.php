@@ -7,6 +7,7 @@ namespace EzPhp\Routing;
 use Closure;
 use EzPhp\Contracts\ContainerInterface;
 use EzPhp\Contracts\RouterInterface;
+use EzPhp\Exceptions\MethodNotAllowedException;
 use EzPhp\Exceptions\NotFoundException;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
@@ -398,11 +399,51 @@ final class Router implements RouterInterface
             return $this->applyModelBindings($matched);
         }
 
+        // The path exists, just not for this method: 405, not the fallback route.
+        $allowed = $this->allowedMethodsFor($request);
+
+        if ($allowed !== []) {
+            throw new MethodNotAllowedException($allowed);
+        }
+
         if ($this->fallbackRoute !== null) {
             return $this->fallbackRoute;
         }
 
         throw new RouteException();
+    }
+
+    /**
+     * Methods whose route table matches the request path; GET implies HEAD.
+     *
+     * @param Request $request
+     *
+     * @return list<string> Sorted; empty when no method matches the path.
+     */
+    private function allowedMethodsFor(Request $request): array
+    {
+        $allowed = [];
+
+        foreach ($this->routes as $method => $routes) {
+            $probe = $request->withMethod($method);
+
+            foreach ($routes as $route) {
+                if ($route->matches($probe) !== null) {
+                    $allowed[$method] = true;
+
+                    if ($method === 'GET') {
+                        $allowed['HEAD'] = true;
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        $methods = array_map('strval', array_keys($allowed));
+        sort($methods);
+
+        return $methods;
     }
 
     /**
@@ -502,6 +543,7 @@ final class Router implements RouterInterface
      *
      * Handles the `_method` POST field override (for HTML form PUT/PATCH/DELETE),
      * then iterates over registered routes and returns the first match, or null.
+     * A HEAD request without a matching HEAD route falls back to the GET routes.
      *
      * @param Request $request
      *
@@ -520,6 +562,19 @@ final class Router implements RouterInterface
         foreach ($this->routes[$request->method()] ?? [] as $route) {
             if (($matched = $route->matches($request)) !== null) {
                 return $matched;
+            }
+        }
+
+        // HEAD is GET without a body (RFC 9110 §9.3.2): without an explicit HEAD
+        // route, fall back to the GET table. The handler still receives the HEAD
+        // request; Application::send() drops the body.
+        if ($request->method() === 'HEAD') {
+            $asGet = $request->withMethod('GET');
+
+            foreach ($this->routes['GET'] ?? [] as $route) {
+                if (($matched = $route->matches($asGet)) !== null) {
+                    return $matched;
+                }
             }
         }
 

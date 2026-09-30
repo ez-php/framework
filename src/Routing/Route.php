@@ -264,7 +264,7 @@ final class Route
         }
 
         $path = $this->normalizePath($this->path);
-        $uri = $this->normalizePath($request->uri());
+        $uri = $this->normalizePath($this->pathOf($request->uri()));
         $pattern = $this->buildPattern($path);
 
         if (!preg_match($pattern, $uri, $matches)) {
@@ -277,7 +277,7 @@ final class Route
         foreach ($names[1] as $i => $name) {
             $value = $matches[$i + 1] ?? '';
             if ($value !== '') {
-                $params[$name] = $value;
+                $params[$name] = rawurldecode($value);
             }
         }
 
@@ -397,6 +397,24 @@ final class Route
         }
 
         return new Response((string) $result);
+    }
+
+    /**
+     * Strip the query string and fragment from a request URI.
+     *
+     * The URI comes from REQUEST_URI, which includes '?query'. Matching runs on the
+     * still-encoded path so an encoded '/' (%2F) stays inside its segment; captured
+     * params are decoded afterwards in matches().
+     *
+     * @param string $uri
+     *
+     * @return string
+     */
+    private function pathOf(string $uri): string
+    {
+        $path = substr($uri, 0, strcspn($uri, '?#'));
+
+        return $path === '' ? '/' : $path;
     }
 
     /**

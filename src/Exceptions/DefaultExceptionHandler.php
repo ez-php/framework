@@ -115,6 +115,24 @@ final class DefaultExceptionHandler implements ExceptionHandler
      */
     public function render(Throwable $e, RequestInterface $request): Response
     {
+        $response = $this->renderResponse($e, $request);
+
+        // RFC 9110 §15.5.6: a 405 response MUST carry an Allow header.
+        if ($e instanceof MethodNotAllowedException) {
+            $response = $response->withHeader('Allow', implode(', ', $e->getAllowedMethods()));
+        }
+
+        return $response;
+    }
+
+    /**
+     * @param Throwable        $e
+     * @param RequestInterface $request
+     *
+     * @return Response
+     */
+    private function renderResponse(Throwable $e, RequestInterface $request): Response
+    {
         // Check custom renderers first (in registration order)
         foreach ($this->renderables as [$class, $renderer]) {
             if ($e instanceof $class) {

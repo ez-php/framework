@@ -28,10 +28,11 @@ docker compose exec app composer full
 Executes in order:
 1. `sync_guidelines.php --check` — fails if any `CLAUDE.md` has drifted from this file
 2. `check_test_classes.php` — fails on a duplicate test class name (all packages share the `Tests\` namespace, so a collision is a fatal error in the aggregated run, not a test failure)
-3. `phpstan analyse` — static analysis, level 9, config: `phpstan.neon`
-4. `php-cs-fixer fix` — auto-fixes style (`@PSR12` + `@PHP83Migration` + strict rules)
+3. `check_module_deps.php` — fails when a package's code imports an ez-php package its `composer.json` does not declare (module `src`: `require`/`suggest`; tests: `require`/`require-dev` and their dependencies), or requires one it never uses
+4. `phpstan analyse` — static analysis, level 9, config: `phpstan.neon`
+5. `php-cs-fixer fix` — auto-fixes style (`@PSR12` + `@PHP83Migration` + strict rules)
    *(Note: `@PHP85Migration` does not exist yet in php-cs-fixer; `@PHP83Migration` is the highest available and is used intentionally even though the project targets PHP 8.5)*
-5. `phpunit` — all tests with coverage
+6. `phpunit` — all tests with coverage
 
 Individual commands when needed:
 ```
@@ -40,6 +41,7 @@ composer cs                  # CS Fixer only
 composer test                # PHPUnit only
 composer guidelines:check    # CLAUDE.md drift only
 composer test-classes:check  # duplicate test class names only
+composer module-deps:check   # undeclared / unused ez-php package dependencies only
 ```
 
 **PHPStan:** never suppress with `@phpstan-ignore-line` — always fix the root cause.
@@ -198,20 +200,22 @@ vendor/bin/docker-init
 
 This copies `Dockerfile`, `docker-compose.yml`, `.env.example`, `start.sh`, and `docker/` into the module, replacing `{{MODULE_NAME}}` placeholders. Existing files are never overwritten.
 
-Pass `--services` to merge MySQL/Redis/Meilisearch service definitions directly into `docker-compose.yml` and uncomment the matching sections in `.env.example`, instead of adapting them by hand afterward:
+Pass `--services` to merge MySQL/Redis/Meilisearch/Memcached/Mailpit service definitions directly into `docker-compose.yml` and uncomment the matching sections in `.env.example`, instead of adapting them by hand afterward:
 
 ```
 vendor/bin/docker-init --services=mysql
 vendor/bin/docker-init --services=redis
 vendor/bin/docker-init --services=meilisearch
 vendor/bin/docker-init --services=mysql,redis
+vendor/bin/docker-init --services=memcached,mailpit
 ```
 
-Pass `--extensions` to merge PHP extension install blocks (apt packages plus `docker-php-ext-install`/`pecl` lines) directly into `docker/app/Dockerfile`, instead of hand-editing it afterward — supported extensions: `bcmath`, `gmp`, `gd`, `imagick`:
+Pass `--extensions` to merge PHP extension install blocks (apt packages plus `docker-php-ext-install`/`pecl` lines) directly into `docker/app/Dockerfile`, instead of hand-editing it afterward — supported extensions: `bcmath`, `gmp`, `gd`, `imagick`, `memcached`, `apcu` (with `apc.enable_cli=1`):
 
 ```
 vendor/bin/docker-init --extensions=gmp,bcmath
 vendor/bin/docker-init --extensions=gd,imagick
+vendor/bin/docker-init --extensions=memcached,apcu
 ```
 
 When run from a module directory inside this monorepo, any requested extension not already present is also merged into the shared root `docker/app/Dockerfile` — the container `composer full` at the root actually runs against, distinct from the module's own standalone image.
@@ -285,6 +289,7 @@ src/
 │   │   ├── DbSeedCommand.php         — db:seed — runs seeders registered via SeederRunner
 │   │   ├── DbSetupCommand.php        — db:setup — runs migrations + seeders in one step; not atomic, see Design Decisions
 │   │   ├── DoctorCommand.php         — doctor — checks environment, extensions, and config for common issues
+│   │   ├── DownCommand.php           — down — maintenance mode on (`--retry=`, `--secret=` bypass path)
 │   │   ├── EnvCheckCommand.php       — env:check — verifies all required .env keys are present
 │   │   ├── IdeGenerateCommand.php    — ide:generate — generates _ide_helpers.php PHPDoc stubs for installed static façades
 │   │   ├── ListCommand.php           — list — lists all available commands with descriptions
@@ -311,7 +316,8 @@ src/
 │   │   ├── ScheduleListCommand.php   — schedule:list — lists all registered scheduled commands and their next run time
 │   │   ├── ScheduleRunCommand.php    — schedule:run — runs all due scheduled commands (trigger with system cron)
 │   │   ├── ServeCommand.php          — serve — starts the built-in PHP web server with the running interpreter (PHP_BINARY); --watch auto-restarts on PHP file changes
-│   │   └── TinkerCommand.php         — tinker — opens an interactive REPL with the application bootstrapped (requires psy/psysh)
+│   │   ├── TinkerCommand.php         — tinker — opens an interactive REPL with the application bootstrapped (requires psy/psysh)
+│   │   └── UpCommand.php             — up — maintenance mode off
 │   └── Schedule/
 │       ├── Scheduler.php             — Registry of ScheduledCommands; command() adds entries; dueCommands() filters by time
 │       └── ScheduledCommand.php      — A command + frequency predicate; everyMinute/hourly/daily/weekly/monthly
@@ -336,11 +342,16 @@ src/
 │   ├── EzPhpException.php            — Base exception for all framework exceptions
 │   ├── ForbiddenException.php        — 403 HTTP exception
 │   ├── HttpException.php             — Generic HTTP exception with configurable status code
+│   ├── MethodNotAllowedException.php — 405 HTTP exception carrying the allowed methods (rendered with an `Allow` header)
 │   ├── NotFoundException.php         — 404 HTTP exception
 │   ├── ProductionHtmlRenderer.php    — Renders a minimal "Something went wrong" page in production mode
-│   ├── RouteException.php            — Thrown when no route matches
+│   ├── RouteException.php            — Thrown when no route matches the path for any method
 │   └── UnauthorizedException.php     — 401 HTTP exception
 ├── Middleware/
+│   ├── ConditionalGetMiddleware.php  — ETag (sha1 of a string body, unless set) and If-None-Match / If-Modified-Since → empty 304 with the validator/caching headers; skips streams and responses that set cookies
+│   ├── LocaleNegotiationMiddleware.php — Accept-Language (q-values, `de-AT` → `de_AT` → `de`) against `app.locales` → Translator::setLocale(); adds Content-Language and Vary: Accept-Language
+│   ├── MaintenanceModeMiddleware.php — 503 (+ Retry-After, JSON for API requests) while down; `/<secret>` sets an HMAC bypass cookie
+│   ├── SecurityHeadersMiddleware.php — nosniff / X-Frame-Options / Referrer-Policy / HSTS defaults; overrides from `security.headers` and the constructor (null removes); CSP only when configured; never overwrites a header the response set
 │   ├── CorsMiddleware.php            — Adds CORS headers (`*`, one origin, or an allow-list echoed with `Vary: Origin`; opt-in credentials); 204 for real preflights only
 │   ├── CsrfMiddleware.php            — CSRF token validation for state-changing requests
 │   ├── CsrfRateLimiterInterface.php  — Optional rate-limiter seam for CSRF brute-force protection
@@ -350,6 +361,8 @@ src/
 │   ├── MiddlewareInterface.php       — Contract: handle(RequestInterface, callable) → ResponseInterface
 │   ├── SessionCsrfTokenStore.php     — Default CsrfTokenStoreInterface implementation using PHP sessions
 │   └── TerminableMiddleware.php      — Extension: terminate(Request, ResponseInterface) → void; runs after the body is sent
+├── Maintenance/
+│   └── MaintenanceMode.php           — JSON marker file `storage/framework/down` (retry, bypass secret); shared by down/up and the middleware
 ├── Migration/
 │   ├── MigrationException.php        — Thrown on migration errors (up/down/status)
 │   ├── MigrationInterface.php        — Contract: up(PDO) and down(PDO)
@@ -419,6 +432,12 @@ tests/
 ├── Middleware/SessionCsrfTokenStoreTest.php
 ├── Middleware/StreamThroughMiddlewareTest.php — StreamedResponse through CORS/Throttle/DebugToolbar and Router::resource()
 ├── Middleware/TerminableMiddlewareTest.php
+├── Maintenance/MaintenanceModeTest.php
+├── Middleware/MaintenanceModeMiddlewareTest.php
+├── Middleware/SecurityHeadersMiddlewareTest.php
+├── Middleware/ConditionalGetMiddlewareTest.php
+├── Middleware/LocaleNegotiationMiddlewareTest.php
+├── Console/Command/MaintenanceCommandsTest.php
 ├── Migration/MigrationServiceProviderTest.php
 ├── Migration/MigratorTest.php
 ├── Migration/SeederRunnerTest.php
@@ -469,7 +488,10 @@ Resolution order: cached instance → registered binding → autowire → `Conta
 
 - `{param}` segments compile to `([^/]+)` (required)
 - `/{param?}` compiles to `(?:\/([^/]+))?` (optional, with preceding slash)
+- Matching runs on the path only — `Request::uri()` is the raw `REQUEST_URI`, so `?query` / `#fragment` are stripped first. The path stays percent-encoded during matching (an encoded `%2F` stays inside its segment); captured params are `rawurldecode()`d afterwards (`john%20doe` → `john doe`, `+` stays literal)
 - HTTP method override: POST field `_method` overrides the real method
+- A path that only matches routes of other methods throws `MethodNotAllowedException` (405, `Allow` lists those methods, `GET` implies `HEAD`) — checked before the fallback route, which only covers unknown paths; `DefaultExceptionHandler` adds the `Allow` header
+- `HEAD` falls back to the `GET` routes when no explicit `HEAD` route matches (the handler still sees `HEAD`); `Application::send()` then emits status and headers only (`ResponseEmitter::emit(..., withBody: false)`)
 - Duplicate route detection on registration
 - `group(prefix, callback)` supports nested prefixes via a stack
 - **Named route URL generation** — `$router->route('user.show', ['id' => 42])` or `$app->route('user.show', ['id' => 42])` returns the URL with parameters substituted; throws `RouteException` if the name is not found. Register names via `->name('...')` on any `Route` returned by `get()`, `post()`, etc.
@@ -491,7 +513,7 @@ Builds a recursive closure pipeline from middleware entries — a class, alias o
 Thin PDO wrapper. Not a DBAL. The ORM and query builder live in `ez-php/orm`.
 
 - `query(sql, bindings)` / `execute(sql, bindings)` — Positional (list) or named (string-keyed) bindings, with type detection (null/bool/int/string); the two styles are not mixed within a single call, matching PDO's own restriction
-- `transaction(callable)` — Auto-rollback on exception; returns callable's return value
+- `transaction(callable)` — Auto-rollback on exception; returns callable's return value. Nesting-aware: if the PDO is already in a transaction (outer `transaction()` or a direct `beginTransaction()`, e.g. `DatabaseTestCase`), it runs inside `SAVEPOINT ez_savepoint_N` — a failure rolls back to the savepoint only and rethrows; the outermost owner commits
 
 ---
 
@@ -559,8 +581,17 @@ $router->post('/webhook/stripe', [WebhookController::class, 'handle'])->withoutC
 
 ---
 
+### Maintenance mode (`src/Maintenance/`, `down`/`up`, `MaintenanceModeMiddleware`)
+
+`ez down [--retry=<s>] [--secret=<s>]` writes `storage/framework/down` (JSON: since, retry, secret); `ez up` deletes it. `MaintenanceModeMiddleware` — register it **first** in the global stack — answers 503 while the file exists: `Retry-After` when set, the framework's JSON error envelope for `wantsJson()` requests, a minimal HTML page otherwise. With a secret, `GET /<secret>` returns a 302 to `/` with an HttpOnly cookie `ez_maintenance_bypass` = `hash_hmac('sha256', …, secret)` (Secure on HTTPS, 12 h); requests carrying it pass through. `ConsoleServiceProvider` binds `MaintenanceMode` so the commands and the autowired middleware share one marker path.
+
+### Security headers (`src/Middleware/SecurityHeadersMiddleware.php`)
+
+Adds `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and HSTS by default; `security.headers` (config) and the constructor array override them (null removes; case-insensitive), a CSP is only sent when configured, and a header the response already set is never overwritten. Autowired with the container's `ConfigInterface`, so registering the class is enough.
+
 ## Design Decisions and Constraints
 
+- **Maintenance state is a file, not cache or DB** — a deploy is exactly when those may be unavailable or mid-migration; a file under `storage/` is visible to every worker on the host and needs nothing else. Multi-host setups run `ez down` on each host (or share `storage/`). The bypass cookie is derived from the secret rather than stored, so it stops working when the secret changes or `ez up` runs.
 - **`final` everywhere** — All concrete classes are `final` to prevent unintended inheritance. Extend behavior through composition or new service providers.
 - **Idempotent bootstrap** — `Application::bootstrap()` guards via `$booted`. Safe to call in tests without leaking state.
 - **Service providers instantiated directly** — `new $class($this)`, not via the container, to avoid circular bootstrap dependency.

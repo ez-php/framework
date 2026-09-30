@@ -7,6 +7,7 @@ namespace Tests\Exceptions;
 use EzPhp\Exceptions\DebugHtmlRenderer;
 use EzPhp\Exceptions\DefaultExceptionHandler;
 use EzPhp\Exceptions\HttpException;
+use EzPhp\Exceptions\MethodNotAllowedException;
 use EzPhp\Exceptions\ProductionHtmlRenderer;
 use EzPhp\Exceptions\RouteException;
 use EzPhp\Http\Request;
@@ -26,6 +27,7 @@ use Throwable;
 #[CoversClass(DefaultExceptionHandler::class)]
 #[UsesClass(RouteException::class)]
 #[UsesClass(HttpException::class)]
+#[UsesClass(MethodNotAllowedException::class)]
 #[UsesClass(DebugHtmlRenderer::class)]
 #[UsesClass(ProductionHtmlRenderer::class)]
 final class DefaultExceptionHandlerTest extends TestCase
@@ -109,6 +111,33 @@ final class DefaultExceptionHandlerTest extends TestCase
         $this->assertSame(404, $response->status());
         $this->assertSame('text/html; charset=utf-8', $response->headers()['Content-Type']);
         $this->assertStringContainsString('404', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_render_returns_405_with_allow_header(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $response = $handler->render(new MethodNotAllowedException(['GET', 'HEAD']), new Request('POST', '/users'));
+
+        $this->assertSame(405, $response->status());
+        $this->assertSame('GET, HEAD', $response->headers()['Allow']);
+        $this->assertStringContainsString('Method Not Allowed', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_render_returns_405_json_with_allow_header(): void
+    {
+        $handler = new DefaultExceptionHandler();
+        $request = new Request('POST', '/users', headers: ['Accept' => 'application/json']);
+        $response = $handler->render(new MethodNotAllowedException(['GET']), $request);
+
+        $this->assertSame(405, $response->status());
+        $this->assertSame('GET', $response->headers()['Allow']);
+        $this->assertSame('{"error":{"code":405,"message":"Method Not Allowed"}}', $response->body());
     }
 
     /**

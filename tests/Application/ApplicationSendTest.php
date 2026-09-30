@@ -146,6 +146,21 @@ final class ApplicationSendTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function test_head_request_to_get_route_sends_no_body(): void
+    {
+        $app = $this->appWithStream('/send-head', fn (): iterable => ['a', 'b']);
+        $request = new Request('HEAD', '/send-head');
+
+        $response = $app->handle($request);
+        $app->send($request, $response, $this->emitter());
+
+        $this->assertSame(200, $response->status());
+        $this->assertSame(['terminate'], SendLog::$entries);
+    }
+
+    /**
      * @param int|null $disconnectAfter
      *
      * @return ResponseEmitter
