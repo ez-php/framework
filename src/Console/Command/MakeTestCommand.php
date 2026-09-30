@@ -31,9 +31,12 @@ final readonly class MakeTestCommand implements CommandInterface
      * MakeTestCommand Constructor
      *
      * @param string $testsPath Absolute path to the tests/ directory.
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
-    public function __construct(private string $testsPath)
-    {
+    public function __construct(
+        private string $testsPath,
+        private mixed $errorStream = null,
+    ) {
     }
 
     /**
@@ -70,14 +73,14 @@ final readonly class MakeTestCommand implements CommandInterface
         $name = $args[0] ?? null;
 
         if ($name === null || !preg_match('/^[A-Za-z][A-Za-z0-9]*$/', $name)) {
-            fwrite(STDERR, "Usage: ez make:test <ClassName> [unit|feature|http]\n");
+            fwrite($this->errorStream ?? STDERR, "Usage: ez make:test <ClassName> [unit|feature|http]\n");
             return 1;
         }
 
         $type = isset($args[1]) ? strtolower($args[1]) : 'unit';
 
         if (!in_array($type, self::VALID_TYPES, true)) {
-            fwrite(STDERR, "Invalid type '$type'. Use: unit, feature, or http\n");
+            fwrite($this->errorStream ?? STDERR, "Invalid type '$type'. Use: unit, feature, or http\n");
             return 1;
         }
 
@@ -89,12 +92,12 @@ final readonly class MakeTestCommand implements CommandInterface
         }
 
         if (file_exists($fullPath)) {
-            fwrite(STDERR, "Test already exists: $filename\n");
+            fwrite($this->errorStream ?? STDERR, "Test already exists: $filename\n");
             return 1;
         }
 
         if (file_put_contents($fullPath, $this->stub($name, $type)) === false) {
-            fwrite(STDERR, "Failed to create test: $filename\n");
+            fwrite($this->errorStream ?? STDERR, "Failed to create test: $filename\n");
             return 1;
         }
 

@@ -27,9 +27,11 @@ final readonly class CompletionGenerateCommand implements CommandInterface
      * CompletionGenerateCommand Constructor
      *
      * @param list<CommandInterface> $commands All commands registered in the Console.
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
     public function __construct(
         private array $commands,
+        private mixed $errorStream = null,
     ) {
     }
 
@@ -81,7 +83,7 @@ final readonly class CompletionGenerateCommand implements CommandInterface
 
                 return 0;
             default:
-                Output::error("Unknown shell '{$shell}'. Usage: ez completion:generate <bash|zsh>");
+                Output::error("Unknown shell '{$shell}'. Usage: ez completion:generate <bash|zsh>", $this->errorStream);
 
                 return 1;
         }

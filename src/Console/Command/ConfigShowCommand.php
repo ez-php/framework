@@ -32,9 +32,11 @@ final class ConfigShowCommand implements CommandInterface
      * ConfigShowCommand Constructor
      *
      * @param ConfigInterface $config
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
     public function __construct(
         private readonly ConfigInterface $config,
+        private readonly mixed $errorStream = null,
     ) {
     }
 
@@ -74,7 +76,7 @@ final class ConfigShowCommand implements CommandInterface
         $key = $args[0] ?? null;
 
         if ($key === null || $key === '') {
-            Output::error('Missing key. Usage: ez config:show <key>');
+            Output::error('Missing key. Usage: ez config:show <key>', $this->errorStream);
 
             return 1;
         }
@@ -82,7 +84,7 @@ final class ConfigShowCommand implements CommandInterface
         $value = $this->config->get($key, self::MISSING);
 
         if ($value === self::MISSING) {
-            Output::error("Config key not found: $key");
+            Output::error("Config key not found: $key", $this->errorStream);
 
             return 1;
         }

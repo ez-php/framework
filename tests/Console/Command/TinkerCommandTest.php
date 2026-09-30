@@ -24,7 +24,7 @@ final class TinkerCommandTest extends TestCase
      */
     public function test_name_description_help(): void
     {
-        $command = new TinkerCommand(new Application());
+        $command = new TinkerCommand(new Application(), errorStream: fopen('php://memory', 'w') ?: null);
 
         $this->assertSame('tinker', $command->getName());
         $this->assertNotEmpty($command->getDescription());
@@ -40,7 +40,7 @@ final class TinkerCommandTest extends TestCase
             $this->markTestSkipped('PsySH is installed — skipping fallback test.');
         }
 
-        $command = new TinkerCommand(new Application());
+        $command = new TinkerCommand(new Application(), errorStream: fopen('php://memory', 'w') ?: null);
 
         $this->expectOutputString('');
 

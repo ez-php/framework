@@ -24,7 +24,7 @@ final class ConfigShowCommandTest extends TestCase
      */
     public function test_name_and_description(): void
     {
-        $command = new ConfigShowCommand(new Config([]));
+        $command = new ConfigShowCommand(new Config([]), errorStream: fopen('php://memory', 'w') ?: null);
 
         $this->assertSame('config:show', $command->getName());
         $this->assertNotEmpty($command->getDescription());
@@ -37,7 +37,7 @@ final class ConfigShowCommandTest extends TestCase
     public function test_prints_scalar_value_for_dot_key(): void
     {
         $config = new Config(['app' => ['debug' => true, 'name' => 'ez-php']]);
-        $command = new ConfigShowCommand($config);
+        $command = new ConfigShowCommand($config, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle(['app.name']);
@@ -53,7 +53,7 @@ final class ConfigShowCommandTest extends TestCase
     public function test_prints_json_for_array_value(): void
     {
         $config = new Config(['db' => ['host' => 'localhost', 'port' => 3306]]);
-        $command = new ConfigShowCommand($config);
+        $command = new ConfigShowCommand($config, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle(['db']);
@@ -69,7 +69,7 @@ final class ConfigShowCommandTest extends TestCase
      */
     public function test_returns_error_when_no_key_given(): void
     {
-        $command = new ConfigShowCommand(new Config([]));
+        $command = new ConfigShowCommand(new Config([]), errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle([]);
@@ -83,7 +83,7 @@ final class ConfigShowCommandTest extends TestCase
      */
     public function test_returns_error_when_key_not_found(): void
     {
-        $command = new ConfigShowCommand(new Config(['app' => ['name' => 'ez-php']]));
+        $command = new ConfigShowCommand(new Config(['app' => ['name' => 'ez-php']]), errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle(['app.missing']);

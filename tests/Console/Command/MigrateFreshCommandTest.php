@@ -158,10 +158,9 @@ final class MigrateFreshCommandTest extends TestCase
     {
         file_put_contents($this->seederPath . '/TestSeeder.php', <<<'PHP'
             <?php
-            use EzPhp\Database\Database;
             use EzPhp\Migration\SeederInterface;
             return new class implements SeederInterface {
-                public function run(Database $db): void {
+                public function run(\EzPhp\Contracts\DatabaseInterface $db): void {
                     $db->execute('INSERT INTO items (name) VALUES (?)', ['seeded']);
                 }
             };

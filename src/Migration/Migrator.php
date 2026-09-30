@@ -99,11 +99,7 @@ final class Migrator
     {
         $pdo = $this->db->getPdo();
 
-        /** @var mixed $driverAttr */
-        $driverAttr = $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
-        $driver = is_string($driverAttr) ? $driverAttr : '';
-
-        if ($driver === 'mysql') {
+        if ($this->driver() === 'mysql') {
             return $this->dropAllTablesMysql($pdo);
         }
 
@@ -296,16 +292,116 @@ final class Migrator
     }
 
     /**
+     * Create the tracking table, or upgrade one created before it had a primary key.
+     *
+     * The `id` primary key lets the table exist on servers with
+     * `sql_require_primary_key=ON`; the unique index on `migration` stops two
+     * concurrent `migrate` runs from recording the same migration twice.
+     *
      * @return void
+     * @throws Throwable
      */
     private function ensureMigrationsTable(): void
     {
-        $this->db->query('
-            CREATE TABLE IF NOT EXISTS migrations (
-                migration VARCHAR(255) NOT NULL,
+        $mysql = $this->driver() === 'mysql';
+
+        if ($mysql) {
+            $this->db->query('
+                CREATE TABLE IF NOT EXISTS migrations (
+                    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                    migration VARCHAR(255) NOT NULL,
+                    batch INTEGER NOT NULL,
+                    UNIQUE KEY migrations_migration_unique (migration)
+                )
+            ');
+        } else {
+            $this->createSqliteMigrationsTable('migrations');
+        }
+
+        if ($this->hasIdColumn($mysql)) {
+            return;
+        }
+
+        if ($mysql) {
+            $this->upgradeMysqlMigrationsTable();
+        } else {
+            $this->upgradeSqliteMigrationsTable();
+        }
+    }
+
+    /**
+     * @param string $table
+     *
+     * @return void
+     */
+    private function createSqliteMigrationsTable(string $table): void
+    {
+        $this->db->query("
+            CREATE TABLE IF NOT EXISTS {$table} (
+                id INTEGER PRIMARY KEY,
+                migration VARCHAR(255) NOT NULL UNIQUE,
                 batch INTEGER NOT NULL
             )
-        ');
+        ");
+    }
+
+    /**
+     * @param bool $mysql
+     *
+     * @return bool
+     */
+    private function hasIdColumn(bool $mysql): bool
+    {
+        if ($mysql) {
+            return $this->db->query("SHOW COLUMNS FROM migrations LIKE 'id'") !== [];
+        }
+
+        return in_array('id', array_column($this->db->query('PRAGMA table_info(migrations)'), 'name'), true);
+    }
+
+    /**
+     * Add the primary key to a legacy MySQL table, drop duplicate rows (keeping
+     * the first recorded one), then add the unique index.
+     *
+     * @return void
+     */
+    private function upgradeMysqlMigrationsTable(): void
+    {
+        $this->db->query('ALTER TABLE migrations ADD COLUMN id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST');
+        $this->db->query('DELETE m1 FROM migrations m1 JOIN migrations m2 ON m1.migration = m2.migration AND m1.id > m2.id');
+        $this->db->query('ALTER TABLE migrations ADD UNIQUE KEY migrations_migration_unique (migration)');
+    }
+
+    /**
+     * SQLite cannot add a primary key to an existing table, so the legacy table
+     * is rebuilt: copy de-duplicated rows in their original order, then swap.
+     *
+     * @return void
+     * @throws Throwable
+     */
+    private function upgradeSqliteMigrationsTable(): void
+    {
+        $this->db->transaction(function (): void {
+            $this->db->query('DROP TABLE IF EXISTS migrations_upgrade');
+            $this->createSqliteMigrationsTable('migrations_upgrade');
+            $this->db->query('
+                INSERT INTO migrations_upgrade (migration, batch)
+                SELECT migration, MIN(batch) FROM migrations GROUP BY migration ORDER BY MIN(rowid)
+            ');
+            $this->db->query('DROP TABLE migrations');
+            $this->db->query('ALTER TABLE migrations_upgrade RENAME TO migrations');
+        });
+    }
+
+    /**
+     * @return string
+     */
+    private function driver(): string
+    {
+        /** @var mixed $driver */
+        $driver = $this->db->getPdo()->getAttribute(\PDO::ATTR_DRIVER_NAME);
+
+        return is_string($driver) ? $driver : '';
     }
 
     /**

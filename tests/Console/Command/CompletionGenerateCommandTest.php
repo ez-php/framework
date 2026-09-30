@@ -51,7 +51,7 @@ final class CompletionGenerateCommandTest extends TestCase
 
     public function test_name_description_help(): void
     {
-        $command = new CompletionGenerateCommand([]);
+        $command = new CompletionGenerateCommand([], errorStream: fopen('php://memory', 'w') ?: null);
 
         $this->assertSame('completion:generate', $command->getName());
         $this->assertNotEmpty($command->getDescription());
@@ -60,7 +60,7 @@ final class CompletionGenerateCommandTest extends TestCase
 
     public function test_prints_bash_script_by_default(): void
     {
-        $command = new CompletionGenerateCommand([$this->makeStub('migrate')]);
+        $command = new CompletionGenerateCommand([$this->makeStub('migrate')], errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle(['bash']);
@@ -73,7 +73,7 @@ final class CompletionGenerateCommandTest extends TestCase
 
     public function test_prints_zsh_script(): void
     {
-        $command = new CompletionGenerateCommand([$this->makeStub('migrate')]);
+        $command = new CompletionGenerateCommand([$this->makeStub('migrate')], errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle(['zsh']);
@@ -85,7 +85,7 @@ final class CompletionGenerateCommandTest extends TestCase
 
     public function test_returns_error_for_unknown_shell(): void
     {
-        $command = new CompletionGenerateCommand([$this->makeStub('migrate')]);
+        $command = new CompletionGenerateCommand([$this->makeStub('migrate')], errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle(['fish']);
@@ -96,7 +96,7 @@ final class CompletionGenerateCommandTest extends TestCase
 
     public function test_returns_error_when_no_shell_given(): void
     {
-        $command = new CompletionGenerateCommand([]);
+        $command = new CompletionGenerateCommand([], errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle([]);

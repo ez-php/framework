@@ -74,13 +74,37 @@ final readonly class MaintenanceMode
     }
 
     /**
+     * The active maintenance settings, read from the marker file in one go — or
+     * null while the application is up. A marker that cannot be read or decoded
+     * still means "down", with no retry and no bypass.
+     *
+     * @return MaintenanceState|null
+     */
+    public function state(): ?MaintenanceState
+    {
+        if (!is_file($this->markerFile)) {
+            return null;
+        }
+
+        $raw = @file_get_contents($this->markerFile);
+        $data = $raw === false ? null : json_decode($raw, true);
+        $data = is_array($data) ? $data : [];
+
+        $retry = $data['retry'] ?? null;
+        $secret = $data['secret'] ?? null;
+
+        return new MaintenanceState(
+            is_int($retry) && $retry > 0 ? $retry : null,
+            is_string($secret) && $secret !== '' ? $secret : null,
+        );
+    }
+
+    /**
      * @return int|null
      */
     public function retryAfter(): ?int
     {
-        $retry = $this->read()['retry'] ?? null;
-
-        return is_int($retry) && $retry > 0 ? $retry : null;
+        return $this->state()?->retryAfter;
     }
 
     /**
@@ -88,38 +112,16 @@ final readonly class MaintenanceMode
      */
     public function secret(): ?string
     {
-        $secret = $this->read()['secret'] ?? null;
-
-        return is_string($secret) && $secret !== '' ? $secret : null;
+        return $this->state()?->secret;
     }
 
     /**
-     * The bypass cookie value for the current secret — derived from it, so the
-     * cookie is useless once the secret changes or maintenance ends.
+     * The bypass cookie value for the current secret — see MaintenanceState::bypassToken().
      *
      * @return string|null Null when no secret is set.
      */
     public function bypassToken(): ?string
     {
-        $secret = $this->secret();
-
-        return $secret === null ? null : hash_hmac('sha256', 'ez-maintenance-bypass', $secret);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function read(): array
-    {
-        $raw = @file_get_contents($this->markerFile);
-
-        if ($raw === false) {
-            return [];
-        }
-
-        $data = json_decode($raw, true);
-
-        /** @var array<string, mixed> */
-        return is_array($data) ? $data : [];
+        return $this->state()?->bypassToken();
     }
 }

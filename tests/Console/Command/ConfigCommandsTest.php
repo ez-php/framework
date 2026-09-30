@@ -67,7 +67,7 @@ final class ConfigCommandsTest extends TestCase
      */
     public function test_cache_command_name_description_help(): void
     {
-        $cmd = new ConfigCacheCommand(new ConfigLoader($this->configDir), $this->cachePath);
+        $cmd = new ConfigCacheCommand(new ConfigLoader($this->configDir), $this->cachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         $this->assertSame('config:cache', $cmd->getName());
         $this->assertNotEmpty($cmd->getDescription());
@@ -79,7 +79,7 @@ final class ConfigCommandsTest extends TestCase
      */
     public function test_clear_command_name_description_help(): void
     {
-        $cmd = new ConfigClearCommand($this->cachePath);
+        $cmd = new ConfigClearCommand($this->cachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         $this->assertSame('config:clear', $cmd->getName());
         $this->assertNotEmpty($cmd->getDescription());
@@ -91,7 +91,7 @@ final class ConfigCommandsTest extends TestCase
      */
     public function test_cache_command_creates_cache_file(): void
     {
-        $cmd = new ConfigCacheCommand(new ConfigLoader($this->configDir), $this->cachePath);
+        $cmd = new ConfigCacheCommand(new ConfigLoader($this->configDir), $this->cachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle([]);
@@ -106,7 +106,7 @@ final class ConfigCommandsTest extends TestCase
      */
     public function test_cache_file_contains_valid_php_array(): void
     {
-        $cmd = new ConfigCacheCommand(new ConfigLoader($this->configDir), $this->cachePath);
+        $cmd = new ConfigCacheCommand(new ConfigLoader($this->configDir), $this->cachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle([]);
@@ -133,7 +133,7 @@ final class ConfigCommandsTest extends TestCase
     public function test_clear_command_removes_cache_file(): void
     {
         // First create the cache
-        $cacheCmd = new ConfigCacheCommand(new ConfigLoader($this->configDir), $this->cachePath);
+        $cacheCmd = new ConfigCacheCommand(new ConfigLoader($this->configDir), $this->cachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cacheCmd->handle([]);
@@ -142,7 +142,7 @@ final class ConfigCommandsTest extends TestCase
         $this->assertFileExists($this->cachePath);
 
         // Now clear it
-        $clearCmd = new ConfigClearCommand($this->cachePath);
+        $clearCmd = new ConfigClearCommand($this->cachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $clearCmd->handle([]);
@@ -157,7 +157,7 @@ final class ConfigCommandsTest extends TestCase
      */
     public function test_clear_command_returns_0_when_no_cache_exists(): void
     {
-        $cmd = new ConfigClearCommand($this->cachePath);
+        $cmd = new ConfigClearCommand($this->cachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle([]);

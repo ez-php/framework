@@ -74,7 +74,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_controller_creates_file(): void
     {
-        $cmd = new MakeControllerCommand($this->srcPath);
+        $cmd = new MakeControllerCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle(['UserController']);
@@ -89,7 +89,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_controller_stub_contains_class_name(): void
     {
-        $cmd = new MakeControllerCommand($this->srcPath);
+        $cmd = new MakeControllerCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['PostController']);
@@ -106,7 +106,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_controller_returns_1_without_name(): void
     {
-        $cmd = new MakeControllerCommand($this->srcPath);
+        $cmd = new MakeControllerCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle([]);
@@ -120,7 +120,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_controller_returns_1_if_already_exists(): void
     {
-        $cmd = new MakeControllerCommand($this->srcPath);
+        $cmd = new MakeControllerCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['UserController']);
@@ -135,7 +135,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_controller_returns_1_for_invalid_name(): void
     {
-        $cmd = new MakeControllerCommand($this->srcPath);
+        $cmd = new MakeControllerCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle(['123invalid']);
@@ -149,7 +149,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_controller_get_name(): void
     {
-        $cmd = new MakeControllerCommand($this->srcPath);
+        $cmd = new MakeControllerCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertSame('make:controller', $cmd->getName());
     }
 
@@ -158,7 +158,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_controller_get_description(): void
     {
-        $cmd = new MakeControllerCommand($this->srcPath);
+        $cmd = new MakeControllerCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertNotEmpty($cmd->getDescription());
     }
 
@@ -167,7 +167,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_controller_get_help(): void
     {
-        $cmd = new MakeControllerCommand($this->srcPath);
+        $cmd = new MakeControllerCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertStringContainsString('make:controller', $cmd->getHelp());
     }
 
@@ -178,7 +178,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_middleware_creates_file(): void
     {
-        $cmd = new MakeMiddlewareCommand($this->srcPath);
+        $cmd = new MakeMiddlewareCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle(['AuthMiddleware']);
@@ -193,7 +193,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_middleware_stub_implements_middleware_interface(): void
     {
-        $cmd = new MakeMiddlewareCommand($this->srcPath);
+        $cmd = new MakeMiddlewareCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['CorsMiddleware']);
@@ -210,7 +210,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_middleware_returns_1_without_name(): void
     {
-        $cmd = new MakeMiddlewareCommand($this->srcPath);
+        $cmd = new MakeMiddlewareCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle([]);
@@ -224,7 +224,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_middleware_returns_1_if_already_exists(): void
     {
-        $cmd = new MakeMiddlewareCommand($this->srcPath);
+        $cmd = new MakeMiddlewareCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['AuthMiddleware']);
@@ -239,7 +239,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_middleware_get_name(): void
     {
-        $cmd = new MakeMiddlewareCommand($this->srcPath);
+        $cmd = new MakeMiddlewareCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertSame('make:middleware', $cmd->getName());
     }
 
@@ -248,7 +248,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_middleware_get_description(): void
     {
-        $cmd = new MakeMiddlewareCommand($this->srcPath);
+        $cmd = new MakeMiddlewareCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertNotEmpty($cmd->getDescription());
     }
 
@@ -257,7 +257,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_middleware_get_help(): void
     {
-        $cmd = new MakeMiddlewareCommand($this->srcPath);
+        $cmd = new MakeMiddlewareCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertStringContainsString('make:middleware', $cmd->getHelp());
     }
 
@@ -268,7 +268,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_provider_creates_file(): void
     {
-        $cmd = new MakeProviderCommand($this->srcPath);
+        $cmd = new MakeProviderCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle(['AppServiceProvider']);
@@ -283,7 +283,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_provider_stub_extends_service_provider(): void
     {
-        $cmd = new MakeProviderCommand($this->srcPath);
+        $cmd = new MakeProviderCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['MyProvider']);
@@ -300,7 +300,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_provider_returns_1_without_name(): void
     {
-        $cmd = new MakeProviderCommand($this->srcPath);
+        $cmd = new MakeProviderCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle([]);
@@ -314,7 +314,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_provider_returns_1_if_already_exists(): void
     {
-        $cmd = new MakeProviderCommand($this->srcPath);
+        $cmd = new MakeProviderCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['AppServiceProvider']);
@@ -329,7 +329,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_provider_get_name(): void
     {
-        $cmd = new MakeProviderCommand($this->srcPath);
+        $cmd = new MakeProviderCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertSame('make:provider', $cmd->getName());
     }
 
@@ -338,7 +338,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_provider_get_description(): void
     {
-        $cmd = new MakeProviderCommand($this->srcPath);
+        $cmd = new MakeProviderCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertNotEmpty($cmd->getDescription());
     }
 
@@ -347,7 +347,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_provider_get_help(): void
     {
-        $cmd = new MakeProviderCommand($this->srcPath);
+        $cmd = new MakeProviderCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertStringContainsString('make:provider', $cmd->getHelp());
     }
 
@@ -358,7 +358,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_event_creates_file(): void
     {
-        $cmd = new MakeEventCommand($this->srcPath);
+        $cmd = new MakeEventCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle(['UserCreated']);
@@ -373,7 +373,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_event_stub_implements_event_interface(): void
     {
-        $cmd = new MakeEventCommand($this->srcPath);
+        $cmd = new MakeEventCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['OrderPlaced']);
@@ -390,7 +390,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_event_returns_1_without_name(): void
     {
-        $cmd = new MakeEventCommand($this->srcPath);
+        $cmd = new MakeEventCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle([]);
@@ -404,7 +404,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_event_returns_1_if_already_exists(): void
     {
-        $cmd = new MakeEventCommand($this->srcPath);
+        $cmd = new MakeEventCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['UserCreated']);
@@ -419,7 +419,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_event_get_name(): void
     {
-        $cmd = new MakeEventCommand($this->srcPath);
+        $cmd = new MakeEventCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertSame('make:event', $cmd->getName());
     }
 
@@ -428,7 +428,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_event_get_description(): void
     {
-        $cmd = new MakeEventCommand($this->srcPath);
+        $cmd = new MakeEventCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertNotEmpty($cmd->getDescription());
     }
 
@@ -437,7 +437,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_event_get_help(): void
     {
-        $cmd = new MakeEventCommand($this->srcPath);
+        $cmd = new MakeEventCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertStringContainsString('make:event', $cmd->getHelp());
     }
 
@@ -448,7 +448,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_listener_creates_file(): void
     {
-        $cmd = new MakeListenerCommand($this->srcPath);
+        $cmd = new MakeListenerCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle(['SendWelcomeEmail']);
@@ -463,7 +463,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_listener_stub_implements_listener_interface(): void
     {
-        $cmd = new MakeListenerCommand($this->srcPath);
+        $cmd = new MakeListenerCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['NotifyAdmin']);
@@ -481,7 +481,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_listener_returns_1_without_name(): void
     {
-        $cmd = new MakeListenerCommand($this->srcPath);
+        $cmd = new MakeListenerCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle([]);
@@ -495,7 +495,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_listener_returns_1_if_already_exists(): void
     {
-        $cmd = new MakeListenerCommand($this->srcPath);
+        $cmd = new MakeListenerCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['SendWelcomeEmail']);
@@ -510,7 +510,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_listener_get_name(): void
     {
-        $cmd = new MakeListenerCommand($this->srcPath);
+        $cmd = new MakeListenerCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertSame('make:listener', $cmd->getName());
     }
 
@@ -519,7 +519,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_listener_get_description(): void
     {
-        $cmd = new MakeListenerCommand($this->srcPath);
+        $cmd = new MakeListenerCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertNotEmpty($cmd->getDescription());
     }
 
@@ -528,7 +528,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_listener_get_help(): void
     {
-        $cmd = new MakeListenerCommand($this->srcPath);
+        $cmd = new MakeListenerCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertStringContainsString('make:listener', $cmd->getHelp());
     }
 
@@ -539,7 +539,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_request_creates_file(): void
     {
-        $cmd = new MakeRequestCommand($this->srcPath);
+        $cmd = new MakeRequestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle(['StoreUserRequest']);
@@ -554,7 +554,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_request_stub_has_rules_method(): void
     {
-        $cmd = new MakeRequestCommand($this->srcPath);
+        $cmd = new MakeRequestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['CreatePostRequest']);
@@ -572,7 +572,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_request_returns_1_without_name(): void
     {
-        $cmd = new MakeRequestCommand($this->srcPath);
+        $cmd = new MakeRequestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle([]);
@@ -586,7 +586,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_request_returns_1_if_already_exists(): void
     {
-        $cmd = new MakeRequestCommand($this->srcPath);
+        $cmd = new MakeRequestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['StoreUserRequest']);
@@ -601,7 +601,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_request_get_name(): void
     {
-        $cmd = new MakeRequestCommand($this->srcPath);
+        $cmd = new MakeRequestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertSame('make:request', $cmd->getName());
     }
 
@@ -610,7 +610,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_request_get_description(): void
     {
-        $cmd = new MakeRequestCommand($this->srcPath);
+        $cmd = new MakeRequestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertNotEmpty($cmd->getDescription());
     }
 
@@ -619,7 +619,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_request_get_help(): void
     {
-        $cmd = new MakeRequestCommand($this->srcPath);
+        $cmd = new MakeRequestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertStringContainsString('make:request', $cmd->getHelp());
     }
 
@@ -630,7 +630,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_test_creates_unit_test_by_default(): void
     {
-        $cmd = new MakeTestCommand($this->srcPath);
+        $cmd = new MakeTestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle(['UserTest']);
@@ -645,7 +645,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_test_unit_stub_extends_test_case(): void
     {
-        $cmd = new MakeTestCommand($this->srcPath);
+        $cmd = new MakeTestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['MyUnitTest', 'unit']);
@@ -662,7 +662,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_test_feature_stub_extends_application_test_case(): void
     {
-        $cmd = new MakeTestCommand($this->srcPath);
+        $cmd = new MakeTestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['MyFeatureTest', 'feature']);
@@ -678,7 +678,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_test_http_stub_extends_http_test_case(): void
     {
-        $cmd = new MakeTestCommand($this->srcPath);
+        $cmd = new MakeTestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['MyHttpTest', 'http']);
@@ -694,7 +694,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_test_returns_1_for_invalid_type(): void
     {
-        $cmd = new MakeTestCommand($this->srcPath);
+        $cmd = new MakeTestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle(['SomeTest', 'invalid']);
@@ -708,7 +708,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_test_returns_1_without_name(): void
     {
-        $cmd = new MakeTestCommand($this->srcPath);
+        $cmd = new MakeTestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle([]);
@@ -722,7 +722,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_test_returns_1_if_already_exists(): void
     {
-        $cmd = new MakeTestCommand($this->srcPath);
+        $cmd = new MakeTestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['UserTest']);
@@ -737,7 +737,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_test_get_name(): void
     {
-        $cmd = new MakeTestCommand($this->srcPath);
+        $cmd = new MakeTestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertSame('make:test', $cmd->getName());
     }
 
@@ -746,7 +746,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_test_get_description(): void
     {
-        $cmd = new MakeTestCommand($this->srcPath);
+        $cmd = new MakeTestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertNotEmpty($cmd->getDescription());
     }
 
@@ -755,7 +755,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_test_get_help(): void
     {
-        $cmd = new MakeTestCommand($this->srcPath);
+        $cmd = new MakeTestCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
         $this->assertStringContainsString('make:test', $cmd->getHelp());
     }
 
@@ -766,7 +766,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_command_creates_file(): void
     {
-        $cmd = new MakeCommandCommand($this->srcPath);
+        $cmd = new MakeCommandCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle(['SyncUsersCommand']);
@@ -781,7 +781,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_command_stub_implements_command_interface(): void
     {
-        $cmd = new MakeCommandCommand($this->srcPath);
+        $cmd = new MakeCommandCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['SyncUsersCommand']);
@@ -802,7 +802,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_command_derives_a_kebab_case_command_name(): void
     {
-        $cmd = new MakeCommandCommand($this->srcPath);
+        $cmd = new MakeCommandCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['SyncUsersCommand']);
@@ -818,7 +818,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_command_stub_explains_registration(): void
     {
-        $cmd = new MakeCommandCommand($this->srcPath);
+        $cmd = new MakeCommandCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['MyCommand']);
@@ -834,7 +834,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_command_returns_1_without_name(): void
     {
-        $cmd = new MakeCommandCommand($this->srcPath);
+        $cmd = new MakeCommandCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle([]);
@@ -848,7 +848,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_command_returns_1_on_invalid_name(): void
     {
-        $cmd = new MakeCommandCommand($this->srcPath);
+        $cmd = new MakeCommandCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $cmd->handle(['not-a-class']);
@@ -862,7 +862,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_command_returns_1_when_file_exists(): void
     {
-        $cmd = new MakeCommandCommand($this->srcPath);
+        $cmd = new MakeCommandCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $cmd->handle(['DupCommand']);
@@ -877,7 +877,7 @@ final class MakeCommandsTest extends TestCase
      */
     public function test_make_command_metadata(): void
     {
-        $cmd = new MakeCommandCommand($this->srcPath);
+        $cmd = new MakeCommandCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         $this->assertSame('make:command', $cmd->getName());
         $this->assertNotSame('', $cmd->getDescription());

@@ -64,7 +64,7 @@ final class RouteCacheCommandTest extends TestCase
     public function test_name_and_description(): void
     {
         $router = new Router();
-        $command = new RouteCacheCommand($router, $this->cachePath);
+        $command = new RouteCacheCommand($router, $this->cachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         $this->assertSame('route:cache', $command->getName());
         $this->assertNotEmpty($command->getDescription());
@@ -79,7 +79,7 @@ final class RouteCacheCommandTest extends TestCase
         $router = $this->routerWithContainer();
         $router->add('GET', '/users', [\stdClass::class, 'index'])->name('users.index');
 
-        $command = new RouteCacheCommand($router, $this->cachePath);
+        $command = new RouteCacheCommand($router, $this->cachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle([]);
@@ -107,7 +107,7 @@ final class RouteCacheCommandTest extends TestCase
         $router->get('/closure', fn () => 'hello');
         $router->add('GET', '/controller', [\stdClass::class, 'show']);
 
-        $command = new RouteCacheCommand($router, $this->cachePath);
+        $command = new RouteCacheCommand($router, $this->cachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle([]);
@@ -133,7 +133,7 @@ final class RouteCacheCommandTest extends TestCase
             ->middleware(CorsMiddleware::class)
             ->withoutCsrf();
 
-        $command = new RouteCacheCommand($router, $this->cachePath);
+        $command = new RouteCacheCommand($router, $this->cachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $command->handle([]);
@@ -155,7 +155,7 @@ final class RouteCacheCommandTest extends TestCase
         $router = new Router();
         $router->get('/only-closure', fn () => 'hello');
 
-        $command = new RouteCacheCommand($router, $this->cachePath);
+        $command = new RouteCacheCommand($router, $this->cachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle([]);
@@ -175,7 +175,7 @@ final class RouteCacheCommandTest extends TestCase
         $router = $this->routerWithContainer();
         $router->add('GET', '/users', [\stdClass::class, 'index']);
 
-        $command = new RouteCacheCommand($router, $nestedPath);
+        $command = new RouteCacheCommand($router, $nestedPath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle([]);
@@ -195,7 +195,7 @@ final class RouteCacheCommandTest extends TestCase
      */
     public function test_clear_name_and_description(): void
     {
-        $command = new RouteClearCommand($this->cachePath);
+        $command = new RouteClearCommand($this->cachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         $this->assertSame('route:clear', $command->getName());
         $this->assertNotEmpty($command->getDescription());
@@ -209,7 +209,7 @@ final class RouteCacheCommandTest extends TestCase
     {
         file_put_contents($this->cachePath, '<?php return [];');
 
-        $command = new RouteClearCommand($this->cachePath);
+        $command = new RouteClearCommand($this->cachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle([]);
@@ -224,7 +224,7 @@ final class RouteCacheCommandTest extends TestCase
      */
     public function test_clear_returns_zero_when_no_cache_exists(): void
     {
-        $command = new RouteClearCommand($this->cachePath);
+        $command = new RouteClearCommand($this->cachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle([]);
@@ -248,7 +248,7 @@ final class RouteCacheCommandTest extends TestCase
         $dirAsCachePath = sys_get_temp_dir() . '/ez-php-route-cache-dir-' . uniqid();
         mkdir($dirAsCachePath);
 
-        $command = new RouteClearCommand($dirAsCachePath);
+        $command = new RouteClearCommand($dirAsCachePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = @$command->handle([]);

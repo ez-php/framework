@@ -22,9 +22,12 @@ final readonly class TinkerCommand implements CommandInterface
      * TinkerCommand Constructor
      *
      * @param Application $app The bootstrapped application instance.
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
-    public function __construct(private Application $app)
-    {
+    public function __construct(
+        private Application $app,
+        private mixed $errorStream = null,
+    ) {
     }
 
     /**
@@ -59,8 +62,8 @@ final readonly class TinkerCommand implements CommandInterface
     public function handle(array $args): int
     {
         if (!class_exists(\Psy\Shell::class)) {
-            fwrite(STDERR, "Tinker requires PsySH. Install it with:\n");
-            fwrite(STDERR, "  composer require --dev psy/psysh\n");
+            fwrite($this->errorStream ?? STDERR, "Tinker requires PsySH. Install it with:\n");
+            fwrite($this->errorStream ?? STDERR, "  composer require --dev psy/psysh\n");
             return 1;
         }
 

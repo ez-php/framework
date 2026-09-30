@@ -26,9 +26,14 @@ final readonly class ServeCommand implements CommandInterface
      * ServeCommand Constructor
      *
      * @param string $publicPath Absolute path to the public/ directory.
+     * @param string $phpBinary  Interpreter that runs the server; defaults to the one running this command.
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
-    public function __construct(private string $publicPath)
-    {
+    public function __construct(
+        private string $publicPath,
+        private string $phpBinary = PHP_BINARY,
+        private mixed $errorStream = null,
+    ) {
     }
 
     /**
@@ -146,8 +151,8 @@ final readonly class ServeCommand implements CommandInterface
     /**
      * Build the shell command that starts PHP's built-in server.
      *
-     * Uses the interpreter running this command (PHP_BINARY), not whatever `php`
-     * is first on PATH — on hosts with several PHP versions that could be another one.
+     * Uses the interpreter running this command (PHP_BINARY by default), not whatever
+     * `php` is first on PATH — on hosts with several PHP versions that could be another one.
      *
      * @param string $address host:port to bind to.
      *
@@ -155,7 +160,7 @@ final readonly class ServeCommand implements CommandInterface
      */
     public function serverCommand(string $address): string
     {
-        return escapeshellarg(PHP_BINARY) . ' -S ' . escapeshellarg($address) . ' -t ' . escapeshellarg($this->publicPath);
+        return escapeshellarg($this->phpBinary) . ' -S ' . escapeshellarg($address) . ' -t ' . escapeshellarg($this->publicPath);
     }
 
     /**
@@ -167,17 +172,19 @@ final readonly class ServeCommand implements CommandInterface
      */
     private function spawnServer(string $address): mixed
     {
-        $cmd = $this->serverCommand($address);
         $descriptors = [
             0 => ['pipe', 'r'],
             1 => STDOUT,
             2 => STDERR,
         ];
         $pipes = [];
-        $process = proc_open($cmd, $descriptors, $pipes);
+        // Array form: no shell in between, so a missing interpreter makes proc_open()
+        // fail here instead of spawning a shell that exits with 127.
+        $process = @proc_open([$this->phpBinary, '-S', $address, '-t', $this->publicPath], $descriptors, $pipes);
 
         if ($process === false) {
-            fwrite(STDERR, "Failed to start PHP server.\n");
+            $error = error_get_last()['message'] ?? 'unknown error';
+            fwrite($this->errorStream ?? STDERR, "Failed to start PHP server: $error\n");
 
             return null;
         }
@@ -194,6 +201,10 @@ final readonly class ServeCommand implements CommandInterface
      */
     private function collectMtimes(array $dirs): array
     {
+        // PHP caches the last stat() result; without this, a change to the most
+        // recently stat'ed file (e.g. the only watched file) is never seen.
+        clearstatcache();
+
         $map = [];
 
         foreach ($dirs as $dir) {

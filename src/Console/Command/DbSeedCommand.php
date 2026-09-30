@@ -29,10 +29,12 @@ final readonly class DbSeedCommand implements CommandInterface
      *
      * @param SeederRunner $runner
      * @param string       $env    Current APP_ENV value (e.g. 'production', 'local').
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
     public function __construct(
         private SeederRunner $runner,
         private string $env = 'local',
+        private mixed $errorStream = null,
     ) {
     }
 
@@ -70,7 +72,7 @@ final readonly class DbSeedCommand implements CommandInterface
         $input = new Input($args);
 
         if ($this->env === 'production' && !$input->hasFlag('force')) {
-            fwrite(STDERR, "Seeders will not run in production. Use --force to override.\n");
+            fwrite($this->errorStream ?? STDERR, "Seeders will not run in production. Use --force to override.\n");
             return 1;
         }
 

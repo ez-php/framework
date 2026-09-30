@@ -19,9 +19,12 @@ final readonly class MakeMigrationCommand implements CommandInterface
      * MakeMigrationCommand Constructor
      *
      * @param string $migrationsPath
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
-    public function __construct(private string $migrationsPath)
-    {
+    public function __construct(
+        private string $migrationsPath,
+        private mixed $errorStream = null,
+    ) {
     }
 
     /**
@@ -59,7 +62,7 @@ final readonly class MakeMigrationCommand implements CommandInterface
         $name = $input->argument(0);
 
         if ($name === null) {
-            fwrite(STDERR, "Usage: ez make:migration <name> [--force]\n");
+            fwrite($this->errorStream ?? STDERR, "Usage: ez make:migration <name> [--force]\n");
             return 1;
         }
 
@@ -72,12 +75,12 @@ final readonly class MakeMigrationCommand implements CommandInterface
         }
 
         if (file_exists($fullPath) && !$input->hasFlag('force')) {
-            fwrite(STDERR, "Migration already exists: $filename (use --force to overwrite)\n");
+            fwrite($this->errorStream ?? STDERR, "Migration already exists: $filename (use --force to overwrite)\n");
             return 1;
         }
 
         if (file_put_contents($fullPath, $this->stub($name)) === false) {
-            fwrite(STDERR, "Failed to create migration: $filename\n");
+            fwrite($this->errorStream ?? STDERR, "Failed to create migration: $filename\n");
             return 1;
         }
 

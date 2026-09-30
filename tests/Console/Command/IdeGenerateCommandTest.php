@@ -49,7 +49,7 @@ final class IdeGenerateCommandTest extends TestCase
      */
     public function test_name_and_description(): void
     {
-        $command = new IdeGenerateCommand($this->basePath);
+        $command = new IdeGenerateCommand($this->basePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         $this->assertSame('ide:generate', $command->getName());
         $this->assertNotEmpty($command->getDescription());
@@ -61,7 +61,7 @@ final class IdeGenerateCommandTest extends TestCase
      */
     public function test_generates_file_with_facade_stub_via_facades_option(): void
     {
-        $command = new IdeGenerateCommand($this->basePath);
+        $command = new IdeGenerateCommand($this->basePath, errorStream: fopen('php://memory', 'w') ?: null);
         $output = $this->basePath . '/_ide_helpers.php';
 
         ob_start();
@@ -91,7 +91,7 @@ final class IdeGenerateCommandTest extends TestCase
      */
     public function test_respects_output_flag_with_custom_path(): void
     {
-        $command = new IdeGenerateCommand($this->basePath);
+        $command = new IdeGenerateCommand($this->basePath, errorStream: fopen('php://memory', 'w') ?: null);
         $customOutput = $this->basePath . '/custom_helpers.php';
 
         ob_start();
@@ -107,7 +107,7 @@ final class IdeGenerateCommandTest extends TestCase
      */
     public function test_defaults_output_to_ide_helpers_php_in_base_path(): void
     {
-        $command = new IdeGenerateCommand($this->basePath);
+        $command = new IdeGenerateCommand($this->basePath, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $command->handle(['--facades=' . IdeHelperFacadeFixture::class]);
@@ -121,7 +121,7 @@ final class IdeGenerateCommandTest extends TestCase
      */
     public function test_nonexistent_facade_class_is_silently_skipped(): void
     {
-        $command = new IdeGenerateCommand($this->basePath);
+        $command = new IdeGenerateCommand($this->basePath, errorStream: fopen('php://memory', 'w') ?: null);
         $output = $this->basePath . '/_ide_helpers.php';
 
         ob_start();
@@ -136,7 +136,7 @@ final class IdeGenerateCommandTest extends TestCase
      */
     public function test_extra_facade_without_public_static_methods_produces_no_block(): void
     {
-        $command = new IdeGenerateCommand($this->basePath);
+        $command = new IdeGenerateCommand($this->basePath, errorStream: fopen('php://memory', 'w') ?: null);
         $output = $this->basePath . '/_ide_helpers.php';
 
         ob_start();
@@ -159,7 +159,7 @@ final class IdeGenerateCommandTest extends TestCase
      */
     public function test_private_static_method_is_excluded_from_stubs(): void
     {
-        $command = new IdeGenerateCommand($this->basePath);
+        $command = new IdeGenerateCommand($this->basePath, errorStream: fopen('php://memory', 'w') ?: null);
         $output = $this->basePath . '/_ide_helpers.php';
 
         ob_start();

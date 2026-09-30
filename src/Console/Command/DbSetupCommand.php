@@ -38,12 +38,14 @@ final readonly class DbSetupCommand implements CommandInterface
      * @param SeederRunner $seederRunner
      * @param string       $env           Current APP_ENV value (e.g. 'production', 'local').
      * @param Prompt       $prompt        Interactive prompt (inject for testing).
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
     public function __construct(
         private Migrator $migrator,
         private SeederRunner $seederRunner,
         private string $env = 'local',
         private Prompt $prompt = new Prompt(),
+        private mixed $errorStream = null,
     ) {
     }
 
@@ -106,7 +108,7 @@ final readonly class DbSetupCommand implements CommandInterface
         }
 
         if ($this->env === 'production' && !$input->hasFlag('force')) {
-            fwrite(STDERR, "Seeders will not run in production. Use --force to override.\n");
+            fwrite($this->errorStream ?? STDERR, "Seeders will not run in production. Use --force to override.\n");
             return 1;
         }
 
@@ -119,7 +121,7 @@ final readonly class DbSetupCommand implements CommandInterface
             });
         } catch (Throwable $e) {
             fwrite(
-                STDERR,
+                $this->errorStream ?? STDERR,
                 "Seeding failed after $seededCount seeder(s) completed: {$e->getMessage()}\n"
                 . 'db:setup is not atomic — the schema is already migrated and the seeders reported above '
                 . 'are already committed. Fix the failing seeder and re-run; a seeder that is not '
@@ -167,7 +169,7 @@ final readonly class DbSetupCommand implements CommandInterface
             }
             return true;
         } catch (Throwable $e) {
-            fwrite(STDERR, 'Rollback failed: ' . $e->getMessage() . "\n");
+            fwrite($this->errorStream ?? STDERR, 'Rollback failed: ' . $e->getMessage() . "\n");
 
             if (!$this->prompt->confirm('Rollback failed. Drop all tables instead?')) {
                 return false;

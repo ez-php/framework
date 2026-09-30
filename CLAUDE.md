@@ -362,13 +362,14 @@ src/
 │   ├── SessionCsrfTokenStore.php     — Default CsrfTokenStoreInterface implementation using PHP sessions
 │   └── TerminableMiddleware.php      — Extension: terminate(Request, ResponseInterface) → void; runs after the body is sent
 ├── Maintenance/
-│   └── MaintenanceMode.php           — JSON marker file `storage/framework/down` (retry, bypass secret); shared by down/up and the middleware
+│   ├── MaintenanceMode.php           — JSON marker file `storage/framework/down` (retry, bypass secret); shared by down/up and the middleware
+│   └── MaintenanceState.php          — Settings of an active window (retry, secret, bypassToken()), read once per request via MaintenanceMode::state()
 ├── Migration/
 │   ├── MigrationException.php        — Thrown on migration errors (up/down/status)
 │   ├── MigrationInterface.php        — Contract: up(PDO) and down(PDO)
 │   ├── MigrationServiceProvider.php  — Registers Migrator with correct path
 │   ├── Migrator.php                  — Scans, loads, executes, and rolls back migrations
-│   ├── SeederInterface.php           — Contract for database seeders: run(PDO): void
+│   ├── SeederInterface.php           — Contract for database seeders: run(DatabaseInterface): void
 │   └── SeederRunner.php              — Resolves and executes seeders registered via db:seed
 ├── Routing/
 │   ├── ResourceControllerInterface.php — Contract for resourceful controllers: index/show/create/store/edit/update/destroy
@@ -520,7 +521,7 @@ Thin PDO wrapper. Not a DBAL. The ORM and query builder live in `ez-php/orm`.
 ### Migrator (`src/Migration/Migrator.php`)
 
 - Scans `database/migrations/*.php`; each file must `return` an anonymous class implementing `MigrationInterface`
-- Tracks executed migrations and batch numbers in the `migrations` table (auto-created)
+- Tracks executed migrations and batch numbers in the `migrations` table (auto-created with an `id` primary key — required on MySQL servers with `sql_require_primary_key=ON` — and a unique index on `migration`, so two concurrent `migrate` runs cannot record the same file twice). A table created before these existed is upgraded on first use: MySQL adds the column and index in place, SQLite rebuilds the table; duplicate rows collapse to the first one recorded
 - `migrate()` — Runs pending files in filename order; wraps each in a transaction
 - `rollback()` — Reverses the latest batch in reverse filename order
 
@@ -552,14 +553,14 @@ use EzPhp\Session\StartSessionMiddleware;
 
 // 1. Register EzPhp\Session\SessionServiceProvider (provider/modules.php)
 
-// 2. In a service provider register() method, bind the token store
-$this->app->bind(CsrfTokenStoreInterface::class, SessionCsrfTokenStore::class);
+// 2. Nothing to bind — SessionServiceProvider::register() binds
+//    CsrfTokenStoreInterface → SessionCsrfTokenStore unless you bound it first
 
 // 3. Register both middleware globally — session start must come first
 $app->middleware(StartSessionMiddleware::class, CsrfMiddleware::class);
 ```
 
-Without `ez-php/session`, any middleware that calls `session_start()` before `CsrfMiddleware` works — but then cookie flags and `session.use_strict_mode` are your responsibility (see `docs/SECURITY.md` § Cookies).
+Without `ez-php/session`, any middleware that calls `session_start()` before `CsrfMiddleware` works — but then cookie flags and `session.use_strict_mode` are your responsibility (see `docs/SECURITY.md` § Cookies), and you bind the store yourself in a provider's `register()`: `$this->app->bind(CsrfTokenStoreInterface::class, SessionCsrfTokenStore::class);`.
 
 **In HTML forms**, include the hidden token field:
 
@@ -583,7 +584,7 @@ $router->post('/webhook/stripe', [WebhookController::class, 'handle'])->withoutC
 
 ### Maintenance mode (`src/Maintenance/`, `down`/`up`, `MaintenanceModeMiddleware`)
 
-`ez down [--retry=<s>] [--secret=<s>]` writes `storage/framework/down` (JSON: since, retry, secret); `ez up` deletes it. `MaintenanceModeMiddleware` — register it **first** in the global stack — answers 503 while the file exists: `Retry-After` when set, the framework's JSON error envelope for `wantsJson()` requests, a minimal HTML page otherwise. With a secret, `GET /<secret>` returns a 302 to `/` with an HttpOnly cookie `ez_maintenance_bypass` = `hash_hmac('sha256', …, secret)` (Secure on HTTPS, 12 h); requests carrying it pass through. `ConsoleServiceProvider` binds `MaintenanceMode` so the commands and the autowired middleware share one marker path.
+`ez down [--retry=<s>] [--secret[=<s>]]` writes `storage/framework/down` (JSON: since, retry, secret); `ez up` deletes it. A given secret must be at least 16 characters (`DownCommand::MIN_SECRET_LENGTH`) — it is the whole credential for the bypass path; `--secret` without a value generates a random 32-character one and prints it. `MaintenanceModeMiddleware` — register it **first** in the global stack — answers 503 while the file exists: `Retry-After` when set, the framework's JSON error envelope for `wantsJson()` requests, a minimal HTML page otherwise. With a secret, `GET /<secret>` returns a 302 to `/` with an HttpOnly cookie `ez_maintenance_bypass` = `hash_hmac('sha256', …, secret)` (Secure on HTTPS, 12 h); requests carrying it pass through. `ConsoleServiceProvider` binds `MaintenanceMode` so the commands and the autowired middleware share one marker path. The middleware reads the marker once per request via `MaintenanceMode::state()` (a `MaintenanceState` value object, null while up) instead of once per accessor.
 
 ### Security headers (`src/Middleware/SecurityHeadersMiddleware.php`)
 
@@ -604,6 +605,7 @@ Adds `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and HSTS by 
 - **Database is intentionally minimal** — No query builder, no schema builder in this package. Those belong in `ez-php/orm`.
 - **`Database` has no `table()` method** — A `table()` shortcut that returned an ORM `QueryBuilder` was considered but deliberately not implemented. Adding it would create a runtime dependency from the framework core on `ez-php/orm`, which violates module-boundary rules and is not declared in `composer.json`. Code that needs a `QueryBuilder` must resolve `ez-php/orm`'s `QueryBuilder` directly (e.g. via the container or a service provider). If a future bridge is needed, implement a `QueryBuilderFactoryInterface` in `ez-php/contracts` and bind it in `DatabaseServiceProvider`.
 - **Migrations use raw PDO** — `up(PDO)` / `down(PDO)` to keep migrations dependency-free; they must not rely on the ORM or Database class.
+- **`SeederInterface::run()` takes `DatabaseInterface`, not the concrete `Database`** — dependency inversion: seeders depend on the contract. This was a breaking change (PHP forbids an implementer from narrowing a parameter type, so `run(Database $db)` seeders stop loading); the template's `docs/upgrade-seeder-interface.md` has the one-line migration, and `make:seeder` generates the new signature.
 - **`db:setup` is not atomic** — `migrate()` and the seed step are two independently-recoverable steps with no umbrella transaction. If a seeder throws partway through, the schema is already migrated and every seeder that ran before the failure is already committed; `DbSetupCommand` reports each seeder as it succeeds (via `SeederRunner::run()`'s `$onSeeded` callback) so a failure names exactly which ones. Re-running is safe only if the seeders already run are idempotent — no automatic rollback or resumption is attempted, by design, to keep the seed step dependency-free of a transaction-aware `Database` abstraction that migrations also can't rely on (implicit-commit DDL in the migration step above already rules that out).
 - **`CorsMiddleware` is a concrete helper** — Provided as a convenience; not part of the routing or middleware infrastructure. Global middleware is autowired from its class string, so configure it by binding `CorsMiddleware::class` to a closure in a provider (e.g. `new CorsMiddleware(allowOrigin: 'https://app.example.com, https://admin.example.com', allowCredentials: true)`). `allowOrigin` keeps its original meaning for `*` and a single origin; a comma-separated list switches to allow-list mode — the matching request `Origin` is echoed (browsers accept only one origin per response) and `Vary: Origin` is always added so shared caches don't serve one origin's answer to another. `allowCredentials` cannot be combined with `*` (the constructor throws — browsers reject that combination anyway). Only an `OPTIONS` request carrying `Access-Control-Request-Method` is a preflight and short-circuits with 204; any other `OPTIONS` request is routed normally.
 - **`ez-php/i18n` and `ez-php/validation` are core dependencies** — They are declared in `composer.json` `require` and are not optional. `TranslatorServiceProvider` ships in `CoreServiceProviders::all()` so exception renderers can localise production error pages, and `Controller::validate()` is a first-class base-controller convenience built on `ez-php/validation`. The kernel cannot bootstrap without them. (i18n is consumed through `TranslatorInterface` from `ez-php/contracts`; validation is used via its static `Validator` facade.)

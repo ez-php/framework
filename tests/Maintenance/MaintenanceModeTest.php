@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Maintenance;
 
 use EzPhp\Maintenance\MaintenanceMode;
+use EzPhp\Maintenance\MaintenanceState;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Tests\TestCase;
 
@@ -14,6 +15,7 @@ use Tests\TestCase;
  * @package Tests\Maintenance
  */
 #[CoversClass(MaintenanceMode::class)]
+#[CoversClass(MaintenanceState::class)]
 final class MaintenanceModeTest extends TestCase
 {
     private string $dir;
@@ -78,5 +80,36 @@ final class MaintenanceModeTest extends TestCase
 
         self::assertTrue($this->mode()->isDown());
         self::assertNull($this->mode()->retryAfter());
+    }
+
+    public function test_state_is_null_while_up(): void
+    {
+        self::assertNull($this->mode()->state());
+    }
+
+    public function test_state_carries_retry_secret_and_bypass_token(): void
+    {
+        $this->mode()->activate(retryAfter: 30, secret: 'bypass-secret-123');
+
+        $state = $this->mode()->state();
+
+        self::assertInstanceOf(MaintenanceState::class, $state);
+        self::assertSame(30, $state->retryAfter);
+        self::assertSame('bypass-secret-123', $state->secret);
+        self::assertSame(hash_hmac('sha256', 'ez-maintenance-bypass', 'bypass-secret-123'), $state->bypassToken());
+        self::assertSame($state->bypassToken(), $this->mode()->bypassToken());
+    }
+
+    public function test_state_of_a_corrupt_marker_is_down_without_settings(): void
+    {
+        mkdir($this->dir . '/framework', 0o755, true);
+        file_put_contents($this->dir . '/framework/down', 'not json');
+
+        $state = $this->mode()->state();
+
+        self::assertInstanceOf(MaintenanceState::class, $state);
+        self::assertNull($state->retryAfter);
+        self::assertNull($state->secret);
+        self::assertNull($state->bypassToken());
     }
 }

@@ -19,6 +19,7 @@ use Tests\TestCase;
  */
 #[CoversClass(MaintenanceModeMiddleware::class)]
 #[UsesClass(MaintenanceMode::class)]
+#[UsesClass(\EzPhp\Maintenance\MaintenanceState::class)]
 final class MaintenanceModeMiddlewareTest extends TestCase
 {
     private string $marker;

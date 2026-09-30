@@ -24,9 +24,12 @@ final readonly class MakeCommandCommand implements CommandInterface
      *                        and ships no `src/` directory. Every other `make:*`
      *                        generator that emits an `App\…` class is bound the
      *                        same way.
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
-    public function __construct(private string $appPath)
-    {
+    public function __construct(
+        private string $appPath,
+        private mixed $errorStream = null,
+    ) {
     }
 
     /**
@@ -63,7 +66,7 @@ final readonly class MakeCommandCommand implements CommandInterface
         $name = $args[0] ?? null;
 
         if ($name === null || !preg_match('/^[A-Za-z][A-Za-z0-9]*$/', $name)) {
-            fwrite(STDERR, "Usage: ez make:command <ClassName>\n");
+            fwrite($this->errorStream ?? STDERR, "Usage: ez make:command <ClassName>\n");
 
             return 1;
         }
@@ -77,13 +80,13 @@ final readonly class MakeCommandCommand implements CommandInterface
         }
 
         if (file_exists($fullPath)) {
-            fwrite(STDERR, "Command already exists: $filename\n");
+            fwrite($this->errorStream ?? STDERR, "Command already exists: $filename\n");
 
             return 1;
         }
 
         if (file_put_contents($fullPath, $this->stub($name)) === false) {
-            fwrite(STDERR, "Failed to create command: $filename\n");
+            fwrite($this->errorStream ?? STDERR, "Failed to create command: $filename\n");
 
             return 1;
         }

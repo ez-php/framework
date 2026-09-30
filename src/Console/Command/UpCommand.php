@@ -25,9 +25,12 @@ final readonly class UpCommand implements CommandInterface
      * UpCommand Constructor
      *
      * @param MaintenanceMode $maintenance
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
-    public function __construct(private MaintenanceMode $maintenance)
-    {
+    public function __construct(
+        private MaintenanceMode $maintenance,
+        private mixed $errorStream = null,
+    ) {
     }
 
     /**
@@ -68,7 +71,7 @@ final readonly class UpCommand implements CommandInterface
         }
 
         if (!$this->maintenance->deactivate()) {
-            Output::error('Could not remove the maintenance marker.');
+            Output::error('Could not remove the maintenance marker.', $this->errorStream);
 
             return 1;
         }

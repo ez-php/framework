@@ -18,9 +18,12 @@ final readonly class MakeListenerCommand implements CommandInterface
      * MakeListenerCommand Constructor
      *
      * @param string $appPath
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
-    public function __construct(private string $appPath)
-    {
+    public function __construct(
+        private string $appPath,
+        private mixed $errorStream = null,
+    ) {
     }
 
     /**
@@ -57,7 +60,7 @@ final readonly class MakeListenerCommand implements CommandInterface
         $name = $args[0] ?? null;
 
         if ($name === null || !preg_match('/^[A-Za-z][A-Za-z0-9]*$/', $name)) {
-            fwrite(STDERR, "Usage: ez make:listener <ClassName>\n");
+            fwrite($this->errorStream ?? STDERR, "Usage: ez make:listener <ClassName>\n");
             return 1;
         }
 
@@ -70,12 +73,12 @@ final readonly class MakeListenerCommand implements CommandInterface
         }
 
         if (file_exists($fullPath)) {
-            fwrite(STDERR, "Listener already exists: $filename\n");
+            fwrite($this->errorStream ?? STDERR, "Listener already exists: $filename\n");
             return 1;
         }
 
         if (file_put_contents($fullPath, $this->stub($name)) === false) {
-            fwrite(STDERR, "Failed to create listener: $filename\n");
+            fwrite($this->errorStream ?? STDERR, "Failed to create listener: $filename\n");
             return 1;
         }
 

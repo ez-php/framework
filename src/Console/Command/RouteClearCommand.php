@@ -26,9 +26,12 @@ final class RouteClearCommand implements CommandInterface
      * RouteClearCommand Constructor
      *
      * @param string $cachePath Absolute path to the route cache file.
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
-    public function __construct(private readonly string $cachePath)
-    {
+    public function __construct(
+        private readonly string $cachePath,
+        private readonly mixed $errorStream = null,
+    ) {
     }
 
     /**
@@ -69,7 +72,7 @@ final class RouteClearCommand implements CommandInterface
         }
 
         if (!unlink($this->cachePath)) {
-            Output::error("Could not remove route cache: {$this->cachePath}");
+            Output::error("Could not remove route cache: {$this->cachePath}", $this->errorStream);
 
             return 1;
         }

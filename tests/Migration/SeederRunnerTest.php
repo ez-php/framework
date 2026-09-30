@@ -196,7 +196,7 @@ final class SeederRunnerTest extends TestCase
             use EzPhp\\Database\\Database;
             use EzPhp\\Migration\\SeederInterface;
             return new class implements SeederInterface {
-                public function run(Database \$db): void {
+                public function run(\EzPhp\Contracts\DatabaseInterface \$db): void {
                     \$db->execute('INSERT INTO items (name) VALUES (?)', ['{$name}']);
                 }
             };
@@ -210,10 +210,9 @@ final class SeederRunnerTest extends TestCase
     {
         return <<<'PHP'
             <?php
-            use EzPhp\Database\Database;
             use EzPhp\Migration\SeederInterface;
             return new class implements SeederInterface {
-                public function run(Database $db): void {
+                public function run(\EzPhp\Contracts\DatabaseInterface $db): void {
                     throw new \RuntimeException('seeder failed');
                 }
             };

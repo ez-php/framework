@@ -7,7 +7,6 @@ namespace EzPhp\Migration;
 use EzPhp\Application\Application;
 use EzPhp\Contracts\DatabaseInterface;
 use EzPhp\Contracts\Schema\SchemaInterface;
-use EzPhp\Database\Database;
 use EzPhp\ServiceProvider\ServiceProvider;
 
 /**
@@ -33,7 +32,7 @@ final class MigrationServiceProvider extends ServiceProvider
 
         $this->app->bind(SeederRunner::class, function (Application $app): SeederRunner {
             return new SeederRunner(
-                $app->make(Database::class),
+                $app->make(DatabaseInterface::class),
                 $app->basePath('database/seeders'),
             );
         });

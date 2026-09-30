@@ -118,7 +118,7 @@ final class DbSetupCommandTest extends TestCase
      */
     public function test_name_description_help(): void
     {
-        $command = new DbSetupCommand($this->migrator, $this->runner);
+        $command = new DbSetupCommand($this->migrator, $this->runner, errorStream: fopen('php://memory', 'w') ?: null);
 
         $this->assertSame('db:setup', $command->getName());
         $this->assertNotEmpty($command->getDescription());
@@ -145,7 +145,7 @@ final class DbSetupCommandTest extends TestCase
 
         file_put_contents($this->seederPath . '/TestSeeder.php', $this->seederStub('Alice'));
 
-        $command = new DbSetupCommand($this->migrator, $this->runner);
+        $command = new DbSetupCommand($this->migrator, $this->runner, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle([]);
@@ -162,7 +162,7 @@ final class DbSetupCommandTest extends TestCase
      */
     public function test_prints_nothing_to_migrate_when_up_to_date(): void
     {
-        $command = new DbSetupCommand($this->migrator, $this->runner);
+        $command = new DbSetupCommand($this->migrator, $this->runner, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle([]);
@@ -178,7 +178,7 @@ final class DbSetupCommandTest extends TestCase
      */
     public function test_prints_no_seeders_when_directory_empty(): void
     {
-        $command = new DbSetupCommand($this->migrator, $this->runner);
+        $command = new DbSetupCommand($this->migrator, $this->runner, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle([]);
@@ -208,7 +208,7 @@ final class DbSetupCommandTest extends TestCase
 
         $this->migrator->migrate();
 
-        $command = new DbSetupCommand($this->migrator, $this->runner);
+        $command = new DbSetupCommand($this->migrator, $this->runner, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle(['--refresh']);
@@ -239,7 +239,7 @@ final class DbSetupCommandTest extends TestCase
 
         $this->migrator->migrate();
 
-        $command = new DbSetupCommand($this->migrator, $this->runner);
+        $command = new DbSetupCommand($this->migrator, $this->runner, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle(['--refresh-hard']);
@@ -272,7 +272,7 @@ final class DbSetupCommandTest extends TestCase
 
         $this->migrator->migrate();
 
-        $command = new DbSetupCommand($this->migrator, $this->runner, 'local', $this->makePrompt(['y']));
+        $command = new DbSetupCommand($this->migrator, $this->runner, 'local', $this->makePrompt(['y']), errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle(['--refresh']);
@@ -305,7 +305,7 @@ final class DbSetupCommandTest extends TestCase
 
         $this->migrator->migrate();
 
-        $command = new DbSetupCommand($this->migrator, $this->runner, 'local', $this->makePrompt(['n']));
+        $command = new DbSetupCommand($this->migrator, $this->runner, 'local', $this->makePrompt(['n']), errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle(['--refresh']);
@@ -322,7 +322,7 @@ final class DbSetupCommandTest extends TestCase
     {
         file_put_contents($this->seederPath . '/TestSeeder.php', $this->seederStub('Alice'));
 
-        $command = new DbSetupCommand($this->migrator, $this->runner, 'production');
+        $command = new DbSetupCommand($this->migrator, $this->runner, 'production', errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle([]);
@@ -339,7 +339,7 @@ final class DbSetupCommandTest extends TestCase
     {
         file_put_contents($this->seederPath . '/TestSeeder.php', $this->seederStub('Alice'));
 
-        $command = new DbSetupCommand($this->migrator, $this->runner, 'production');
+        $command = new DbSetupCommand($this->migrator, $this->runner, 'production', errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle(['--force']);
@@ -362,16 +362,15 @@ final class DbSetupCommandTest extends TestCase
         file_put_contents($this->seederPath . '/ASeeder.php', $this->seederStub('Alice'));
         file_put_contents($this->seederPath . '/BSeeder.php', <<<'PHP'
             <?php
-            use EzPhp\Database\Database;
             use EzPhp\Migration\SeederInterface;
             return new class implements SeederInterface {
-                public function run(Database $db): void {
+                public function run(\EzPhp\Contracts\DatabaseInterface $db): void {
                     throw new \RuntimeException('seeder failed');
                 }
             };
             PHP);
 
-        $command = new DbSetupCommand($this->migrator, $this->runner);
+        $command = new DbSetupCommand($this->migrator, $this->runner, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         try {
@@ -428,7 +427,7 @@ final class DbSetupCommandTest extends TestCase
             use EzPhp\\Database\\Database;
             use EzPhp\\Migration\\SeederInterface;
             return new class implements SeederInterface {
-                public function run(Database \$db): void {
+                public function run(\EzPhp\Contracts\DatabaseInterface \$db): void {
                     \$db->execute('INSERT INTO items (name) VALUES (?)', ['{$name}']);
                 }
             };

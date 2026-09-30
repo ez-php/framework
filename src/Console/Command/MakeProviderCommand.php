@@ -21,9 +21,12 @@ final readonly class MakeProviderCommand implements CommandInterface
      *                        `basePath('app')`: the stub declares `namespace App\Providers;`
      *                        and the template autoloads `App\ => app/`, so anywhere else
      *                        produces a class Composer never loads.
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
-    public function __construct(private string $appPath)
-    {
+    public function __construct(
+        private string $appPath,
+        private mixed $errorStream = null,
+    ) {
     }
 
     /**
@@ -60,7 +63,7 @@ final readonly class MakeProviderCommand implements CommandInterface
         $name = $args[0] ?? null;
 
         if ($name === null || !preg_match('/^[A-Za-z][A-Za-z0-9]*$/', $name)) {
-            fwrite(STDERR, "Usage: ez make:provider <ClassName>\n");
+            fwrite($this->errorStream ?? STDERR, "Usage: ez make:provider <ClassName>\n");
             return 1;
         }
 
@@ -73,12 +76,12 @@ final readonly class MakeProviderCommand implements CommandInterface
         }
 
         if (file_exists($fullPath)) {
-            fwrite(STDERR, "Provider already exists: $filename\n");
+            fwrite($this->errorStream ?? STDERR, "Provider already exists: $filename\n");
             return 1;
         }
 
         if (file_put_contents($fullPath, $this->stub($name)) === false) {
-            fwrite(STDERR, "Failed to create provider: $filename\n");
+            fwrite($this->errorStream ?? STDERR, "Failed to create provider: $filename\n");
             return 1;
         }
 

@@ -18,9 +18,12 @@ final readonly class MakeEventCommand implements CommandInterface
      * MakeEventCommand Constructor
      *
      * @param string $appPath
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
-    public function __construct(private string $appPath)
-    {
+    public function __construct(
+        private string $appPath,
+        private mixed $errorStream = null,
+    ) {
     }
 
     /**
@@ -57,7 +60,7 @@ final readonly class MakeEventCommand implements CommandInterface
         $name = $args[0] ?? null;
 
         if ($name === null || !preg_match('/^[A-Za-z][A-Za-z0-9]*$/', $name)) {
-            fwrite(STDERR, "Usage: ez make:event <ClassName>\n");
+            fwrite($this->errorStream ?? STDERR, "Usage: ez make:event <ClassName>\n");
             return 1;
         }
 
@@ -70,12 +73,12 @@ final readonly class MakeEventCommand implements CommandInterface
         }
 
         if (file_exists($fullPath)) {
-            fwrite(STDERR, "Event already exists: $filename\n");
+            fwrite($this->errorStream ?? STDERR, "Event already exists: $filename\n");
             return 1;
         }
 
         if (file_put_contents($fullPath, $this->stub($name)) === false) {
-            fwrite(STDERR, "Failed to create event: $filename\n");
+            fwrite($this->errorStream ?? STDERR, "Failed to create event: $filename\n");
             return 1;
         }
 

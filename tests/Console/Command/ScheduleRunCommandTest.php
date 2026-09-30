@@ -33,7 +33,8 @@ final class ScheduleRunCommandTest extends TestCase
     {
         return new ScheduleRunCommand(
             $scheduler,
-            fn (): Console => new Console([]),
+            // No commands registered: the Console's "Unknown command" line goes to memory, not STDERR.
+            fn (): Console => new Console([], fopen('php://memory', 'w') ?: null),
         );
     }
 

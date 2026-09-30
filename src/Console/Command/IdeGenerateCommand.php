@@ -65,9 +65,12 @@ final class IdeGenerateCommand implements CommandInterface
      * IdeGenerateCommand Constructor
      *
      * @param string $basePath Absolute path to the application root (output goes here by default).
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
-    public function __construct(private readonly string $basePath)
-    {
+    public function __construct(
+        private readonly string $basePath,
+        private readonly mixed $errorStream = null,
+    ) {
     }
 
     /**
@@ -122,7 +125,7 @@ final class IdeGenerateCommand implements CommandInterface
         $content = $this->buildFile($blocks);
 
         if (file_put_contents($output, $content) === false) {
-            fwrite(STDERR, "Failed to write: $output\n");
+            fwrite($this->errorStream ?? STDERR, "Failed to write: $output\n");
             return 1;
         }
 

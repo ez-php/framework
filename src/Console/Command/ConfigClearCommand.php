@@ -26,9 +26,12 @@ final class ConfigClearCommand implements CommandInterface
      * ConfigClearCommand Constructor
      *
      * @param string $cachePath Absolute path to the config cache file.
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
-    public function __construct(private readonly string $cachePath)
-    {
+    public function __construct(
+        private readonly string $cachePath,
+        private readonly mixed $errorStream = null,
+    ) {
     }
 
     /**
@@ -69,7 +72,7 @@ final class ConfigClearCommand implements CommandInterface
         }
 
         if (!unlink($this->cachePath)) {
-            Output::error("Could not remove cache file: {$this->cachePath}");
+            Output::error("Could not remove cache file: {$this->cachePath}", $this->errorStream);
 
             return 1;
         }

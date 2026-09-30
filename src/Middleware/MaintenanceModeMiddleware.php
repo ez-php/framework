@@ -46,13 +46,16 @@ final readonly class MaintenanceModeMiddleware implements MiddlewareInterface
      */
     public function handle(RequestInterface $request, callable $next): ResponseInterface
     {
-        if (!$this->maintenance->isDown()) {
+        // One read of the marker file per request; state() is null while up.
+        $state = $this->maintenance->state();
+
+        if ($state === null) {
             /** @var ResponseInterface */
             return $next($request);
         }
 
-        $token = $this->maintenance->bypassToken();
-        $secret = $this->maintenance->secret();
+        $token = $state->bypassToken();
+        $secret = $state->secret;
 
         if ($token !== null) {
             $cookie = $request->cookie(MaintenanceMode::BYPASS_COOKIE);
@@ -77,23 +80,22 @@ final readonly class MaintenanceModeMiddleware implements MiddlewareInterface
             }
         }
 
-        return $this->unavailable($request);
+        return $this->unavailable($request, $state->retryAfter);
     }
 
     /**
      * @param RequestInterface $request
+     * @param int|null         $retry   Seconds for `Retry-After`; null omits the header.
      *
      * @return Response
      */
-    private function unavailable(RequestInterface $request): Response
+    private function unavailable(RequestInterface $request, ?int $retry): Response
     {
         $response = $request->wantsJson()
             ? (new Response('{"error":{"code":503,"message":"Service Unavailable"}}', 503))
                 ->withHeader('Content-Type', 'application/json')
             : (new Response($this->page(), 503))
                 ->withHeader('Content-Type', 'text/html; charset=utf-8');
-
-        $retry = $this->maintenance->retryAfter();
 
         return $retry === null ? $response : $response->withHeader('Retry-After', (string) $retry);
     }

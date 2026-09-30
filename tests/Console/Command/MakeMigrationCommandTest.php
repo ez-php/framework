@@ -43,7 +43,7 @@ final class MakeMigrationCommandTest extends TestCase
      */
     public function test_name_and_description(): void
     {
-        $command = new MakeMigrationCommand($this->path);
+        $command = new MakeMigrationCommand($this->path, errorStream: fopen('php://memory', 'w') ?: null);
 
         $this->assertSame('make:migration', $command->getName());
         $this->assertNotEmpty($command->getDescription());
@@ -54,7 +54,7 @@ final class MakeMigrationCommandTest extends TestCase
      */
     public function test_creates_migration_file(): void
     {
-        $command = new MakeMigrationCommand($this->path);
+        $command = new MakeMigrationCommand($this->path, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle(['create_users_table']);
@@ -71,7 +71,7 @@ final class MakeMigrationCommandTest extends TestCase
      */
     public function test_filename_contains_name_and_timestamp(): void
     {
-        $command = new MakeMigrationCommand($this->path);
+        $command = new MakeMigrationCommand($this->path, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $command->handle(['create_posts_table']);
@@ -90,7 +90,7 @@ final class MakeMigrationCommandTest extends TestCase
      */
     public function test_generated_file_contains_valid_stub(): void
     {
-        $command = new MakeMigrationCommand($this->path);
+        $command = new MakeMigrationCommand($this->path, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $command->handle(['create_orders_table']);
@@ -112,7 +112,7 @@ final class MakeMigrationCommandTest extends TestCase
      */
     public function test_create_pattern_generates_schema_create_stub(): void
     {
-        $command = new MakeMigrationCommand($this->path);
+        $command = new MakeMigrationCommand($this->path, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $command->handle(['create_users_table']);
@@ -132,7 +132,7 @@ final class MakeMigrationCommandTest extends TestCase
      */
     public function test_add_columns_pattern_generates_schema_table_stub(): void
     {
-        $command = new MakeMigrationCommand($this->path);
+        $command = new MakeMigrationCommand($this->path, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $command->handle(['add_email_to_users_table']);
@@ -150,7 +150,7 @@ final class MakeMigrationCommandTest extends TestCase
      */
     public function test_drop_pattern_generates_schema_drop_stub(): void
     {
-        $command = new MakeMigrationCommand($this->path);
+        $command = new MakeMigrationCommand($this->path, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $command->handle(['drop_posts_table']);
@@ -167,7 +167,7 @@ final class MakeMigrationCommandTest extends TestCase
      */
     public function test_unrecognised_pattern_generates_blank_stub(): void
     {
-        $command = new MakeMigrationCommand($this->path);
+        $command = new MakeMigrationCommand($this->path, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $command->handle(['some_custom_migration']);
@@ -186,7 +186,7 @@ final class MakeMigrationCommandTest extends TestCase
      */
     public function test_returns_1_without_name_argument(): void
     {
-        $command = new MakeMigrationCommand($this->path);
+        $command = new MakeMigrationCommand($this->path, errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle([]);

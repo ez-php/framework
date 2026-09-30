@@ -53,7 +53,7 @@ final class DbSeedCommandTest extends TestCase
      */
     public function test_name_description_help(): void
     {
-        $command = new DbSeedCommand($this->runner);
+        $command = new DbSeedCommand($this->runner, errorStream: fopen('php://memory', 'w') ?: null);
 
         $this->assertSame('db:seed', $command->getName());
         $this->assertNotEmpty($command->getDescription());
@@ -68,7 +68,7 @@ final class DbSeedCommandTest extends TestCase
         file_put_contents($this->path . '/TestSeeder.php', $this->stub('Alice'));
 
         ob_start();
-        $code = (new DbSeedCommand($this->runner))->handle([]);
+        $code = (new DbSeedCommand($this->runner, errorStream: fopen('php://memory', 'w') ?: null))->handle([]);
         $output = (string) ob_get_clean();
 
         $this->assertSame(0, $code);
@@ -81,7 +81,7 @@ final class DbSeedCommandTest extends TestCase
     public function test_prints_no_seeders_when_directory_empty(): void
     {
         ob_start();
-        $code = (new DbSeedCommand($this->runner))->handle([]);
+        $code = (new DbSeedCommand($this->runner, errorStream: fopen('php://memory', 'w') ?: null))->handle([]);
         $output = (string) ob_get_clean();
 
         $this->assertSame(0, $code);
@@ -95,7 +95,7 @@ final class DbSeedCommandTest extends TestCase
     {
         file_put_contents($this->path . '/TestSeeder.php', $this->stub('Alice'));
 
-        $command = new DbSeedCommand($this->runner, 'production');
+        $command = new DbSeedCommand($this->runner, 'production', errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle([]);
@@ -111,7 +111,7 @@ final class DbSeedCommandTest extends TestCase
     {
         file_put_contents($this->path . '/TestSeeder.php', $this->stub('Alice'));
 
-        $command = new DbSeedCommand($this->runner, 'production');
+        $command = new DbSeedCommand($this->runner, 'production', errorStream: fopen('php://memory', 'w') ?: null);
 
         ob_start();
         $code = $command->handle(['--force']);
@@ -133,7 +133,7 @@ final class DbSeedCommandTest extends TestCase
             use EzPhp\\Database\\Database;
             use EzPhp\\Migration\\SeederInterface;
             return new class implements SeederInterface {
-                public function run(Database \$db): void {
+                public function run(\EzPhp\Contracts\DatabaseInterface \$db): void {
                     \$db->execute('INSERT INTO items (name) VALUES (?)', ['{$name}']);
                 }
             };

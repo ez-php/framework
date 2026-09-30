@@ -34,10 +34,12 @@ final class RouteCacheCommand implements CommandInterface
      *
      * @param Router $router    The router instance with all routes already loaded.
      * @param string $cachePath Absolute path to the cache file.
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
     public function __construct(
         private readonly Router $router,
         private readonly string $cachePath,
+        private readonly mixed $errorStream = null,
     ) {
     }
 
@@ -90,7 +92,7 @@ final class RouteCacheCommand implements CommandInterface
         $dir = dirname($this->cachePath);
 
         if (!is_dir($dir) && !mkdir($dir, 0o755, true)) {
-            Output::error("Could not create cache directory: $dir");
+            Output::error("Could not create cache directory: $dir", $this->errorStream);
 
             return 1;
         }
@@ -98,7 +100,7 @@ final class RouteCacheCommand implements CommandInterface
         $content = '<?php return ' . var_export($data, true) . ';' . "\n";
 
         if (file_put_contents($this->cachePath, $content) === false) {
-            Output::error("Could not write route cache: {$this->cachePath}");
+            Output::error("Could not write route cache: {$this->cachePath}", $this->errorStream);
 
             return 1;
         }

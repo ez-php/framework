@@ -403,6 +403,49 @@ final class MigratorTest extends TestCase
     /**
      * @return void
      */
+    public function test_migrations_table_has_primary_key_and_unique_migration(): void
+    {
+        $this->migrator->status();
+
+        $columns = $this->db->query('PRAGMA table_info(migrations)');
+        $pk = array_values(array_filter($columns, static fn (array $c): bool => $c['pk'] == 1));
+        $this->assertSame('id', $pk[0]['name'] ?? null);
+
+        $this->db->query("INSERT INTO migrations (migration, batch) VALUES ('0001_a.php', 1)");
+
+        $this->expectException(\PDOException::class);
+        $this->db->query("INSERT INTO migrations (migration, batch) VALUES ('0001_a.php', 2)");
+    }
+
+    /**
+     * A table created before the primary key existed is rebuilt in place:
+     * rows keep their order, duplicates collapse to the first recorded batch.
+     *
+     * @return void
+     * @throws Throwable
+     */
+    public function test_legacy_migrations_table_is_upgraded(): void
+    {
+        $this->db->query('CREATE TABLE migrations (migration VARCHAR(255) NOT NULL, batch INTEGER NOT NULL)');
+        $this->db->query("INSERT INTO migrations (migration, batch) VALUES ('0001_a.php', 1), ('0002_b.php', 2), ('0001_a.php', 3)");
+
+        $this->createMigrationFile('0003_create_users_table.php', 'users');
+        $this->assertSame(['0003_create_users_table.php'], $this->migrator->migrate());
+
+        $this->assertContains('id', array_column($this->db->query('PRAGMA table_info(migrations)'), 'name'));
+        $this->assertSame(
+            [
+                ['migration' => '0001_a.php', 'batch' => 1],
+                ['migration' => '0002_b.php', 'batch' => 2],
+                ['migration' => '0003_create_users_table.php', 'batch' => 3],
+            ],
+            $this->db->query('SELECT migration, batch FROM migrations ORDER BY id'),
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function test_drop_all_tables_returns_empty_when_no_tables_exist(): void
     {
         $dropped = $this->migrator->dropAllTables();

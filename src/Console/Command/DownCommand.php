@@ -16,7 +16,7 @@ use EzPhp\Maintenance\MaintenanceMode;
  * answers every request with 503 until `ez up`.
  *
  * Usage:
- *   ez down [--retry=60] [--secret=<bypass-secret>]
+ *   ez down [--retry=60] [--secret[=<bypass-secret>]]
  *
  * @internal
  * @package EzPhp\Console\Command
@@ -24,12 +24,20 @@ use EzPhp\Maintenance\MaintenanceMode;
 final readonly class DownCommand implements CommandInterface
 {
     /**
+     * Minimum length of a given --secret: it is the whole credential for the bypass path.
+     */
+    public const int MIN_SECRET_LENGTH = 16;
+
+    /**
      * DownCommand Constructor
      *
      * @param MaintenanceMode $maintenance
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
-    public function __construct(private MaintenanceMode $maintenance)
-    {
+    public function __construct(
+        private MaintenanceMode $maintenance,
+        private mixed $errorStream = null,
+    ) {
     }
 
     /**
@@ -53,11 +61,12 @@ final readonly class DownCommand implements CommandInterface
      */
     public function getHelp(): string
     {
-        return "Usage: ez down [--retry=<seconds>] [--secret=<secret>]\n\n"
+        return "Usage: ez down [--retry=<seconds>] [--secret[=<secret>]]\n\n"
             . "Requests get 503 Service Unavailable until `ez up`. Requires MaintenanceModeMiddleware in the\n"
             . "global middleware stack.\n\n"
             . "  --retry   Seconds sent as the Retry-After header.\n"
-            . '  --secret  Visiting /<secret> sets a cookie that bypasses maintenance mode.';
+            . "  --secret  Visiting /<secret> sets a cookie that bypasses maintenance mode. At least\n"
+            . '            ' . self::MIN_SECRET_LENGTH . ' characters; without a value a random secret is generated and printed.';
     }
 
     /**
@@ -71,14 +80,24 @@ final readonly class DownCommand implements CommandInterface
         $retry = $input->option('retry');
         $secret = $input->option('secret');
 
+        if ($secret === '' && $input->hasFlag('secret')) {
+            $secret = bin2hex(random_bytes(16));
+        }
+
         if ($retry !== '' && preg_match('/^[1-9][0-9]*$/', $retry) !== 1) {
-            Output::error('--retry must be a positive number of seconds.');
+            Output::error('--retry must be a positive number of seconds.', $this->errorStream);
 
             return 1;
         }
 
         if ($secret !== '' && preg_match('/^[A-Za-z0-9_-]+$/', $secret) !== 1) {
-            Output::error('--secret may only contain letters, digits, "-" and "_".');
+            Output::error('--secret may only contain letters, digits, "-" and "_".', $this->errorStream);
+
+            return 1;
+        }
+
+        if ($secret !== '' && strlen($secret) < self::MIN_SECRET_LENGTH) {
+            Output::error('--secret must be at least ' . self::MIN_SECRET_LENGTH . ' characters (or pass --secret without a value to generate one).', $this->errorStream);
 
             return 1;
         }
@@ -86,7 +105,7 @@ final readonly class DownCommand implements CommandInterface
         try {
             $this->maintenance->activate($retry === '' ? null : (int) $retry, $secret === '' ? null : $secret);
         } catch (\RuntimeException $e) {
-            Output::error($e->getMessage());
+            Output::error($e->getMessage(), $this->errorStream);
 
             return 1;
         }

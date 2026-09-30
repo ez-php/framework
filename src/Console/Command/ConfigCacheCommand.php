@@ -32,10 +32,12 @@ final class ConfigCacheCommand implements CommandInterface
      *
      * @param ConfigLoader $loader    Config loader used to gather all configuration values.
      * @param string       $cachePath Absolute path to the cache file.
+     * @param resource|null $errorStream Where error messages go; null = STDERR (injectable for tests).
      */
     public function __construct(
         private readonly ConfigLoader $loader,
         private readonly string $cachePath,
+        private readonly mixed $errorStream = null,
     ) {
     }
 
@@ -73,7 +75,7 @@ final class ConfigCacheCommand implements CommandInterface
         try {
             $config = $this->loader->load();
         } catch (ConfigException $e) {
-            Output::error('Failed to load config: ' . $e->getMessage());
+            Output::error('Failed to load config: ' . $e->getMessage(), $this->errorStream);
 
             return 1;
         }
@@ -81,7 +83,7 @@ final class ConfigCacheCommand implements CommandInterface
         $dir = dirname($this->cachePath);
 
         if (!is_dir($dir) && !mkdir($dir, 0o755, true)) {
-            Output::error("Could not create cache directory: $dir");
+            Output::error("Could not create cache directory: $dir", $this->errorStream);
 
             return 1;
         }
@@ -89,7 +91,7 @@ final class ConfigCacheCommand implements CommandInterface
         $content = '<?php return ' . var_export($config, true) . ';' . "\n";
 
         if (file_put_contents($this->cachePath, $content) === false) {
-            Output::error("Could not write config cache: {$this->cachePath}");
+            Output::error("Could not write config cache: {$this->cachePath}", $this->errorStream);
 
             return 1;
         }
