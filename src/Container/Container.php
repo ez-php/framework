@@ -315,6 +315,25 @@ final class Container implements TaggedContainerInterface
     }
 
     /**
+     * Whether the given class could be built by autowiring (exists and is instantiable).
+     *
+     * @param class-string $class
+     *
+     * @return bool
+     * @throws ReflectionException
+     */
+    private function isAutowirable(string $class): bool
+    {
+        if (!class_exists($class)) {
+            return false;
+        }
+
+        $this->reflectionCache[$class] ??= new ReflectionClass($class);
+
+        return $this->reflectionCache[$class]->isInstantiable();
+    }
+
+    /**
      * @template T of object
      * @param class-string<T>      $class
      * @param array<string, mixed> $overrides Named constructor parameter overrides.
@@ -363,6 +382,13 @@ final class Container implements TaggedContainerInterface
 
                 if (isset($this->contextualBindings[$class][$typeName])) {
                     $dependencies[] = ($this->contextualBindings[$class][$typeName])($this);
+                    continue;
+                }
+
+                // An optional dependency on an unbound interface/abstract class (or Closure)
+                // can never be autowired — fall back to its default instead of throwing.
+                if ($parameter->isDefaultValueAvailable() && !$this->has($typeName) && !$this->isAutowirable($typeName)) {
+                    $dependencies[] = $parameter->getDefaultValue();
                     continue;
                 }
 

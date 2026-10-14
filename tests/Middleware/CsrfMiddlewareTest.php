@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Tests\Middleware;
 
 use EzPhp\Http\Request;
+use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
+use EzPhp\Http\ResponseInterface;
 use EzPhp\Middleware\CsrfMiddleware;
 use EzPhp\Middleware\CsrfTokenStoreInterface;
 use EzPhp\Routing\Route;
@@ -396,5 +398,116 @@ final class CsrfMiddlewareTest extends TestCase
         $response = $middleware->handle($request, fn (Request $r): Response => new Response('ok'));
 
         $this->assertSame(403, $response->status());
+    }
+
+    /**
+     * Angular's HttpClient echoes the XSRF-TOKEN cookie in X-XSRF-TOKEN.
+     *
+     * @return void
+     */
+    public function test_accepts_token_from_x_xsrf_token_header(): void
+    {
+        $router = new Router();
+        $router->post('/submit', fn () => 'ok');
+
+        $middleware = $this->makeMiddleware($router, $this->makeStore());
+
+        $request = new Request('POST', '/submit', headers: ['X-XSRF-TOKEN' => self::TOKEN]);
+        $response = $middleware->handle($request, fn (Request $r): Response => new Response('ok'));
+
+        $this->assertSame(200, $response->status());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_mismatch_returns_json_envelope_when_client_accepts_json(): void
+    {
+        $router = new Router();
+        $router->post('/submit', fn () => 'ok');
+
+        $middleware = $this->makeMiddleware($router, $this->makeStore());
+
+        $request = new Request('POST', '/submit', headers: ['Accept' => 'application/json']);
+        $response = $middleware->handle($request, fn (Request $r): Response => new Response('ok'));
+
+        $this->assertSame(403, $response->status());
+        $this->assertSame('application/json', $response->headers()['Content-Type'] ?? null);
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame('{"error":{"code":403,"message":"CSRF token mismatch."}}', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_mismatch_stays_plain_text_for_browser_accept_header(): void
+    {
+        $router = new Router();
+        $router->post('/submit', fn () => 'ok');
+
+        $middleware = $this->makeMiddleware($router, $this->makeStore());
+
+        $request = new Request('POST', '/submit', headers: ['Accept' => 'text/html,application/xhtml+xml,*/*;q=0.8']);
+        $response = $middleware->handle($request, fn (Request $r): Response => new Response('ok'));
+
+        $this->assertSame(403, $response->status());
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame('CSRF token mismatch.', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_too_many_attempts_returns_json_envelope_when_client_accepts_json(): void
+    {
+        $router = new Router();
+        $router->post('/login', fn () => 'ok');
+
+        $limiter = new class () implements \EzPhp\Middleware\CsrfRateLimiterInterface {
+            public function attempt(string $key, int $maxAttempts, int $decaySeconds): bool
+            {
+                return false;
+            }
+
+            public function tooManyAttempts(string $key, int $maxAttempts): bool
+            {
+                return true;
+            }
+        };
+
+        $middleware = new CsrfMiddleware($router, $this->makeStore(), $limiter);
+        $request = new Request('POST', '/login', headers: ['Accept' => 'application/json']);
+
+        $response = $middleware->handle($request, fn (Request $r): Response => new Response('ok'));
+
+        $this->assertSame(429, $response->status());
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame('{"error":{"code":429,"message":"Too Many Requests."}}', $response->body());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_mismatch_response_factory_overrides_the_default_response(): void
+    {
+        $router = new Router();
+        $router->post('/submit', fn () => 'ok');
+
+        $seen = [];
+        $factory = function (RequestInterface $request, int $status, string $message) use (&$seen): ResponseInterface {
+            $seen = [$status, $message];
+
+            return new Response('{"message":"Page expired."}', 419);
+        };
+
+        $middleware = new CsrfMiddleware($router, $this->makeStore(), mismatchResponse: $factory);
+
+        $request = new Request('POST', '/submit', headers: ['Accept' => 'application/json']);
+        $response = $middleware->handle($request, fn (Request $r): Response => new Response('ok'));
+
+        $this->assertSame(419, $response->status());
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame('{"message":"Page expired."}', $response->body());
+        $this->assertSame([403, 'CSRF token mismatch.'], $seen);
     }
 }

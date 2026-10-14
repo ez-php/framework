@@ -353,14 +353,15 @@ src/
 │   ├── MaintenanceModeMiddleware.php — 503 (+ Retry-After, JSON for API requests) while down; `/<secret>` sets an HMAC bypass cookie
 │   ├── SecurityHeadersMiddleware.php — nosniff / X-Frame-Options / Referrer-Policy / HSTS defaults; overrides from `security.headers` and the constructor (null removes); CSP only when configured; never overwrites a header the response set
 │   ├── CorsMiddleware.php            — Adds CORS headers (`*`, one origin, or an allow-list echoed with `Vary: Origin`; opt-in credentials); 204 for real preflights only
-│   ├── CsrfMiddleware.php            — CSRF token validation for state-changing requests
+│   ├── CsrfMiddleware.php            — CSRF token validation for state-changing requests; JSON envelope for JSON clients, optional rejection factory
 │   ├── CsrfRateLimiterInterface.php  — Optional rate-limiter seam for CSRF brute-force protection
 │   ├── CsrfTokenStoreInterface.php   — Contract for CSRF token storage (session-backed by default)
 │   ├── DebugToolbarMiddleware.php    — Injects HTML debug toolbar into responses when APP_DEBUG=true
 │   ├── MiddlewareHandler.php         — Builds and executes global + route middleware pipelines
 │   ├── MiddlewareInterface.php       — Contract: handle(RequestInterface, callable) → ResponseInterface
 │   ├── SessionCsrfTokenStore.php     — Default CsrfTokenStoreInterface implementation using PHP sessions
-│   └── TerminableMiddleware.php      — Extension: terminate(Request, ResponseInterface) → void; runs after the body is sent
+│   ├── TerminableMiddleware.php      — Extension: terminate(Request, ResponseInterface) → void; runs after the body is sent
+│   └── XsrfCookieMiddleware.php      — Opt-in: mirrors the CSRF token into a JS-readable `XSRF-TOKEN` cookie after the request ran (SPAs)
 ├── Maintenance/
 │   ├── MaintenanceMode.php           — JSON marker file `storage/framework/down` (retry, bypass secret); shared by down/up and the middleware
 │   └── MaintenanceState.php          — Settings of an active window (retry, secret, bypassToken()), read once per request via MaintenanceMode::state()
@@ -433,6 +434,7 @@ tests/
 ├── Middleware/SessionCsrfTokenStoreTest.php
 ├── Middleware/StreamThroughMiddlewareTest.php — StreamedResponse through CORS/Throttle/DebugToolbar and Router::resource()
 ├── Middleware/TerminableMiddlewareTest.php
+├── Middleware/XsrfCookieMiddlewareTest.php
 ├── Maintenance/MaintenanceModeTest.php
 ├── Middleware/MaintenanceModeMiddlewareTest.php
 ├── Middleware/SecurityHeadersMiddlewareTest.php
@@ -481,6 +483,7 @@ Resolution order: cached instance → registered binding → autowire → `Conta
 - Bindings are stored as closures; calling `bind()` with a class-string or null auto-wraps it
 - Autowiring uses `ReflectionClass` to recursively resolve constructor parameters
 - Interfaces and abstract classes **cannot** be autowired — bind them explicitly in a provider
+- An **optional** parameter (one with a default) typed against an unbound interface, abstract class or `Closure` receives its default instead of throwing — e.g. `CsrfMiddleware`'s `?CsrfRateLimiterInterface $rateLimiter = null`. A binding, when present, still wins; a required parameter of such a type still throws
 - **Circular dependency detection** — when `build()` detects a class already in the current resolution stack it throws `ContainerException` with the full dependency chain (e.g. `Circular dependency detected while resolving 'A': A → B → A`)
 
 ---
@@ -540,7 +543,11 @@ Thin PDO wrapper. Not a DBAL. The ORM and query builder live in `ez-php/orm`.
 
 ### CSRF Protection (`src/Middleware/CsrfMiddleware.php`)
 
-`CsrfMiddleware` verifies the `_token` form field (or `X-CSRF-TOKEN` header) on all state-changing requests (POST, PUT, PATCH, DELETE). Routes can opt out with `->withoutCsrf()`.
+`CsrfMiddleware` verifies the `_token` form field (or the `X-CSRF-TOKEN` / `X-XSRF-TOKEN` header) on all state-changing requests (POST, PUT, PATCH, DELETE). Routes can opt out with `->withoutCsrf()`.
+
+A rejection (403 mismatch, 429 when the optional rate limiter trips) is plain text, or the framework's JSON error envelope `{"error":{"code":403,"message":"CSRF token mismatch."}}` when the `Accept` header contains `application/json` — the same check and shape as `DefaultExceptionHandler`. The optional `$mismatchResponse` constructor closure `(RequestInterface, int $status, string $message): ResponseInterface` replaces the built-in response entirely (e.g. a 419 in an application's own JSON format); bind `CsrfMiddleware::class` to a closure in a provider to pass it.
+
+**SPAs:** the opt-in `XsrfCookieMiddleware` writes the current token into a non-HttpOnly `XSRF-TOKEN` cookie *after* `$next` returned, so a token rotated during the request (`Auth::login()`) reaches the client in the same response; it skips the cookie when the request already carried the current value. Angular's `HttpClient` and Axios echo that cookie in `X-XSRF-TOKEN`. Constructor options: `secure`, `domain`, `path`. Register it after `StartSessionMiddleware`, like `CsrfMiddleware`.
 
 **Required infrastructure setup:**
 

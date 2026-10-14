@@ -174,6 +174,52 @@ final class ContainerTest extends TestCase
     }
 
     /**
+     * An optional parameter typed against an unbound interface or Closure gets
+     * its default instead of failing (CsrfMiddleware's `?CsrfRateLimiterInterface
+     * $rateLimiter = null` relies on this).
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_autowiring_uses_default_for_optional_unbound_interface_and_closure(): void
+    {
+        $container = new Container();
+        $result = $container->make(AutowiringOptionalAbstractDependencies::class);
+
+        $this->assertNull($result->dependency);
+        $this->assertNull($result->factory);
+    }
+
+    /**
+     * A bound interface still wins over the default.
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_autowiring_prefers_binding_over_default_for_optional_interface(): void
+    {
+        $container = new Container();
+        $container->bind(ContainerTestInterface::class, ContainerTestImplementation::class);
+        $result = $container->make(AutowiringOptionalAbstractDependencies::class);
+
+        $this->assertInstanceOf(ContainerTestImplementation::class, $result->dependency);
+    }
+
+    /**
+     * A required interface parameter without a binding still throws.
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_autowiring_throws_for_required_unbound_interface(): void
+    {
+        $container = new Container();
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage('cannot be instantiated directly');
+        $container->make(AutowiringRequiredInterfaceDependency::class);
+    }
+
+    /**
      * @return void
      * @throws ReflectionException
      */
@@ -707,6 +753,43 @@ readonly class AutowiringOuter
      * @param AutowiringDependent $dependent
      */
     public function __construct(public AutowiringDependent $dependent)
+    {
+    }
+}
+
+/**
+ * Class AutowiringOptionalAbstractDependencies
+ *
+ * @package Tests\Container
+ */
+readonly class AutowiringOptionalAbstractDependencies
+{
+    /**
+     * AutowiringOptionalAbstractDependencies Constructor
+     *
+     * @param ContainerTestInterface|null $dependency
+     * @param \Closure|null               $factory
+     */
+    public function __construct(
+        public ?ContainerTestInterface $dependency = null,
+        public ?\Closure $factory = null,
+    ) {
+    }
+}
+
+/**
+ * Class AutowiringRequiredInterfaceDependency
+ *
+ * @package Tests\Container
+ */
+readonly class AutowiringRequiredInterfaceDependency
+{
+    /**
+     * AutowiringRequiredInterfaceDependency Constructor
+     *
+     * @param ContainerTestInterface $dependency
+     */
+    public function __construct(public ContainerTestInterface $dependency)
     {
     }
 }

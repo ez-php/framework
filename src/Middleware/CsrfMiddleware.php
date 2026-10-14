@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace EzPhp\Middleware;
 
+use Closure;
 use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
 use EzPhp\Http\ResponseInterface;
@@ -13,9 +14,16 @@ use EzPhp\Routing\Router;
  * Class CsrfMiddleware
  *
  * Verifies the CSRF token for all state-changing requests (POST, PUT, PATCH,
- * DELETE). The token is read from the form input field `_token` or the
- * `X-CSRF-TOKEN` request header and compared against the value stored in the
- * CSRF token store (typically PHP's session).
+ * DELETE). The token is read from the form input field `_token`, the
+ * `X-CSRF-TOKEN` request header, or the `X-XSRF-TOKEN` header (what Angular and
+ * Axios echo from the cookie set by XsrfCookieMiddleware) and compared against
+ * the value stored in the CSRF token store (typically PHP's session).
+ *
+ * Rejections are plain text, or the framework's JSON error envelope
+ * (`{"error":{"code":403,"message":"..."}}`, as DefaultExceptionHandler renders
+ * it) when the Accept header asks for application/json. Pass a
+ * `$mismatchResponse` factory to build the rejection yourself instead (e.g. a
+ * 419 in an application-specific JSON shape).
  *
  * Routes can opt out of CSRF verification by calling `->withoutCsrf()` on the
  * Route object. CsrfMiddleware resolves the current route via the Router to
@@ -53,6 +61,10 @@ final class CsrfMiddleware implements MiddlewareInterface
      *                                                  response is 429 once the limit is exceeded.
      * @param int                          $maxAttempts  Maximum CSRF failures per window (default: 5).
      * @param int                          $decaySeconds Window length in seconds (default: 60).
+     * @param (Closure(RequestInterface, int, string): ResponseInterface)|null $mismatchResponse
+     *                                                  Optional factory for the rejection, called with
+     *                                                  the request, the default status (403 or 429)
+     *                                                  and message; replaces the built-in response.
      */
     public function __construct(
         private readonly Router $router,
@@ -60,6 +72,7 @@ final class CsrfMiddleware implements MiddlewareInterface
         private readonly ?CsrfRateLimiterInterface $rateLimiter = null,
         private readonly int $maxAttempts = 5,
         private readonly int $decaySeconds = 60,
+        private readonly ?Closure $mismatchResponse = null,
     ) {
     }
 
@@ -101,28 +114,56 @@ final class CsrfMiddleware implements MiddlewareInterface
      *
      * @param RequestInterface $request
      *
-     * @return Response
+     * @return ResponseInterface
      */
-    private function handleTokenMismatch(RequestInterface $request): Response
+    private function handleTokenMismatch(RequestInterface $request): ResponseInterface
     {
         if ($this->rateLimiter === null) {
-            return new Response('CSRF token mismatch.', 403);
+            return $this->reject($request, 403, 'CSRF token mismatch.');
         }
 
         $ip = $request->server('REMOTE_ADDR', 'unknown');
         $key = 'csrf_mismatch:' . (is_string($ip) ? $ip : 'unknown');
 
         if ($this->rateLimiter->tooManyAttempts($key, $this->maxAttempts)) {
-            return new Response('Too Many Requests.', 429);
+            return $this->reject($request, 429, 'Too Many Requests.');
         }
 
         $this->rateLimiter->attempt($key, $this->maxAttempts, $this->decaySeconds);
 
-        return new Response('CSRF token mismatch.', 403);
+        return $this->reject($request, 403, 'CSRF token mismatch.');
     }
 
     /**
-     * Extract the CSRF token from form input `_token` or the X-CSRF-TOKEN header.
+     * Build the rejection: the configured factory's response, the JSON error
+     * envelope for clients accepting JSON, or plain text.
+     *
+     * @param RequestInterface $request
+     * @param int              $status
+     * @param string           $message
+     *
+     * @return ResponseInterface
+     */
+    private function reject(RequestInterface $request, int $status, string $message): ResponseInterface
+    {
+        if ($this->mismatchResponse !== null) {
+            return ($this->mismatchResponse)($request, $status, $message);
+        }
+
+        $accept = $request->header('accept', '');
+
+        if (is_string($accept) && str_contains($accept, 'application/json')) {
+            $json = json_encode(['error' => ['code' => $status, 'message' => $message]], JSON_THROW_ON_ERROR);
+
+            return (new Response($json, $status))->withHeader('Content-Type', 'application/json');
+        }
+
+        return new Response($message, $status);
+    }
+
+    /**
+     * Extract the CSRF token from form input `_token`, the X-CSRF-TOKEN header
+     * or the X-XSRF-TOKEN header.
      *
      * @param RequestInterface $request
      *
@@ -135,8 +176,13 @@ final class CsrfMiddleware implements MiddlewareInterface
             return $fromInput;
         }
 
-        $fromHeader = $request->header('X-CSRF-TOKEN');
+        foreach (['X-CSRF-TOKEN', 'X-XSRF-TOKEN'] as $header) {
+            $fromHeader = $request->header($header);
+            if (is_string($fromHeader) && $fromHeader !== '') {
+                return $fromHeader;
+            }
+        }
 
-        return is_string($fromHeader) ? $fromHeader : '';
+        return '';
     }
 }
