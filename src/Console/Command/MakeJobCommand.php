@@ -108,6 +108,13 @@ final readonly class MakeJobCommand implements CommandInterface
             {
                 private int \$attempts = 0;
 
+                public function __construct(
+                    private string \$queue = 'default',
+                    private int \$delay = 0,
+                    private int \$maxTries = 3,
+                ) {
+                }
+
                 public function handle(): void
                 {
                     // Implement the job's work here.
@@ -118,6 +125,21 @@ final readonly class MakeJobCommand implements CommandInterface
                     // Handle permanent failure here (e.g. log or notify).
                 }
 
+                public function getQueue(): string
+                {
+                    return \$this->queue;
+                }
+
+                public function getDelay(): int
+                {
+                    return \$this->delay;
+                }
+
+                public function getMaxTries(): int
+                {
+                    return \$this->maxTries;
+                }
+
                 public function getAttempts(): int
                 {
                     return \$this->attempts;
@@ -126,11 +148,6 @@ final readonly class MakeJobCommand implements CommandInterface
                 public function incrementAttempts(): void
                 {
                     \$this->attempts++;
-                }
-
-                public function getMaxAttempts(): int
-                {
-                    return 3;
                 }
             }
             PHP;

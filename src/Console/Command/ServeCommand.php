@@ -180,10 +180,21 @@ final readonly class ServeCommand implements CommandInterface
         $pipes = [];
         // Array form: no shell in between, so a missing interpreter makes proc_open()
         // fail here instead of spawning a shell that exits with 127.
-        $process = @proc_open([$this->phpBinary, '-S', $address, '-t', $this->publicPath], $descriptors, $pipes);
+        $warning = null;
+        set_error_handler(static function (int $errno, string $errstr) use (&$warning): bool {
+            $warning = $errstr;
+
+            return true;
+        }, E_WARNING);
+
+        try {
+            $process = proc_open([$this->phpBinary, '-S', $address, '-t', $this->publicPath], $descriptors, $pipes);
+        } finally {
+            restore_error_handler();
+        }
 
         if ($process === false) {
-            $error = error_get_last()['message'] ?? 'unknown error';
+            $error = $warning ?? 'unknown error';
             fwrite($this->errorStream ?? STDERR, "Failed to start PHP server: $error\n");
 
             return null;

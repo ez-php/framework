@@ -52,8 +52,24 @@ final readonly class MaintenanceMode
     {
         $dir = dirname($this->markerFile);
 
-        if (!is_dir($dir) && !@mkdir($dir, 0o755, true) && !is_dir($dir)) {
-            throw new \RuntimeException("Cannot create directory: {$dir}");
+        if (!is_dir($dir)) {
+            $warning = null;
+            set_error_handler(static function (int $errno, string $errstr) use (&$warning): bool {
+                $warning = $errstr;
+
+                return true;
+            }, E_WARNING);
+
+            try {
+                $created = mkdir($dir, 0o755, true);
+            } finally {
+                restore_error_handler();
+            }
+
+            // Another process may have created it in the meantime — that is success.
+            if (!$created && !is_dir($dir)) {
+                throw new \RuntimeException("Cannot create directory: {$dir}" . ($warning !== null ? " ({$warning})" : ''));
+            }
         }
 
         $payload = json_encode(['since' => time(), 'retry' => $retryAfter, 'secret' => $secret], JSON_THROW_ON_ERROR);
@@ -86,7 +102,15 @@ final readonly class MaintenanceMode
             return null;
         }
 
-        $raw = @file_get_contents($this->markerFile);
+        // A marker removed or unreadable between is_file() and the read still means "down".
+        set_error_handler(static fn (): bool => true, E_WARNING);
+
+        try {
+            $raw = file_get_contents($this->markerFile);
+        } finally {
+            restore_error_handler();
+        }
+
         $data = $raw === false ? null : json_decode($raw, true);
         $data = is_array($data) ? $data : [];
 

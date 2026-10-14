@@ -40,6 +40,33 @@ use Tests\TestCase;
 #[CoversNothing]
 final class MakeCommandStubImportsTest extends TestCase
 {
+    /**
+     * Run in a child process: loads the autoloader ($argv[1]) and the generated
+     * file ($argv[2]), then exits 1 unless the file returned an object or
+     * itself declared a non-abstract, instantiable class. A missing interface method
+     * is a fatal error, which also exits non-zero.
+     */
+    private const string LOADER = <<<'PHP'
+        require $argv[1];
+        $before = get_declared_classes();
+        $result = require $argv[2];
+        $classes = is_object($result) ? [$result::class] : array_filter(
+            array_diff(get_declared_classes(), $before),
+            static fn (string $c): bool => (new ReflectionClass($c))->getFileName() === realpath($argv[2]),
+        );
+        if ($classes === []) {
+            fwrite(STDERR, "no class declared or returned\n");
+            exit(1);
+        }
+        foreach ($classes as $class) {
+            $ref = new ReflectionClass($class);
+            if ($ref->isAbstract() || !$ref->isInstantiable()) {
+                fwrite(STDERR, "$class is not instantiable\n");
+                exit(1);
+            }
+        }
+        PHP;
+
     private string $dir;
 
     /**
@@ -121,6 +148,69 @@ final class MakeCommandStubImportsTest extends TestCase
                 );
             }
         }
+    }
+
+    /**
+     * Resolving imports is not enough: a stub that implements an interface but
+     * misses one of its methods (make:job once omitted three JobInterface
+     * methods) imports fine and fatals on load. Load each generated file in a
+     * separate PHP process — a fatal there fails this test instead of killing
+     * the suite — and require the declared or returned class to be concrete.
+     *
+     * @param \Closure(string): CommandInterface $factory
+     * @param list<string>                       $args
+     *
+     * @return void
+     */
+    #[DataProvider('generators')]
+    public function test_generated_class_loads_and_is_instantiable(\Closure $factory, array $args): void
+    {
+        ob_start();
+
+        try {
+            $exitCode = $factory($this->dir)->handle($args);
+        } finally {
+            ob_end_clean();
+        }
+
+        $this->assertSame(0, $exitCode);
+
+        $checked = 0;
+
+        foreach ($this->phpFiles($this->dir) as $file) {
+            preg_match_all('/^use (EzPhp\\\\[A-Za-z0-9_\\\\]+);/m', (string) file_get_contents($file), $m);
+
+            foreach ($m[1] as $class) {
+                if (!$this->packageInstalledFor($class)) {
+                    continue 2;
+                }
+            }
+
+            $output = [];
+            exec(
+                escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg(self::LOADER)
+                . ' -- ' . escapeshellarg($this->autoloadPath()) . ' ' . escapeshellarg($file) . ' 2>&1',
+                $output,
+                $status,
+            );
+
+            $this->assertSame(0, $status, sprintf("%s did not load as a concrete class:\n%s", basename($file), implode("\n", $output)));
+            $checked++;
+        }
+
+        if ($checked === 0) {
+            $this->markTestSkipped('the generated stub depends on an optional module that is not installed');
+        }
+    }
+
+    /**
+     * The Composer autoloader of the running test suite.
+     */
+    private function autoloadPath(): string
+    {
+        $loaderFile = (string) (new \ReflectionClass(ClassLoader::class))->getFileName();
+
+        return dirname($loaderFile, 2) . DIRECTORY_SEPARATOR . 'autoload.php';
     }
 
     /**
