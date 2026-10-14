@@ -76,6 +76,7 @@ final readonly class MaintenanceModeMiddleware implements MiddlewareInterface
                         self::BYPASS_TTL,
                         secure: $this->isHttps($request),
                         httpOnly: true,
+                        sameSite: 'Lax',
                     );
             }
         }

@@ -36,12 +36,15 @@ final class XsrfCookieMiddleware implements MiddlewareInterface
      * @param bool                    $secure     Send the cookie over HTTPS only.
      * @param string                  $domain     Cookie domain; empty for the current host.
      * @param string                  $path       Cookie path.
+     * @param string                  $sameSite   SameSite attribute (`Lax`, `Strict`, or `None` with $secure);
+     *                                            Lax by default, matching ez-php/session's session cookie.
      */
     public function __construct(
         private readonly CsrfTokenStoreInterface $tokenStore,
         private readonly bool $secure = false,
         private readonly string $domain = '',
         private readonly string $path = '/',
+        private readonly string $sameSite = 'Lax',
     ) {
     }
 
@@ -62,6 +65,6 @@ final class XsrfCookieMiddleware implements MiddlewareInterface
             return $response;
         }
 
-        return $response->withCookie(self::COOKIE, $token, 0, $this->path, $this->domain, $this->secure, false);
+        return $response->withCookie(self::COOKIE, $token, 0, $this->path, $this->domain, $this->secure, false, $this->sameSite);
     }
 }

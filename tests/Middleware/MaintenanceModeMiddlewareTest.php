@@ -100,6 +100,7 @@ final class MaintenanceModeMiddlewareTest extends TestCase
         self::assertSame(MaintenanceMode::BYPASS_COOKIE, $cookie->name());
         self::assertSame($this->mode->bypassToken(), $cookie->value());
         self::assertStringContainsString('HttpOnly', $cookie->toHeaderValue());
+        self::assertSame('Lax', $cookie->sameSite());
     }
 
     public function test_bypass_cookie_lets_the_request_through(): void

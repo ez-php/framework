@@ -22,15 +22,17 @@ composer require ez-php/framework
 | `Application` | Runtime kernel, bootstrap lifecycle, service provider loading |
 | `Container` | Dependency injection with autowiring |
 | `ServiceProvider` | Register/boot pattern for modular configuration |
-| `Http` | Immutable `Request` / `Response`, `RequestFactory` |
 | `Routing` | Router with named routes, route groups, and URL parameter support |
-| `Middleware` | Pipeline-based middleware with terminable support |
+| `Controller` | `Controller` / `ApiController` base classes with validation and JSON response helpers |
+| `Middleware` | Pipeline-based middleware with terminable support, plus bundled middleware: `CsrfMiddleware`, `XsrfCookieMiddleware` (SPAs), `CorsMiddleware`, `SecurityHeadersMiddleware`, `ConditionalGetMiddleware`, `LocaleNegotiationMiddleware`, `MaintenanceModeMiddleware` |
+| `Maintenance` | `down` / `up` maintenance mode with a secret bypass path |
 | `Database` | Thin PDO wrapper with transactions |
 | `Migration` | File-based migration runner with batch rollback |
 | `Config` | Dot-notation config loader |
-| `Console` | CLI kernel with command registration |
-| `Env` | `.env` file parser with variable interpolation |
+| `Console` | Built-in commands (`migrate`, `make:*`, `route:*`, …) on top of `ez-php/console` |
 | `Exceptions` | Exception handler with service provider integration |
+
+HTTP value objects (`Request`, `Response`, `RequestFactory`) come from [ez-php/http](https://github.com/ez-php/http) and `.env` loading from [ez-php/dotenv](https://github.com/ez-php/dotenv) — both are required dependencies, not part of this package. CSRF setup (session, token store, SPA cookie) is described in [CLAUDE.md § CSRF Protection](CLAUDE.md#csrf-protection).
 
 ## Quick start
 

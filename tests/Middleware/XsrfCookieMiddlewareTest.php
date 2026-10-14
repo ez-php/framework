@@ -79,6 +79,7 @@ final class XsrfCookieMiddlewareTest extends TestCase
         $this->assertSame('/', $cookie->path());
         $this->assertFalse($cookie->isHttpOnly());
         $this->assertFalse($cookie->isSecure());
+        $this->assertSame('Lax', $cookie->sameSite());
     }
 
     /**
@@ -129,5 +130,18 @@ final class XsrfCookieMiddlewareTest extends TestCase
         $this->assertNotNull($cookie);
         $this->assertTrue($cookie->isSecure());
         $this->assertSame('example.com', $cookie->domain());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_same_site_is_configurable(): void
+    {
+        $middleware = new XsrfCookieMiddleware($this->makeStore(fn (): string => 'tok-1'), sameSite: 'Strict');
+
+        $response = $middleware->handle(new Request('GET', '/'), fn (Request $r): Response => new Response('ok'));
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame('Strict', $this->xsrfCookie($response)?->sameSite());
     }
 }
