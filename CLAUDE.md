@@ -198,7 +198,7 @@ Run from the new module root (requires `"ez-php/docker": "^2.0"` in `require-dev
 vendor/bin/docker-init
 ```
 
-This copies `Dockerfile`, `docker-compose.yml`, `.env.example`, `start.sh`, and `docker/` into the module, replacing `{{MODULE_NAME}}` placeholders. Existing files are never overwritten.
+This copies `Dockerfile`, `docker-compose.yml`, `.env.example`, `start.sh`, and `docker/` into the module, replacing `{{MODULE_NAME}}` placeholders (`docker/db/`, the MySQL init script, only with `--services=mysql`). Existing files are never overwritten.
 
 Pass `--services` to merge MySQL/Redis/Meilisearch/Memcached/Mailpit service definitions directly into `docker-compose.yml` and uncomment the matching sections in `.env.example`, instead of adapting them by hand afterward:
 
@@ -243,7 +243,8 @@ After scaffolding:
 | `ez-php/feature-flags` | — | 6385 (`REDIS_HOST_PORT`) | — |
 | `ez-php/scheduler` | — | 6386 (`REDIS_HOST_PORT`) | — |
 | `ez-php/session` | — | 6387 (`REDIS_HOST_PORT`) | — |
-| **next free** | **3312** | **6388** | **7702** |
+| `ez-php/metrics` | — | 6388 (`REDIS_HOST_PORT`) | — |
+| **next free** | **3312** | **6389** | **7702** |
 
 Only set a port for services the module actually uses. Modules without external services need no port config.
 
@@ -325,7 +326,7 @@ src/
 │   ├── Container.php                 — DI container with singleton cache and autowiring; implements TaggedContainerInterface (tag/tagged)
 │   └── ContextualBindingBuilder.php  — Fluent builder for contextual bindings: when(A)->needs(B)->give(C)
 ├── Controller/
-│   ├── Controller.php                — Abstract base controller; provides helper methods for request access
+│   ├── Controller.php                — Abstract base controller; json()/html()/redirect()/abort() helpers and validate($request, $rules, ?$db, ?$translator)
 │   └── ApiController.php             — Extends Controller; adds json(), created(), noContent() response helpers
 ├── Database/
 │   ├── Database.php                  — Thin PDO wrapper: query(), execute(), transaction() (nested calls use savepoints), getPdo()
@@ -615,7 +616,7 @@ Adds `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and HSTS by 
 - **`SeederInterface::run()` takes `DatabaseInterface`, not the concrete `Database`** — dependency inversion: seeders depend on the contract. This was a breaking change (PHP forbids an implementer from narrowing a parameter type, so `run(Database $db)` seeders stop loading); the template's `docs/upgrade-seeder-interface.md` has the one-line migration, and `make:seeder` generates the new signature.
 - **`db:setup` is not atomic** — `migrate()` and the seed step are two independently-recoverable steps with no umbrella transaction. If a seeder throws partway through, the schema is already migrated and every seeder that ran before the failure is already committed; `DbSetupCommand` reports each seeder as it succeeds (via `SeederRunner::run()`'s `$onSeeded` callback) so a failure names exactly which ones. Re-running is safe only if the seeders already run are idempotent — no automatic rollback or resumption is attempted, by design, to keep the seed step dependency-free of a transaction-aware `Database` abstraction that migrations also can't rely on (implicit-commit DDL in the migration step above already rules that out).
 - **`CorsMiddleware` is a concrete helper** — Provided as a convenience; not part of the routing or middleware infrastructure. Global middleware is autowired from its class string, so configure it by binding `CorsMiddleware::class` to a closure in a provider (e.g. `new CorsMiddleware(allowOrigin: 'https://app.example.com, https://admin.example.com', allowCredentials: true)`). `allowOrigin` keeps its original meaning for `*` and a single origin; a comma-separated list switches to allow-list mode — the matching request `Origin` is echoed (browsers accept only one origin per response) and `Vary: Origin` is always added so shared caches don't serve one origin's answer to another. `allowCredentials` cannot be combined with `*` (the constructor throws — browsers reject that combination anyway). Only an `OPTIONS` request carrying `Access-Control-Request-Method` is a preflight and short-circuits with 204; any other `OPTIONS` request is routed normally.
-- **`ez-php/i18n` and `ez-php/validation` are core dependencies** — They are declared in `composer.json` `require` and are not optional. `TranslatorServiceProvider` ships in `CoreServiceProviders::all()` so exception renderers can localise production error pages, and `Controller::validate()` is a first-class base-controller convenience built on `ez-php/validation`. The kernel cannot bootstrap without them. (i18n is consumed through `TranslatorInterface` from `ez-php/contracts`; validation is used via its static `Validator` facade.)
+- **`ez-php/i18n` and `ez-php/validation` are core dependencies** — They are declared in `composer.json` `require` and are not optional. `TranslatorServiceProvider` ships in `CoreServiceProviders::all()` so exception renderers can localise production error pages, and `Controller::validate()` is a first-class base-controller convenience built on `ez-php/validation`. It takes optional `DatabaseInterface`/`TranslatorInterface` arguments rather than resolving them itself (no service locator in the base class, and subclasses keep their own constructors): pass the controller's injected instances to use the `unique`/`exists` rules (which throw without a database) or localised messages. The kernel cannot bootstrap without them. (i18n is consumed through `TranslatorInterface` from `ez-php/contracts`; validation is used via its static `Validator` facade.)
 - **`Container::tag()`/`tagged()` is the standard plugin-discovery convention for driver-based modules** — New driver-/plugin-pattern modules (notification channels, log drivers, health probes, and similar "many interchangeable implementations behind one interface" cases) should register their implementations under a tag via `Container::tag()` and resolve the active set via `Container::tagged()`, instead of each module hand-rolling its own manual registration array. This is a forward-looking convention for new code, not a mandate to retrofit every existing module in one pass — see `Container::tag()`'s own docblock for the intended consumers.
 
 ---

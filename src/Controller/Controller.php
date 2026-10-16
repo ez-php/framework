@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace EzPhp\Controller;
 
+use EzPhp\Contracts\DatabaseInterface;
+use EzPhp\Contracts\TranslatorInterface;
 use EzPhp\Exceptions\HttpException;
 use EzPhp\Http\Request;
 use EzPhp\Http\Response;
@@ -76,15 +78,26 @@ abstract class Controller
      *
      * Requires ez-php/validation to be installed.
      *
-     * @param Request                                                          $request The current HTTP request.
-     * @param array<string, string|list<string|RuleInterface|ConditionalRule>> $rules   Validation rules keyed by field name.
+     * The database rules (`unique`, `exists`) need $db and throw a RuntimeException
+     * without it; messages are localised only when $translator is given. Inject both
+     * into the controller's constructor and pass them through, e.g.
+     * `$this->validate($request, $rules, $this->db, $this->translator)`.
+     *
+     * @param Request                                                          $request    The current HTTP request.
+     * @param array<string, string|list<string|RuleInterface|ConditionalRule>> $rules      Validation rules keyed by field name.
+     * @param DatabaseInterface|null                                           $db         For the `unique`/`exists` rules.
+     * @param TranslatorInterface|null                                         $translator For localised error messages.
      *
      * @return array<string, mixed>
      * @throws ValidationException When validation fails.
      */
-    protected function validate(Request $request, array $rules): array
-    {
-        Validator::make($request->all(), $rules)->validate();
+    protected function validate(
+        Request $request,
+        array $rules,
+        ?DatabaseInterface $db = null,
+        ?TranslatorInterface $translator = null,
+    ): array {
+        Validator::make($request->all(), $rules, $db, $translator)->validate();
 
         return $request->all();
     }

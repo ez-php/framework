@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Controller;
 
+use EzPhp\Contracts\DatabaseInterface;
+use EzPhp\Contracts\TranslatorInterface;
 use EzPhp\Controller\Controller;
+use EzPhp\Database\Database;
 use EzPhp\Exceptions\HttpException;
 use EzPhp\Http\Request;
 use EzPhp\Http\Response;
+use EzPhp\I18n\Translator;
 use EzPhp\Validation\ConditionalRule;
 use EzPhp\Validation\RuleInterface;
 use EzPhp\Validation\ValidationException;
@@ -22,6 +26,7 @@ use Tests\TestCase;
  */
 #[CoversClass(Controller::class)]
 #[UsesClass(HttpException::class)]
+#[UsesClass(Database::class)]
 final class ControllerTest extends TestCase
 {
     private ConcreteController $controller;
@@ -166,6 +171,51 @@ final class ControllerTest extends TestCase
             $this->assertArrayHasKey('email', $e->errors());
         }
     }
+
+    /**
+     * The database rules need a DatabaseInterface; without one they throw a RuntimeException.
+     *
+     * @return void
+     */
+    public function test_validate_runs_database_rules_with_a_database(): void
+    {
+        $db = new Database('sqlite::memory:', '', '');
+        $db->execute('CREATE TABLE users (email TEXT)');
+        $db->execute("INSERT INTO users (email) VALUES ('taken@example.com')");
+
+        $taken = new Request(method: 'POST', uri: '/', body: ['email' => 'taken@example.com']);
+        $free = new Request(method: 'POST', uri: '/', body: ['email' => 'free@example.com']);
+
+        $this->assertSame(['email' => 'free@example.com'], $this->controller->callValidate($free, ['email' => 'unique:users'], $db));
+
+        try {
+            $this->controller->callValidate($taken, ['email' => 'unique:users'], $db);
+            $this->fail('Expected ValidationException');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('email', $e->errors());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function test_validate_uses_the_given_translator(): void
+    {
+        $langPath = sys_get_temp_dir() . '/ez-controller-lang-' . uniqid();
+        mkdir($langPath . '/de', 0o755, true);
+        file_put_contents($langPath . '/de/validation.php', "<?php\nreturn ['required' => 'Das Feld :field ist erforderlich.'];\n");
+
+        try {
+            $this->controller->callValidate(new Request(method: 'POST', uri: '/'), ['name' => 'required'], null, new Translator('de', 'de', $langPath));
+            $this->fail('Expected ValidationException');
+        } catch (ValidationException $e) {
+            $this->assertSame(['Das Feld name ist erforderlich.'], $e->errors()['name']);
+        } finally {
+            unlink($langPath . '/de/validation.php');
+            rmdir($langPath . '/de');
+            rmdir($langPath);
+        }
+    }
 }
 
 /**
@@ -224,11 +274,13 @@ class ConcreteController extends Controller
     /**
      * @param Request                                                          $request
      * @param array<string, string|list<string|RuleInterface|ConditionalRule>> $rules
+     * @param DatabaseInterface|null                                           $db
+     * @param TranslatorInterface|null                                         $translator
      *
      * @return array<string, mixed>
      */
-    public function callValidate(Request $request, array $rules): array
+    public function callValidate(Request $request, array $rules, ?DatabaseInterface $db = null, ?TranslatorInterface $translator = null): array
     {
-        return $this->validate($request, $rules);
+        return $this->validate($request, $rules, $db, $translator);
     }
 }
