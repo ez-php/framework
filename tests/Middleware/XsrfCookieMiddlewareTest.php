@@ -10,7 +10,6 @@ use EzPhp\Http\Response;
 use EzPhp\Middleware\CsrfTokenStoreInterface;
 use EzPhp\Middleware\XsrfCookieMiddleware;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
 
 /**
@@ -19,7 +18,6 @@ use Tests\TestCase;
  * @package Tests\Middleware
  */
 #[CoversClass(XsrfCookieMiddleware::class)]
-#[UsesClass(Cookie::class)]
 final class XsrfCookieMiddlewareTest extends TestCase
 {
     /**
