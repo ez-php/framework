@@ -139,6 +139,8 @@ final readonly class MakeCommandCommand implements CommandInterface
             use EzPhp\\Console\\CommandInterface;
 
             /**
+             * Class $name
+             *
              * Register this command from a service provider's boot():
              *
              *     if (\$this->app instanceof CommandRegistryInterface) {
@@ -151,23 +153,42 @@ final readonly class MakeCommandCommand implements CommandInterface
              */
             final class $name implements CommandInterface
             {
+                /**
+                 * The command name, used as `ez <name>`.
+                 *
+                 * @return string
+                 */
                 public function getName(): string
                 {
                     return '$commandName';
                 }
 
+                /**
+                 * One-line description shown by `ez list`.
+                 *
+                 * @return string
+                 */
                 public function getDescription(): string
                 {
                     return '';
                 }
 
+                /**
+                 * Usage text shown by `ez help`.
+                 *
+                 * @return string
+                 */
                 public function getHelp(): string
                 {
                     return 'Usage: ez $commandName';
                 }
 
                 /**
+                 * Run the command.
+                 *
                  * @param list<string> \$args
+                 *
+                 * @return int exit code
                  */
                 public function handle(array \$args): int
                 {

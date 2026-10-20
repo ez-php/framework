@@ -113,7 +113,17 @@ final readonly class MakeSeederCommand implements CommandInterface
             use EzPhp\Contracts\DatabaseInterface;
             use EzPhp\Migration\SeederInterface;
 
+            /**
+             * Seeder — run with `ez db:seed`.
+             */
             return new class implements SeederInterface {
+                /**
+                 * Insert the seed data.
+                 *
+                 * @param DatabaseInterface $db
+                 *
+                 * @return void
+                 */
                 public function run(DatabaseInterface $db): void
                 {
                     // $db->execute('INSERT INTO table (col) VALUES (?)', ['value']);

@@ -107,8 +107,20 @@ final readonly class MakeControllerCommand implements CommandInterface
             use EzPhp\\Http\\Request;
             use EzPhp\\Http\\Response;
 
+            /**
+             * Class $name
+             *
+             * @package App\\Controllers
+             */
             final class $name
             {
+                /**
+                 * Handle the index request.
+                 *
+                 * @param Request \$request
+                 *
+                 * @return Response
+                 */
                 public function index(Request \$request): Response
                 {
                     return new Response('');

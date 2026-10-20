@@ -77,6 +77,36 @@ final class RouterTest extends TestCase
      * @return void
      * @throws RouteException
      */
+    public function test_matched_route_is_the_route_of_the_last_retrieval(): void
+    {
+        $router = new Router();
+        $router->get('/users/{id}', fn () => new Response('u'));
+        $fallback = $router->fallback(fn () => new Response('404'));
+
+        $this->assertNull($router->matchedRoute());
+
+        $route = $router->retrieveRoute(new Request('GET', '/users/42'));
+        $this->assertSame('/users/{id}', $route->getPath());
+        $this->assertSame($route, $router->matchedRoute());
+
+        $router->retrieveRoute(new Request('GET', '/nowhere'));
+        $this->assertSame($fallback, $router->matchedRoute());
+    }
+
+    public function test_matched_route_is_reset_when_retrieval_fails(): void
+    {
+        $router = new Router();
+        $router->get('/users/{id}', fn () => new Response('u'));
+        $router->retrieveRoute(new Request('GET', '/users/42'));
+
+        try {
+            $router->retrieveRoute(new Request('GET', '/missing'));
+        } catch (RouteException) {
+        }
+
+        $this->assertNull($router->matchedRoute());
+    }
+
     public function test_retrieve_route_throws_for_unknown_path(): void
     {
         $router = new Router();

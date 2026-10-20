@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace EzPhp\Controller;
 
 use EzPhp\Contracts\DatabaseInterface;
+use EzPhp\Contracts\GateInterface;
 use EzPhp\Contracts\TranslatorInterface;
+use EzPhp\Exceptions\ApplicationException;
+use EzPhp\Exceptions\ForbiddenException;
 use EzPhp\Exceptions\HttpException;
 use EzPhp\Http\Request;
 use EzPhp\Http\Response;
@@ -100,6 +103,38 @@ abstract class Controller
         Validator::make($request->all(), $rules, $db, $translator)->validate();
 
         return $request->all();
+    }
+
+    /**
+     * Authorize the current user for an ability, or abort with 403.
+     *
+     * The gate is passed in like validate()'s database — no service locator in
+     * the base class. Inject it into the controller's constructor as an
+     * optional dependency, `private ?GateInterface $gate = null`: the container
+     * fills it when ez-php/authorization (or any GateInterface binding) is
+     * installed and leaves null otherwise, which this method reports clearly
+     * instead of silently allowing.
+     *
+     * @param GateInterface|null $gate    The gate, usually the controller's injected one.
+     * @param string             $ability Ability name, e.g. 'update'.
+     * @param mixed              $subject Optional subject (object or class-string).
+     *
+     * @return void
+     * @throws ForbiddenException   When the ability is denied (403).
+     * @throws ApplicationException When no gate is available.
+     */
+    protected function authorize(?GateInterface $gate, string $ability, mixed $subject = null): void
+    {
+        if ($gate === null) {
+            throw new ApplicationException(
+                "Cannot authorize '{$ability}': no " . GateInterface::class . ' is bound. '
+                . 'Register ez-php/authorization\'s AuthorizationServiceProvider (or bind your own GateInterface).'
+            );
+        }
+
+        if (!$gate->allows($ability, $subject)) {
+            throw new ForbiddenException("This action is unauthorized: {$ability}.");
+        }
     }
 
     /**

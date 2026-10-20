@@ -104,9 +104,16 @@ final readonly class MakeChannelCommand implements CommandInterface
             use EzPhp\\Notification\\ChannelInterface;
             use EzPhp\\Notification\\NotificationInterface;
 
+            /**
+             * Class $name
+             *
+             * @package App\\Channels
+             */
             final class $name implements ChannelInterface
             {
                 /**
+                 * Deliver the notification through this channel.
+                 *
                  * @param object              \$notifiable  The recipient (e.g. a User model).
                  * @param NotificationInterface \$notification
                  *

@@ -106,8 +106,18 @@ final readonly class MakeProviderCommand implements CommandInterface
 
             use EzPhp\\ServiceProvider\\ServiceProvider;
 
+            /**
+             * Class $name
+             *
+             * @package App\\Providers
+             */
             final class $name extends ServiceProvider
             {
+                /**
+                 * Bind services into the container.
+                 *
+                 * @return void
+                 */
                 public function register(): void
                 {
                     //

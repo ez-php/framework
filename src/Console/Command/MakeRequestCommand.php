@@ -104,9 +104,16 @@ final readonly class MakeRequestCommand implements CommandInterface
             use EzPhp\\Http\\Request;
             use EzPhp\\Validation\\Validator;
 
+            /**
+             * Class $name
+             *
+             * @package App\\Requests
+             */
             final class $name
             {
                 /**
+                 * The validation rules for this request.
+                 *
                  * @return array<string, string|list<string>>
                  */
                 public function rules(): array
@@ -115,13 +122,15 @@ final readonly class MakeRequestCommand implements CommandInterface
                 }
 
                 /**
+                 * Build a validator for the request input.
+                 *
                  * @param Request \$request
                  *
                  * @return Validator
                  */
                 public function validate(Request \$request): Validator
                 {
-                    return new Validator(\$request->all(), \$this->rules());
+                    return Validator::make(\$request->all(), \$this->rules());
                 }
             }
             PHP;

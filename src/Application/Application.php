@@ -367,14 +367,15 @@ final class Application implements ContainerInterface, CommandRegistryInterface
             throw new ApplicationException('Container not set!');
         }
 
-        $this->activateDeferredProviderFor($class);
-
+        // The container's deferred resolver (installed in foundation()) activates
+        // a deferred provider for this class and for every autowired dependency.
         return $this->container->make($class);
     }
 
     /**
-     * Determine whether an explicit binding or resolved instance exists for
-     * the given class, without attempting to resolve it.
+     * Determine whether an explicit binding, resolved instance or deferred
+     * provider binding exists for the given class, without attempting to
+     * resolve it (a deferred provider is not activated).
      *
      * @param string $class
      *
@@ -477,6 +478,17 @@ final class Application implements ContainerInterface, CommandRegistryInterface
     private function foundation(): void
     {
         $this->container = new Container();
+        $this->container->setDeferredResolver(function (string $class, bool $activate): bool {
+            if (!isset($this->deferredBindings[$class])) {
+                return false;
+            }
+
+            if ($activate) {
+                $this->activateDeferredProviderFor($class);
+            }
+
+            return true;
+        });
         $this->container->bind(Application::class, fn () => $this);
         $this->container->bind(ContainerInterface::class, fn () => $this);
         $this->container->bind(Container::class, fn () => $this->container);
@@ -510,11 +522,17 @@ final class Application implements ContainerInterface, CommandRegistryInterface
      * register() always runs immediately, so the binding is available to the
      * make() call that triggered activation. boot() normally runs right
      * after it too — except when this activation was itself triggered from
-     * inside another deferred provider's register()/boot() (that provider's
-     * boot() resolved a class belonging to a second, not-yet-loaded deferred
+     * inside another deferred provider's register() or boot() (that provider
+     * resolved a class belonging to a second, not-yet-loaded deferred
      * provider). In that nested case, boot() is queued and runs immediately
-     * after the outer provider's own boot() completes instead of interleaving
-     * mid-boot, preserving the register-before-boot ordering guarantee.
+     * after the outermost provider's own boot() completes instead of
+     * interleaving, preserving the register-before-boot ordering guarantee.
+     *
+     * Failure handling: a provider whose register() throws is not marked as
+     * loaded, so the next resolution retries it. If the outermost activation
+     * throws, boots it queued for nested providers are discarded — those
+     * providers stay registered but un-booted rather than being booted later
+     * by an unrelated activation.
      *
      * @param string $class
      *
@@ -532,26 +550,41 @@ final class Application implements ContainerInterface, CommandRegistryInterface
             return;
         }
 
+        // Marked before register() so a provider resolving its own classes there
+        // does not recurse into itself; unmarked again if register() throws.
         $this->loadedDeferredProviders[$providerClass] = true;
 
         $provider = new $providerClass($this);
-        $provider->register();
-
-        if ($this->activatingDeferredProvider) {
-            $this->deferredBootQueue[] = $provider;
-            return;
-        }
-
+        $outermost = !$this->activatingDeferredProvider;
         $this->activatingDeferredProvider = true;
 
         try {
+            try {
+                $provider->register();
+            } catch (Throwable $e) {
+                unset($this->loadedDeferredProviders[$providerClass]);
+
+                throw $e;
+            }
+
+            if (!$outermost) {
+                $this->deferredBootQueue[] = $provider;
+
+                return;
+            }
+
             $provider->boot();
 
             while ($queued = array_shift($this->deferredBootQueue)) {
                 $queued->boot();
             }
         } finally {
-            $this->activatingDeferredProvider = false;
+            if ($outermost) {
+                $this->activatingDeferredProvider = false;
+                // A failed activation discards the boots it queued, instead of
+                // leaving them for the next, unrelated activation to run.
+                $this->deferredBootQueue = [];
+            }
         }
     }
 

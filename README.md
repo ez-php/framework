@@ -110,7 +110,7 @@ The router reads `_method` from the parsed request body and overrides the HTTP m
 
 - [ez-php/orm](https://github.com/ez-php/orm) — Data Mapper ORM, Query Builder, Schema Builder
 - [ez-php/auth](https://github.com/ez-php/auth) — Session, Bearer token, JWT, and personal access token authentication
-- [ez-php/cache](https://github.com/ez-php/cache) — Array, File, Redis, and Memcached drivers; tags, locks, stampede protection
+- [ez-php/cache](https://github.com/ez-php/cache) — Array, File, Redis, Memcached and Database drivers; tags, locks, stampede protection
 - [ez-php/events](https://github.com/ez-php/events) — Synchronous event bus, static `Event` façade, stoppable events
 - [ez-php/i18n](https://github.com/ez-php/i18n) — Locale-based translator, dot-notation keys, `LocaleFormatter`
 - [ez-php/validation](https://github.com/ez-php/validation) — Rule-based validator, `FormRequest`, optional DB/translator integration
@@ -119,7 +119,7 @@ The router reads `_method` from the parsed request body and overrides the HTTP m
 - [ez-php/mail](https://github.com/ez-php/mail) — Transactional email, SMTP/Mailgun/SendGrid/Log/Null drivers
 - [ez-php/view](https://github.com/ez-php/view) — PHP template engine, layouts, sections, partials
 - [ez-php/queue](https://github.com/ez-php/queue) — Async job queue, database and Redis drivers, failed-job management
-- [ez-php/rate-limiter](https://github.com/ez-php/rate-limiter) — Rate limiting, Array/Redis/CacheDelegate drivers, `ThrottleMiddleware`
+- [ez-php/rate-limiter](https://github.com/ez-php/rate-limiter) — Rate limiting, Array/File/Redis/SlidingWindowRedis/Cache (`CacheDriver`) drivers, `ThrottleMiddleware`
 - [ez-php/scheduler](https://github.com/ez-php/scheduler) — Cron-based job scheduler with File/Database mutex overlap prevention
 - [ez-php/broadcast](https://github.com/ez-php/broadcast) — Real-time event broadcasting, SSE helpers, Null/Log/Redis/Array drivers
 - [ez-php/search](https://github.com/ez-php/search) — Full-text search, Meilisearch/Elasticsearch/Typesense drivers

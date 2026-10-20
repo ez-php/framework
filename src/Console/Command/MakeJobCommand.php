@@ -104,10 +104,22 @@ final readonly class MakeJobCommand implements CommandInterface
             use EzPhp\\Contracts\\JobInterface;
             use Throwable;
 
+            /**
+             * Class $name
+             *
+             * @package App\\Jobs
+             */
             final class $name implements JobInterface
             {
                 private int \$attempts = 0;
 
+                /**
+                 * $name Constructor
+                 *
+                 * @param string \$queue    Queue name the job is pushed to
+                 * @param int    \$delay    Seconds before the job becomes available
+                 * @param int    \$maxTries Attempts before the job is marked as failed
+                 */
                 public function __construct(
                     private string \$queue = 'default',
                     private int \$delay = 0,
@@ -115,36 +127,63 @@ final readonly class MakeJobCommand implements CommandInterface
                 ) {
                 }
 
+                /**
+                 * Execute the job.
+                 *
+                 * @return void
+                 */
                 public function handle(): void
                 {
                     // Implement the job's work here.
                 }
 
+                /**
+                 * Called once the job has failed permanently.
+                 *
+                 * @param Throwable \$e
+                 *
+                 * @return void
+                 */
                 public function fail(Throwable \$e): void
                 {
                     // Handle permanent failure here (e.g. log or notify).
                 }
 
+                /**
+                 * @return string
+                 */
                 public function getQueue(): string
                 {
                     return \$this->queue;
                 }
 
+                /**
+                 * @return int
+                 */
                 public function getDelay(): int
                 {
                     return \$this->delay;
                 }
 
+                /**
+                 * @return int
+                 */
                 public function getMaxTries(): int
                 {
                     return \$this->maxTries;
                 }
 
+                /**
+                 * @return int
+                 */
                 public function getAttempts(): int
                 {
                     return \$this->attempts;
                 }
 
+                /**
+                 * @return void
+                 */
                 public function incrementAttempts(): void
                 {
                     \$this->attempts++;

@@ -127,7 +127,17 @@ final readonly class MakeMigrationCommand implements CommandInterface
             use EzPhp\\Migration\\MigrationInterface;
             use EzPhp\\Orm\\Schema\\Blueprint;
 
+            /**
+             * Migration — run with `ez migrate`.
+             */
             return new class implements MigrationInterface {
+                /**
+                 * Run the migration.
+                 *
+                 * @param SchemaInterface \$schema
+                 *
+                 * @return void
+                 */
                 public function up(SchemaInterface \$schema): void
                 {
                     \$schema->create('$table', function (Blueprint \$table): void {
@@ -136,6 +146,13 @@ final readonly class MakeMigrationCommand implements CommandInterface
                     });
                 }
 
+                /**
+                 * Reverse the migration.
+                 *
+                 * @param SchemaInterface \$schema
+                 *
+                 * @return void
+                 */
                 public function down(SchemaInterface \$schema): void
                 {
                     \$schema->dropIfExists('$table');
@@ -160,7 +177,17 @@ final readonly class MakeMigrationCommand implements CommandInterface
             use EzPhp\\Migration\\MigrationInterface;
             use EzPhp\\Orm\\Schema\\Blueprint;
 
+            /**
+             * Migration — run with `ez migrate`.
+             */
             return new class implements MigrationInterface {
+                /**
+                 * Run the migration.
+                 *
+                 * @param SchemaInterface \$schema
+                 *
+                 * @return void
+                 */
                 public function up(SchemaInterface \$schema): void
                 {
                     \$schema->table('$table', function (Blueprint \$table): void {
@@ -168,6 +195,13 @@ final readonly class MakeMigrationCommand implements CommandInterface
                     });
                 }
 
+                /**
+                 * Reverse the migration.
+                 *
+                 * @param SchemaInterface \$schema
+                 *
+                 * @return void
+                 */
                 public function down(SchemaInterface \$schema): void
                 {
                     \$schema->table('$table', function (Blueprint \$table): void {
@@ -193,12 +227,29 @@ final readonly class MakeMigrationCommand implements CommandInterface
             use EzPhp\\Contracts\\Schema\\SchemaInterface;
             use EzPhp\\Migration\\MigrationInterface;
 
+            /**
+             * Migration — run with `ez migrate`.
+             */
             return new class implements MigrationInterface {
+                /**
+                 * Run the migration.
+                 *
+                 * @param SchemaInterface \$schema
+                 *
+                 * @return void
+                 */
                 public function up(SchemaInterface \$schema): void
                 {
                     \$schema->drop('$table');
                 }
 
+                /**
+                 * Reverse the migration.
+                 *
+                 * @param SchemaInterface \$schema
+                 *
+                 * @return void
+                 */
                 public function down(SchemaInterface \$schema): void
                 {
                     // \$schema->create('$table', function (\\EzPhp\\Orm\\Schema\\Blueprint \$table): void {
@@ -223,12 +274,29 @@ final readonly class MakeMigrationCommand implements CommandInterface
             use EzPhp\Contracts\Schema\SchemaInterface;
             use EzPhp\Migration\MigrationInterface;
 
+            /**
+             * Migration — run with `ez migrate`.
+             */
             return new class implements MigrationInterface {
+                /**
+                 * Run the migration.
+                 *
+                 * @param SchemaInterface $schema
+                 *
+                 * @return void
+                 */
                 public function up(SchemaInterface $schema): void
                 {
                     //
                 }
 
+                /**
+                 * Reverse the migration.
+                 *
+                 * @param SchemaInterface $schema
+                 *
+                 * @return void
+                 */
                 public function down(SchemaInterface $schema): void
                 {
                     //

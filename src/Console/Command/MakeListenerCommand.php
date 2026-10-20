@@ -104,8 +104,20 @@ final readonly class MakeListenerCommand implements CommandInterface
             use EzPhp\\Events\\EventInterface;
             use EzPhp\\Events\\ListenerInterface;
 
+            /**
+             * Class $name
+             *
+             * @package App\\Listeners
+             */
             final class $name implements ListenerInterface
             {
+                /**
+                 * Handle the event.
+                 *
+                 * @param EventInterface \$event
+                 *
+                 * @return void
+                 */
                 public function handle(EventInterface \$event): void
                 {
                 }

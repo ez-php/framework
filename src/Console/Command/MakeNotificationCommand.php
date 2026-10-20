@@ -103,9 +103,16 @@ final readonly class MakeNotificationCommand implements CommandInterface
 
             use EzPhp\\Notification\\NotificationInterface;
 
+            /**
+             * Class $name
+             *
+             * @package App\\Notifications
+             */
             final class $name implements NotificationInterface
             {
                 /**
+                 * The channels this notification is delivered on.
+                 *
                  * @return list<string>
                  */
                 public function via(): array
@@ -114,6 +121,8 @@ final readonly class MakeNotificationCommand implements CommandInterface
                 }
 
                 /**
+                 * The notification payload.
+                 *
                  * @return array<string, mixed>
                  */
                 public function toArray(): array

@@ -103,8 +103,16 @@ final readonly class MakeEventCommand implements CommandInterface
 
             use EzPhp\\Events\\EventInterface;
 
+            /**
+             * Class $name
+             *
+             * @package App\\Events
+             */
             final class $name implements EventInterface
             {
+                /**
+                 * $name Constructor
+                 */
                 public function __construct()
                 {
                 }

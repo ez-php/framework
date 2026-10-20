@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace EzPhp\Container;
 
+use Closure;
 use EzPhp\Contracts\TaggedContainerInterface;
 use EzPhp\Exceptions\ContainerException;
 use ReflectionClass;
@@ -58,6 +59,15 @@ final class Container implements TaggedContainerInterface
     private array $resolutionStack = [];
 
     /**
+     * Deferred-binding hook set by Application: `(class, activate) → bool` reports
+     * whether a deferred provider owns the class and, when $activate is true,
+     * loads that provider (register() + boot()) so its binding exists.
+     *
+     * @var (Closure(string, bool): bool)|null
+     */
+    private ?Closure $deferredResolver = null;
+
+    /**
      * Create a child (scoped) container that inherits all bindings from this
      * container but starts with an empty instance cache.
      *
@@ -71,6 +81,13 @@ final class Container implements TaggedContainerInterface
      *   // $requestContainer has the same bindings as $container
      *   // but every make() creates a fresh instance
      *
+     * Deferred providers: the child does not inherit the deferred resolver
+     * (setDeferredResolver()). A binding whose deferred provider has not been
+     * activated on this (root) container yet is invisible to the child —
+     * has() reports false and make() autowires the class or, for an
+     * interface, throws a ContainerException instead of activating the
+     * provider. Resolve such classes on the root before calling scope().
+     *
      * @return static
      */
     public function scope(): static
@@ -80,8 +97,26 @@ final class Container implements TaggedContainerInterface
         $child->contextualBindings = $this->contextualBindings;
         $child->tags = $this->tags;
         $child->reflectionCache = $this->reflectionCache;
+        // The deferred resolver is deliberately not inherited: activating a provider
+        // binds into the root container, which a child's copied bindings never see.
+        // Activate deferred providers on the root before creating the scope.
 
         return $child;
+    }
+
+    /**
+     * Install the hook that lets every resolution — including constructor
+     * dependencies resolved during autowiring — activate deferred service
+     * providers, and lets has() report their bindings. Set by Application;
+     * null removes it.
+     *
+     * @param (Closure(string, bool): bool)|null $resolver `(class, activate) → owned by a deferred provider`
+     *
+     * @return void
+     */
+    public function setDeferredResolver(?Closure $resolver): void
+    {
+        $this->deferredResolver = $resolver;
     }
 
     /**
@@ -139,8 +174,9 @@ final class Container implements TaggedContainerInterface
     }
 
     /**
-     * Determine whether an explicit binding or cached instance exists for
-     * the given class, without attempting to resolve it.
+     * Determine whether an explicit binding, cached instance or deferred
+     * provider binding exists for the given class, without attempting to
+     * resolve it (a deferred provider is not activated).
      *
      * @param string $class
      *
@@ -148,7 +184,9 @@ final class Container implements TaggedContainerInterface
      */
     public function has(string $class): bool
     {
-        return isset($this->instances[$class]) || isset($this->bindings[$class]);
+        return isset($this->instances[$class])
+            || isset($this->bindings[$class])
+            || ($this->deferredResolver !== null && ($this->deferredResolver)($class, false));
     }
 
     /**
@@ -176,6 +214,10 @@ final class Container implements TaggedContainerInterface
 
         if (!class_exists($class) && !interface_exists($class)) {
             throw new ContainerException("Class '$class' does not exist");
+        }
+
+        if ($this->deferredResolver !== null) {
+            ($this->deferredResolver)($class, true);
         }
 
         if ($overrides !== []) {

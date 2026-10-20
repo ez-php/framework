@@ -137,8 +137,16 @@ final readonly class MakeTestCommand implements CommandInterface
 
             use PHPUnit\\Framework\\TestCase;
 
+            /**
+             * Class $name
+             *
+             * @package Tests
+             */
             final class $name extends TestCase
             {
+                /**
+                 * @return void
+                 */
                 public function testExample(): void
                 {
                     \$this->assertTrue(true);
@@ -163,8 +171,16 @@ final readonly class MakeTestCommand implements CommandInterface
 
             use EzPhp\\Testing\\ApplicationTestCase;
 
+            /**
+             * Class $name
+             *
+             * @package Tests
+             */
             final class $name extends ApplicationTestCase
             {
+                /**
+                 * @return void
+                 */
                 public function testExample(): void
                 {
                     \$this->assertTrue(true);
@@ -189,8 +205,16 @@ final readonly class MakeTestCommand implements CommandInterface
 
             use EzPhp\\Testing\\HttpTestCase;
 
+            /**
+             * Class $name
+             *
+             * @package Tests
+             */
             final class $name extends HttpTestCase
             {
+                /**
+                 * @return void
+                 */
                 public function testExample(): void
                 {
                     \$response = \$this->get('/');

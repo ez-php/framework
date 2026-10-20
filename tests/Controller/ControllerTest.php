@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Tests\Controller;
 
 use EzPhp\Contracts\DatabaseInterface;
+use EzPhp\Contracts\GateInterface;
 use EzPhp\Contracts\TranslatorInterface;
 use EzPhp\Controller\Controller;
 use EzPhp\Database\Database;
+use EzPhp\Exceptions\ApplicationException;
+use EzPhp\Exceptions\ForbiddenException;
 use EzPhp\Exceptions\HttpException;
 use EzPhp\Http\Request;
 use EzPhp\Http\Response;
@@ -26,6 +29,8 @@ use Tests\TestCase;
  */
 #[CoversClass(Controller::class)]
 #[UsesClass(HttpException::class)]
+#[UsesClass(ForbiddenException::class)]
+#[UsesClass(ApplicationException::class)]
 #[UsesClass(Database::class)]
 final class ControllerTest extends TestCase
 {
@@ -105,6 +110,42 @@ final class ControllerTest extends TestCase
     }
 
     // ── abort ─────────────────────────────────────────────────────────────────
+
+    /**
+     * @return void
+     */
+    public function test_authorize_passes_when_the_gate_allows(): void
+    {
+        $gate = new ControllerTestGate(['update' => true]);
+
+        $this->controller->callAuthorize($gate, 'update', 'post');
+
+        $this->assertSame([['update', 'post']], $gate->checks);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_authorize_throws_403_when_denied(): void
+    {
+        try {
+            $this->controller->callAuthorize(new ControllerTestGate([]), 'delete');
+            $this->fail('ForbiddenException expected');
+        } catch (ForbiddenException $e) {
+            $this->assertSame(403, $e->getStatusCode());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function test_authorize_without_gate_throws_a_clear_exception(): void
+    {
+        $this->expectException(ApplicationException::class);
+        $this->expectExceptionMessage('no EzPhp\Contracts\GateInterface is bound');
+
+        $this->controller->callAuthorize(null, 'update');
+    }
 
     /**
      * @return void
@@ -282,5 +323,42 @@ class ConcreteController extends Controller
     public function callValidate(Request $request, array $rules, ?DatabaseInterface $db = null, ?TranslatorInterface $translator = null): array
     {
         return $this->validate($request, $rules, $db, $translator);
+    }
+
+    /**
+     * @param GateInterface|null $gate
+     * @param string             $ability
+     * @param mixed              $subject
+     *
+     * @return void
+     */
+    public function callAuthorize(?GateInterface $gate, string $ability, mixed $subject = null): void
+    {
+        $this->authorize($gate, $ability, $subject);
+    }
+}
+
+/**
+ * Recording GateInterface with a fixed ability → decision map.
+ *
+ * @internal test helper
+ */
+final class ControllerTestGate implements GateInterface
+{
+    /** @var list<array{string, mixed}> */
+    public array $checks = [];
+
+    /**
+     * @param array<string, bool> $decisions
+     */
+    public function __construct(private readonly array $decisions)
+    {
+    }
+
+    public function allows(string $ability, mixed $subject = null): bool
+    {
+        $this->checks[] = [$ability, $subject];
+
+        return $this->decisions[$ability] ?? false;
     }
 }

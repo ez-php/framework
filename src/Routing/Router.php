@@ -32,6 +32,12 @@ final class Router implements RouterInterface
 
     private ?Route $fallbackRoute = null;
 
+    /**
+     * Route returned by the most recent retrieveRoute() call; null before the
+     * first call and after a call that threw. See matchedRoute().
+     */
+    private ?Route $matchedRoute = null;
+
     private string $groupPrefix = '';
 
     /**
@@ -393,10 +399,11 @@ final class Router implements RouterInterface
      */
     public function retrieveRoute(Request $request): Route
     {
+        $this->matchedRoute = null;
         $matched = $this->matchRoute($request);
 
         if ($matched !== null) {
-            return $this->applyModelBindings($matched);
+            return $this->matchedRoute = $this->applyModelBindings($matched);
         }
 
         // The path exists, just not for this method: 405, not the fallback route.
@@ -407,10 +414,24 @@ final class Router implements RouterInterface
         }
 
         if ($this->fallbackRoute !== null) {
-            return $this->fallbackRoute;
+            return $this->matchedRoute = $this->fallbackRoute;
         }
 
         throw new RouteException();
+    }
+
+    /**
+     * The route the most recent retrieveRoute() call resolved — the request
+     * currently being handled, once routing ran. Null before routing and when
+     * no route matched (404/405). Lets global middleware that wraps routing
+     * (e.g. ez-php/metrics' RequestMetricsMiddleware) label by the route
+     * *pattern* (`/users/{id}`) after `$next` returned, instead of the raw URI.
+     *
+     * @return Route|null
+     */
+    public function matchedRoute(): ?Route
+    {
+        return $this->matchedRoute;
     }
 
     /**

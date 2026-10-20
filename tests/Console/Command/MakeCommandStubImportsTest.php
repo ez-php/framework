@@ -204,6 +204,97 @@ final class MakeCommandStubImportsTest extends TestCase
     }
 
     /**
+     * Generated classes follow the guideline "PHPDoc on every class and public
+     * method", like the template's own code: a named class and every public
+     * method of a generated file must be preceded by a docblock.
+     *
+     * @param \Closure(string): CommandInterface $factory
+     * @param list<string>                       $args
+     *
+     * @return void
+     */
+    #[DataProvider('generators')]
+    public function test_generated_class_and_public_methods_have_docblocks(\Closure $factory, array $args): void
+    {
+        ob_start();
+
+        try {
+            $exitCode = $factory($this->dir)->handle($args);
+        } finally {
+            ob_end_clean();
+        }
+
+        $this->assertSame(0, $exitCode);
+
+        foreach ($this->phpFiles($this->dir) as $file) {
+            $this->assertSame(
+                [],
+                self::declarationsWithoutDocblock((string) file_get_contents($file)),
+                basename($file) . ' has declarations without a docblock.',
+            );
+        }
+    }
+
+    /**
+     * Named classes and public methods in $code that are not directly preceded
+     * by a docblock (attributes and modifiers in between are allowed).
+     *
+     * @return list<string>
+     */
+    private static function declarationsWithoutDocblock(string $code): array
+    {
+        $tokens = array_values(array_filter(
+            \PhpToken::tokenize($code),
+            static fn (\PhpToken $t): bool => !$t->is([T_WHITESPACE, T_COMMENT]),
+        ));
+        $modifiers = [T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_FINAL, T_ABSTRACT, T_READONLY];
+        $missing = [];
+
+        foreach ($tokens as $i => $token) {
+            if (!$token->is([T_CLASS, T_FUNCTION])) {
+                continue;
+            }
+
+            $j = $i - 1;
+            $visibility = T_PUBLIC;
+
+            while ($j >= 0 && $tokens[$j]->is($modifiers)) {
+                if ($tokens[$j]->is([T_PROTECTED, T_PRIVATE])) {
+                    $visibility = $tokens[$j]->id;
+                }
+                $j--;
+            }
+
+            while ($j >= 0 && $tokens[$j]->text === ']') {
+                // skip an attribute group #[...]
+                $depth = 0;
+                do {
+                    $depth += $tokens[$j]->text === ']' ? 1 : 0;
+                    $depth -= $tokens[$j]->is(T_ATTRIBUTE) || $tokens[$j]->text === '[' ? 1 : 0;
+                    $j--;
+                } while ($j >= 0 && $depth > 0);
+            }
+
+            $previous = $j >= 0 ? $tokens[$j] : null;
+
+            if ($previous !== null && $previous->is(T_DOC_COMMENT)) {
+                continue;
+            }
+
+            $isDeclarationPosition = $previous === null || in_array($previous->text, ['{', '}', ';'], true) || $previous->is(T_OPEN_TAG);
+
+            if (!$isDeclarationPosition || $visibility !== T_PUBLIC) {
+                continue; // closure, `new class`, `::class`, or a non-public method
+            }
+
+            $name = $tokens[$i + 1]->text ?? '?';
+            $missing[] = ($token->is(T_CLASS) ? 'class ' : 'method ') . $name;
+        }
+
+        return $missing;
+    }
+
+    /**
      * The Composer autoloader of the running test suite.
      */
     private function autoloadPath(): string
