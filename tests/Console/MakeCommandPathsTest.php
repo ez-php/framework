@@ -50,9 +50,9 @@ use Tests\TestCase;
 #[UsesClass(MakeProviderCommand::class)]
 #[UsesClass(MakeEventCommand::class)]
 #[UsesClass(MakeListenerCommand::class)]
-#[UsesClass(MakeJobCommand::class)]
-#[UsesClass(MakeNotificationCommand::class)]
-#[UsesClass(MakeChannelCommand::class)]
+#[CoversClass(MakeJobCommand::class)]
+#[CoversClass(MakeNotificationCommand::class)]
+#[CoversClass(MakeChannelCommand::class)]
 #[UsesClass(MakeRequestCommand::class)]
 #[UsesClass(MakeCommandCommand::class)]
 final class MakeCommandPathsTest extends TestCase

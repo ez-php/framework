@@ -23,7 +23,7 @@ composer require ez-php/framework
 | `Container` | Dependency injection with autowiring |
 | `ServiceProvider` | Register/boot pattern for modular configuration |
 | `Routing` | Router with named routes, route groups, and URL parameter support |
-| `Controller` | `Controller` / `ApiController` base classes with validation and JSON response helpers |
+| `Controller` | `Controller` / `ApiController` base classes with validation and JSON response helpers, plus `authorize(?GateInterface, $ability, $subject)` (403 via `ForbiddenException`; needs a `GateInterface` binding such as `ez-php/authorization`) |
 | `Middleware` | Pipeline-based middleware with terminable support, plus bundled middleware: `CsrfMiddleware`, `XsrfCookieMiddleware` (SPAs), `CorsMiddleware`, `SecurityHeadersMiddleware`, `ConditionalGetMiddleware`, `LocaleNegotiationMiddleware`, `MaintenanceModeMiddleware` |
 | `Maintenance` | `down` / `up` maintenance mode with a secret bypass path |
 | `Database` | Thin PDO wrapper with transactions |

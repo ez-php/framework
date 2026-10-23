@@ -8,7 +8,6 @@ use DateTimeImmutable;
 use EzPhp\Console\Schedule\ScheduledCommand;
 use EzPhp\Console\Schedule\Scheduler;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\UsesClass;
 use Tests\TestCase;
 
 /**
@@ -17,7 +16,7 @@ use Tests\TestCase;
  * @package Tests\Console\Schedule
  */
 #[CoversClass(Scheduler::class)]
-#[UsesClass(ScheduledCommand::class)]
+#[CoversClass(ScheduledCommand::class)]
 final class SchedulerTest extends TestCase
 {
     /**
