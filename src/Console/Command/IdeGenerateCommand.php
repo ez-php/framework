@@ -57,6 +57,7 @@ final class IdeGenerateCommand implements CommandInterface
         'EzPhp\Otel\Otel',
         'EzPhp\Push\Push',
         'EzPhp\RateLimiter\RateLimiter',
+        'EzPhp\Sms\Sms',
         'EzPhp\Storage\Storage',
         'EzPhp\View\View',
     ];
