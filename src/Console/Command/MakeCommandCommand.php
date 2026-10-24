@@ -143,13 +143,11 @@ final readonly class MakeCommandCommand implements CommandInterface
              *
              * Register this command from a service provider's boot():
              *
-             *     if (\$this->app instanceof CommandRegistryInterface) {
-             *         \$this->app->registerCommand($name::class);
-             *     }
+             *     \$this->registerCommand($name::class);
              *
-             * The instanceof guard is needed because registerCommand() lives on
-             * EzPhp\\Contracts\\CommandRegistryInterface, which Application implements
-             * but ContainerInterface does not declare.
+             * ServiceProvider::registerCommand() forwards to the container when it
+             * implements EzPhp\\Contracts\\CommandRegistryInterface (Application
+             * does) and is a no-op otherwise.
              */
             final class $name implements CommandInterface
             {

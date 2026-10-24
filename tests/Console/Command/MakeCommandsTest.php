@@ -826,7 +826,8 @@ final class MakeCommandsTest extends TestCase
 
         $content = file_get_contents($this->srcPath . '/Console/MyCommand.php');
         $this->assertIsString($content);
-        $this->assertStringContainsString('registerCommand', $content);
+        $this->assertStringContainsString('$this->registerCommand(MyCommand::class);', $content);
+        $this->assertStringNotContainsString('instanceof CommandRegistryInterface', $content);
     }
 
     /**
