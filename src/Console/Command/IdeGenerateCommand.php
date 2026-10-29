@@ -44,6 +44,7 @@ final class IdeGenerateCommand implements CommandInterface
         'EzPhp\Auth\Auth',
         'EzPhp\Broadcast\Broadcast',
         'EzPhp\Cache\Cache',
+        'EzPhp\Encryption\Crypt',
         'EzPhp\Events\Event',
         'EzPhp\FeatureFlags\Flag',
         'EzPhp\GraphQL\GraphQL',
