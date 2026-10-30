@@ -9,6 +9,7 @@ use EzPhp\Console\Command\MakeChannelCommand;
 use EzPhp\Console\Command\MakeCommandCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
 use EzPhp\Console\Command\MakeEventCommand;
+use EzPhp\Console\Command\MakeFactoryCommand;
 use EzPhp\Console\Command\MakeJobCommand;
 use EzPhp\Console\Command\MakeListenerCommand;
 use EzPhp\Console\Command\MakeMiddlewareCommand;
@@ -96,6 +97,7 @@ final class MakeCommandStubImportsTest extends TestCase
             'make:command' => [static fn (string $d): CommandInterface => new MakeCommandCommand($d, errorStream: fopen('php://memory', 'w') ?: null), ['StubCommand']],
             'make:controller' => [static fn (string $d): CommandInterface => new MakeControllerCommand($d, errorStream: fopen('php://memory', 'w') ?: null), ['StubController']],
             'make:event' => [static fn (string $d): CommandInterface => new MakeEventCommand($d, errorStream: fopen('php://memory', 'w') ?: null), ['StubEvent']],
+            'make:factory' => [static fn (string $d): CommandInterface => new MakeFactoryCommand($d, errorStream: fopen('php://memory', 'w') ?: null), ['StubEntity']],
             'make:job' => [static fn (string $d): CommandInterface => new MakeJobCommand($d, errorStream: fopen('php://memory', 'w') ?: null), ['StubJob']],
             'make:listener' => [static fn (string $d): CommandInterface => new MakeListenerCommand($d, errorStream: fopen('php://memory', 'w') ?: null), ['StubListener']],
             'make:middleware' => [static fn (string $d): CommandInterface => new MakeMiddlewareCommand($d, errorStream: fopen('php://memory', 'w') ?: null), ['StubMiddleware']],

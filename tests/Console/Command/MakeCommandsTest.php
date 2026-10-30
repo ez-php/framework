@@ -7,6 +7,7 @@ namespace Tests\Console\Command;
 use EzPhp\Console\Command\MakeCommandCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
 use EzPhp\Console\Command\MakeEventCommand;
+use EzPhp\Console\Command\MakeFactoryCommand;
 use EzPhp\Console\Command\MakeListenerCommand;
 use EzPhp\Console\Command\MakeMiddlewareCommand;
 use EzPhp\Console\Command\MakeProviderCommand;
@@ -30,6 +31,7 @@ use Tests\TestCase;
 #[CoversClass(MakeEventCommand::class)]
 #[CoversClass(MakeListenerCommand::class)]
 #[CoversClass(MakeRequestCommand::class)]
+#[CoversClass(MakeFactoryCommand::class)]
 #[CoversClass(MakeTestCommand::class)]
 final class MakeCommandsTest extends TestCase
 {
@@ -624,6 +626,43 @@ final class MakeCommandsTest extends TestCase
     }
 
     // ─── make:test ───────────────────────────────────────────────────────────
+
+    /**
+     * @return void
+     */
+    public function test_make_factory_writes_a_factory_for_the_entity(): void
+    {
+        $cmd = new MakeFactoryCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
+
+        ob_start();
+        $code = $cmd->handle(['User']);
+        ob_get_clean();
+
+        $this->assertSame(0, $code);
+        $file = (string) file_get_contents($this->srcPath . '/UserFactory.php');
+        $this->assertStringContainsString('namespace Tests\\Factories;', $file);
+        $this->assertStringContainsString('use App\\Entities\\User;', $file);
+        $this->assertStringContainsString('use App\\Repositories\\UserRepository;', $file);
+        $this->assertStringContainsString('use EzPhp\\Testing\\EntityFactory;', $file);
+        $this->assertStringContainsString('new EntityFactory(User::class, $repository', $file);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_make_factory_refuses_to_overwrite_and_validates_the_name(): void
+    {
+        $cmd = new MakeFactoryCommand($this->srcPath, errorStream: fopen('php://memory', 'w') ?: null);
+
+        ob_start();
+        $first = $cmd->handle(['User']);
+        $second = $cmd->handle(['User']);
+        $invalid = $cmd->handle(['../User']);
+        $missing = $cmd->handle([]);
+        ob_get_clean();
+
+        $this->assertSame([0, 1, 1, 1], [$first, $second, $invalid, $missing]);
+    }
 
     /**
      * @return void

@@ -21,6 +21,7 @@ use EzPhp\Console\Command\MakeChannelCommand;
 use EzPhp\Console\Command\MakeCommandCommand;
 use EzPhp\Console\Command\MakeControllerCommand;
 use EzPhp\Console\Command\MakeEventCommand;
+use EzPhp\Console\Command\MakeFactoryCommand;
 use EzPhp\Console\Command\MakeJobCommand;
 use EzPhp\Console\Command\MakeListenerCommand;
 use EzPhp\Console\Command\MakeMiddlewareCommand;
@@ -160,6 +161,10 @@ final class ConsoleServiceProvider extends ServiceProvider
             return new MakeRequestCommand($app->basePath('app'));
         });
 
+        $this->app->bind(MakeFactoryCommand::class, function (Application $app): MakeFactoryCommand {
+            return new MakeFactoryCommand($app->basePath('tests/Factories'));
+        });
+
         $this->app->bind(MakeTestCommand::class, function (Application $app): MakeTestCommand {
             return new MakeTestCommand($app->basePath('tests'));
         });
@@ -249,6 +254,7 @@ final class ConsoleServiceProvider extends ServiceProvider
                 $app->make(MakeCommandCommand::class),
                 $app->make(MakeRequestCommand::class),
                 $app->make(MakeTestCommand::class),
+                $app->make(MakeFactoryCommand::class),
                 $app->make(TinkerCommand::class),
                 $app->make(EnvCheckCommand::class),
                 $app->make(DoctorCommand::class),

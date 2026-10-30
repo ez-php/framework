@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace EzPhp\Routing;
 
+use EzPhp\Contracts\ConfigInterface;
 use EzPhp\Contracts\RouterInterface;
 use EzPhp\ServiceProvider\ServiceProvider;
 use ReflectionException;
@@ -24,6 +25,12 @@ final class RouterServiceProvider extends ServiceProvider
         $this->app->bind(Router::class, fn () => new Router($this->app));
         // Modules register their endpoints against the contract, so they need not depend on the framework.
         $this->app->bind(RouterInterface::class, fn () => $this->app->make(Router::class));
+        // Resolved on demand: only applications using signed URLs need `app.url_signing_key`.
+        $this->app->bind(UrlSigner::class, function (): UrlSigner {
+            $key = $this->app->make(ConfigInterface::class)->get('app.url_signing_key');
+
+            return new UrlSigner(is_string($key) ? $key : '');
+        });
     }
 
     /**

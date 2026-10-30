@@ -308,6 +308,7 @@ src/
 │   │   ├── MakeRequestCommand.php    — make:request — scaffolds a FormRequest class in app/Requests/
 │   │   ├── MakeSeederCommand.php     — make:seeder — scaffolds a seeder class in database/seeders/
 │   │   ├── MakeTestCommand.php       — make:test — scaffolds a test class in tests/ (unit/feature/http)
+│   │   ├── MakeFactoryCommand.php    — make:factory — scaffolds tests/Factories/<Entity>Factory.php building an ez-php/testing EntityFactory
 │   │   ├── MigrateCommand.php        — migrate — runs all pending migrations
 │   │   ├── MigrateFreshCommand.php   — migrate:fresh — rolls back all migrations and re-runs from scratch
 │   │   ├── MigrateRollbackCommand.php — migrate:rollback — rolls back the last migration batch
@@ -353,6 +354,7 @@ src/
 │   ├── ConditionalGetMiddleware.php  — ETag (sha1 of a string body, unless set) and If-None-Match / If-Modified-Since → empty 304 with the validator/caching headers; skips streams and responses that set cookies
 │   ├── LocaleNegotiationMiddleware.php — Accept-Language (q-values, `de-AT` → `de_AT` → `de`) against `app.locales` → Translator::setLocale(); adds Content-Language and Vary: Accept-Language
 │   ├── MaintenanceModeMiddleware.php — 503 (+ Retry-After, JSON for API requests) while down; `/<secret>` sets an HMAC bypass cookie
+│   ├── SignedUrlMiddleware.php       — 403 unless the request carries a valid, unexpired UrlSigner signature
 │   ├── SecurityHeadersMiddleware.php — nosniff / X-Frame-Options / Referrer-Policy / HSTS defaults; overrides from `security.headers` and the constructor (null removes); CSP only when configured; never overwrites a header the response set
 │   ├── CorsMiddleware.php            — Adds CORS headers (`*`, one origin, or an allow-list echoed with `Vary: Origin`; opt-in credentials); 204 for real preflights only
 │   ├── CsrfMiddleware.php            — CSRF token validation for state-changing requests; JSON envelope for JSON clients, optional rejection factory
@@ -378,6 +380,7 @@ src/
 │   ├── ResourceControllerInterface.php — Contract for resourceful controllers: index/show/create/store/edit/update/destroy
 │   ├── Route.php                     — Single route: regex matching, param extraction, handler execution
 │   ├── Router.php                    — Route registry with group support and named URL generation
+│   ├── UrlSigner.php                 — HMAC-SHA256 expiring links; signs path + sorted query, not scheme/host; bound from `app.url_signing_key`
 │   └── RouterServiceProvider.php    — Binds Router and loads routes/web.php
 └── ServiceProvider/
     └── ServiceProvider.php           — Abstract base: register() + boot() two-phase lifecycle

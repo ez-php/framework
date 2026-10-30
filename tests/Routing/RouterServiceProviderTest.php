@@ -31,7 +31,9 @@ use EzPhp\Migration\Migrator;
 use EzPhp\Routing\Route;
 use EzPhp\Routing\Router;
 use EzPhp\Routing\RouterServiceProvider;
+use EzPhp\Routing\UrlSigner;
 use EzPhp\ServiceProvider\ServiceProvider;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use ReflectionException;
@@ -69,6 +71,20 @@ use Tests\TestCase;
 #[UsesClass(RouteClearCommand::class)]
 final class RouterServiceProviderTest extends TestCase
 {
+    /**
+     * @return void
+     * @throws ReflectionException
+     */
+    public function test_url_signer_refuses_to_resolve_without_a_signing_key(): void
+    {
+        $app = new Application();
+        $app->bootstrap();
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $app->make(UrlSigner::class);
+    }
+
     /**
      * @return void
      * @throws ReflectionException
