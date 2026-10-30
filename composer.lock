@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bc327ff39df4fa38a5db46bbb3186c10",
+    "content-hash": "77b92cae57606242c20d55b668175dab",
     "packages": [
         {
             "name": "ez-php/console",
@@ -181,16 +181,16 @@
         },
         {
             "name": "ez-php/http",
-            "version": "2.6.4",
+            "version": "2.6.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ez-php/http.git",
-                "reference": "0fa8c20ec63b779188c474a8fa426ed1437dbf4e"
+                "reference": "a2359ac1e7a27b61ee073692de2d856d58738cfc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ez-php/http/zipball/0fa8c20ec63b779188c474a8fa426ed1437dbf4e",
-                "reference": "0fa8c20ec63b779188c474a8fa426ed1437dbf4e",
+                "url": "https://api.github.com/repos/ez-php/http/zipball/a2359ac1e7a27b61ee073692de2d856d58738cfc",
+                "reference": "a2359ac1e7a27b61ee073692de2d856d58738cfc",
                 "shasum": ""
             },
             "require": {
@@ -234,7 +234,7 @@
                 "issues": "https://github.com/ez-php/http/issues",
                 "source": "https://github.com/ez-php/http"
             },
-            "time": "2026-10-30T00:22:58+00:00"
+            "time": "2026-10-30T09:49:47+00:00"
         },
         {
             "name": "ez-php/i18n",
