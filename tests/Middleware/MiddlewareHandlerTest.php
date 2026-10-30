@@ -407,11 +407,32 @@ final class MiddlewareHandlerTest extends TestCase
 
         $handler->handle($this->makeRoute('handler'), new Request('GET', '/'));
     }
+
+    /**
+     * A resolved object set by middleware reaches the handler, also through the
+     * router's withParams() — the request a middleware passes on is the one routed.
+     *
+     * @return void
+     */
+    public function test_attributes_set_by_middleware_reach_the_handler(): void
+    {
+        $handler = new MiddlewareHandler(new Container());
+        $route = (new Route(
+            'GET',
+            '/heroes/{id}',
+            static fn (Request $r): Response => new Response(var_export($r->attribute('hero'), true) . ':' . var_export($r->param('id'), true)),
+        ))->middleware(AttachHeroMiddleware::class);
+        $request = new Request('GET', '/heroes/7');
+        $matched = $route->matches($request);
+        self::assertNotNull($matched);
+
+        $response = $handler->handle($matched, $request);
+
+        self::assertInstanceOf(Response::class, $response);
+        $this->assertSame("'Ayla':'7'", $response->body());
+    }
 }
 
-/**
- * Appends "+appended" to the inner response body.
- */
 final class AppendMiddleware implements MiddlewareInterface
 {
     /**
@@ -501,5 +522,19 @@ final class EchoParametersMiddleware implements ParameterizedMiddlewareInterface
         $response = $next($request);
 
         return new Response('[' . implode('|', $parameters) . ']' . $response->body(), $response->status());
+    }
+}
+
+/**
+ * Resolves "the current user's hero" once and hands it to the action.
+ */
+final class AttachHeroMiddleware implements MiddlewareInterface
+{
+    public function handle(RequestInterface $request, callable $next): ResponseInterface
+    {
+        /** @var ResponseInterface $response */
+        $response = $next($request->withAttribute('hero', 'Ayla'));
+
+        return $response;
     }
 }
